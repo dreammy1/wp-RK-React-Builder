@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>RK Builder — React Page Builder POC</title>
+<script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.6/babel.min.js"></script>
+<style>
+  :root{
+    --bg:#0f1115; --panel:#161a21; --panel2:#1d222c; --line:#2a3140; --ink:#e7ecf3; --muted:#8a94a6;
+    --accent:#5b8cff; --accent2:#38d39f; --danger:#ff5c72; --radius:10px;
+    /* live theme tokens the "site" uses (editable in the Theme panel) */
+    --site-primary:#5b8cff; --site-bg:#ffffff; --site-ink:#141a22; --site-font:'Inter',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+  .app{display:grid;grid-template-rows:auto 1fr;height:100vh}
+  header.top{display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--panel);border-bottom:1px solid var(--line)}
+  .brand{font-weight:700;letter-spacing:.2px;display:flex;align-items:center;gap:8px}
+  .brand .logo{width:22px;height:22px;border-radius:6px;background:linear-gradient(135deg,var(--accent),var(--accent2))}
+  .brand small{color:var(--muted);font-weight:500}
+  .top .spacer{flex:1}
+  .btn{background:var(--panel2);color:var(--ink);border:1px solid var(--line);padding:7px 12px;border-radius:8px;cursor:pointer;font-weight:600}
+  .btn:hover{border-color:var(--accent)}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  .btn.ghost{background:transparent}
+  .seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+  .seg button{background:transparent;color:var(--muted);border:0;padding:7px 12px;cursor:pointer;font-weight:600}
+  .seg button.active{background:var(--panel2);color:var(--ink)}
+  .layout{display:grid;grid-template-columns:210px 1fr 300px;min-height:0}
+  .layout.preview{grid-template-columns:1fr}
+  .col{min-height:0;overflow:auto}
+  .palette{background:var(--panel);border-right:1px solid var(--line);padding:12px}
+  .palette h4,.inspector h4{margin:4px 0 10px;font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted)}
+  .pblock{display:flex;align-items:center;gap:9px;padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:var(--panel2);margin-bottom:8px;cursor:grab;user-select:none}
+  .pblock:hover{border-color:var(--accent)}
+  .pblock .ic{width:22px;height:22px;display:grid;place-items:center;border-radius:6px;background:#0e1218;color:var(--accent2);font-size:13px}
+  .canvaswrap{background:#0b0d11;padding:22px;display:flex;justify-content:center}
+  .canvas{width:100%;max-width:900px;background:var(--site-bg);color:var(--site-ink);font-family:var(--site-font);border-radius:12px;min-height:70vh;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.35)}
+  .dropzone{outline:2px dashed transparent;transition:outline-color .15s}
+  .dropzone.over{outline-color:var(--accent)}
+  .empty{color:#9aa4b2;text-align:center;padding:80px 20px;font-family:system-ui}
+  /* block chrome in edit mode */
+  .blk{position:relative;border:1px solid transparent}
+  .edit .blk{border:1px dashed #d7dde6}
+  .edit .blk:hover{border-color:var(--site-primary)}
+  .edit .blk.sel{border:2px solid var(--site-primary)}
+  .blk .bar{position:absolute;top:-1px;right:-1px;display:none;gap:2px;background:var(--site-primary);border-radius:0 0 0 8px;z-index:3}
+  .edit .blk.sel .bar{display:flex}
+  .blk .bar button{background:transparent;border:0;color:#fff;padding:4px 8px;cursor:pointer;font-weight:700;font-size:12px}
+  .inspector{background:var(--panel);border-left:1px solid var(--line);padding:12px}
+  .field{margin-bottom:12px}
+  .field label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px}
+  .field input,.field textarea,.field select{width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:7px;color:var(--ink);padding:8px}
+  .field textarea{min-height:70px;resize:vertical}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .hint{color:var(--muted);font-size:12px}
+  .pill{display:inline-block;background:#0e1218;border:1px solid var(--line);border-radius:999px;padding:2px 8px;color:var(--muted);font-size:11px;margin-left:6px}
+  code.k{background:#0e1218;border:1px solid var(--line);border-radius:5px;padding:1px 6px;color:var(--accent2)}
+  /* ---- rendered site blocks (what the React frontend would output) ---- */
+  .s-hero{padding:64px 40px;text-align:center;background:linear-gradient(160deg,color-mix(in srgb,var(--site-primary) 14%,transparent),transparent)}
+  .s-hero h1{font-size:40px;margin:0 0 10px}
+  .s-hero p{font-size:17px;opacity:.75;max-width:620px;margin:0 auto 22px}
+  .s-btn{display:inline-block;background:var(--site-primary);color:#fff;text-decoration:none;padding:12px 22px;border-radius:8px;font-weight:700}
+  .s-heading{padding:30px 40px 6px}.s-heading h2{margin:0;font-size:26px}
+  .s-text{padding:8px 40px 22px;opacity:.82}
+  .s-image{padding:16px 40px}.s-image img{width:100%;border-radius:12px;display:block}
+  .s-cta{margin:24px 40px;padding:34px;border-radius:14px;background:var(--site-primary);color:#fff;text-align:center}
+  .s-cta h3{margin:0 0 8px;font-size:24px}.s-cta .s-btn{background:#fff;color:var(--site-primary)}
+  .s-grid{padding:22px 40px}
+  .s-grid h2{margin:0 0 16px;font-size:24px}
+  .grid{display:grid;gap:16px}
+  .card{border:1px solid #e7ebf0;border-radius:12px;overflow:hidden;background:#fff}
+  .card .ph{aspect-ratio:16/10;background:#eef1f5 center/cover}
+  .card .cbody{padding:12px 14px}.card h4{margin:0 0 4px;font-size:16px}.card p{margin:0;font-size:13px;opacity:.7}
+  .spacer-blk{width:100%}
+  .foot{padding:10px 12px;border-top:1px solid var(--line);color:var(--muted);font-size:12px;background:var(--panel)}
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:grid;place-items:center;z-index:20}
+  .modal .box{background:var(--panel);border:1px solid var(--line);border-radius:12px;width:min(680px,92vw);max-height:80vh;display:flex;flex-direction:column}
+  .modal .box header{display:flex;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line)}
+  .modal pre{margin:0;padding:14px;overflow:auto;font-size:12px;color:#cfe6ff}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" data-presets="env,react">
+const {useState, useRef, useMemo} = React;
+
+/* ---- Mock "WordPress content" (what RK Core CPTs would return over REST) ---- */
+const MOCK = {
+  services: [
+    {id:1, title:"Residential Wiring", excerpt:"Safe, code-compliant installs for homes.", image:""},
+    {id:2, title:"Solar & Battery", excerpt:"Design and install of PV + storage.", image:""},
+    {id:3, title:"EV Charging", excerpt:"Level-2 chargers, permits handled.", image:""},
+    {id:4, title:"Maintenance", excerpt:"Inspections and rapid callouts.", image:""},
+  ],
+  portfolio: [
+    {id:1, title:"Maui Beach House", excerpt:"Full rewire + solar.", image:""},
+    {id:2, title:"Downtown Retail", excerpt:"Panel upgrade, LED retrofit.", image:""},
+    {id:3, title:"Warehouse EV Bay", excerpt:"12-charger install.", image:""},
+  ]
+};
+
+/* ---- Block registry: the palette + default props + how each renders ---- */
+const BLOCKS = {
+  hero:      {label:"Hero", icon:"★", make:()=>({heading:"Powering what's next", sub:"Licensed electrical & energy contractors.", cta:"Get a quote"})},
+  heading:   {label:"Heading", icon:"H", make:()=>({text:"Section heading"})},
+  text:      {label:"Text", icon:"¶", make:()=>({text:"Write a short paragraph of body copy here."})},
+  image:     {label:"Image", icon:"▣", make:()=>({url:""})},
+  cta:       {label:"CTA banner", icon:"◈", make:()=>({heading:"Ready to start?", cta:"Contact us"})},
+  services:  {label:"Services grid", icon:"⊞", make:()=>({title:"Our Services", source:"services", cols:3})},
+  portfolio: {label:"Portfolio grid", icon:"▦", make:()=>({title:"Recent Work", source:"portfolio", cols:3})},
+  spacer:    {label:"Spacer", icon:"↕", make:()=>({h:40})},
+};
+const uid = () => Math.random().toString(36).slice(2,9);
+
+/* ---- Renderers (the same idea as your React frontend component library) ---- */
+function Grid({b}){
+  const items = MOCK[b.source] || [];
+  return (
+    <div className="s-grid">
+      <h2>{b.title}</h2>
+      <div className="grid" style={{gridTemplateColumns:`repeat(${b.cols},1fr)`}}>
+        {items.map(it=>(
+          <div className="card" key={it.id}>
+            <div className="ph" style={it.image?{backgroundImage:`url(${it.image})`}:{}}></div>
+            <div className="cbody"><h4>{it.title}</h4><p>{it.excerpt}</p></div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+function RenderBlock({b}){
+  switch(b.type){
+    case "hero": return <div className="s-hero"><h1>{b.heading}</h1><p>{b.sub}</p>{b.cta&&<a className="s-btn">{b.cta}</a>}</div>;
+    case "heading": return <div className="s-heading"><h2>{b.text}</h2></div>;
+    case "text": return <div className="s-text">{b.text}</div>;
+    case "image": return <div className="s-image"><img src={b.url||"https://placehold.co/900x420/eef1f5/9aa4b2?text=Image"} alt=""/></div>;
+    case "cta": return <div className="s-cta"><h3>{b.heading}</h3><a className="s-btn">{b.cta}</a></div>;
+    case "services":
+    case "portfolio": return <Grid b={b}/>;
+    case "spacer": return <div className="spacer-blk" style={{height:b.h}}></div>;
+    default: return null;
+  }
+}
+
+function App(){
+  const [page, setPage] = useState([
+    {id:uid(), type:"hero", heading:"Powering what's next", sub:"Licensed electrical & energy contractors serving the islands.", cta:"Get a quote"},
+    {id:uid(), type:"services", title:"Our Services", source:"services", cols:3},
+    {id:uid(), type:"portfolio", title:"Recent Work", source:"portfolio", cols:3},
+    {id:uid(), type:"cta", heading:"Ready to start your project?", cta:"Contact us"},
+  ]);
+  const [sel, setSel] = useState(null);
+  const [mode, setMode] = useState("edit");     // edit | preview
+  const [tab, setTab] = useState("block");       // block | theme
+  const [theme, setTheme] = useState({primary:"#2f6df6", bg:"#ffffff", ink:"#141a22", font:"Inter"});
+  const [overIdx, setOverIdx] = useState(null);
+  const [showJSON, setShowJSON] = useState(false);
+  const dragType = useRef(null);   // new block type from palette
+  const dragFrom = useRef(null);   // reordering existing index
+
+  const canvasStyle = {
+    "--site-primary":theme.primary, "--site-bg":theme.bg, "--site-ink":theme.ink,
+    "--site-font": theme.font==="Inter" ? "system-ui,sans-serif" : theme.font==="Serif" ? "Georgia,serif" : "'Courier New',monospace"
+  };
+  const selBlock = page.find(b=>b.id===sel);
+
+  const addAt = (type, idx) => {
+    const b = {id:uid(), type, ...BLOCKS[type].make()};
+    setPage(p=>{const n=[...p]; n.splice(idx==null?n.length:idx,0,b); return n;});
+    setSel(b.id);
+  };
+  const move = (from, to) => setPage(p=>{const n=[...p];const [x]=n.splice(from,1);n.splice(to,0,x);return n;});
+  const patch = (id, kv) => setPage(p=>p.map(b=>b.id===id?{...b,...kv}:b));
+  const del = id => { setPage(p=>p.filter(b=>b.id!==id)); if(sel===id) setSel(null); };
+  const dup = id => setPage(p=>{const i=p.findIndex(b=>b.id===id);const c={...p[i],id:uid()};const n=[...p];n.splice(i+1,0,c);return n;});
+
+  const onDrop = (idx) => {
+    if(dragType.current!=null){ addAt(dragType.current, idx); dragType.current=null; }
+    else if(dragFrom.current!=null){ let to=idx; if(idx>dragFrom.current) to=idx-1; move(dragFrom.current, to); dragFrom.current=null; }
+    setOverIdx(null);
+  };
+
+  const layoutJSON = useMemo(()=>JSON.stringify({theme, blocks: page.map(({id,...b})=>b)}, null, 2), [page, theme]);
+
+  return (
+    <div className="app">
+      <header className="top">
+        <div className="brand"><span className="logo"></span> RK Builder <small>React page builder · POC</small></div>
+        <span className="pill">headless WordPress + React</span>
+        <div className="spacer"></div>
+        <div className="seg">
+          <button className={mode==="edit"?"active":""} onClick={()=>{setMode("edit")}}>Edit</button>
+          <button className={mode==="preview"?"active":""} onClick={()=>{setMode("preview");setSel(null)}}>Preview</button>
+        </div>
+        <button className="btn" onClick={()=>setShowJSON(true)}>Export layout JSON</button>
+        <button className="btn primary" onClick={()=>alert("In production this POSTs the layout JSON to\\nPOST /wp-json/rk/v1/builder/layout/{pageId}\\n\\n(Next.js then SSR-renders it for SEO.)")}>Save to WordPress</button>
+      </header>
+
+      <div className={"layout"+(mode==="preview"?" preview":"")}>
+        {mode==="edit" && (
+          <aside className="col palette">
+            <h4>Blocks — drag onto page</h4>
+            {Object.entries(BLOCKS).map(([type,meta])=>(
+              <div key={type} className="pblock" draggable
+                   onDragStart={()=>{dragType.current=type; dragFrom.current=null;}}>
+                <span className="ic">{meta.icon}</span> {meta.label}
+              </div>
+            ))}
+            <h4 style={{marginTop:18}}>Content source</h4>
+            <div className="hint">Services & Portfolio grids read live items from WordPress (RK Core CPTs). Here they use mock data — {MOCK.services.length} services, {MOCK.portfolio.length} projects.</div>
+          </aside>
+        )}
+
+        <main className="col canvaswrap">
+          <div className={"canvas "+(mode==="edit"?"edit":"")} style={canvasStyle}>
+            {page.length===0 && <div className="empty">Drag a block here to start building.</div>}
+            {page.map((b,i)=>(
+              <React.Fragment key={b.id}>
+                {mode==="edit" && (
+                  <div className={"dropzone"+(overIdx===i?" over":"")} style={{height:overIdx===i?18:8}}
+                       onDragOver={e=>{e.preventDefault();setOverIdx(i)}} onDragLeave={()=>setOverIdx(o=>o===i?null:o)} onDrop={()=>onDrop(i)}/>
+                )}
+                <div className={"blk"+(sel===b.id?" sel":"")}
+                     draggable={mode==="edit"}
+                     onDragStart={()=>{dragFrom.current=i; dragType.current=null;}}
+                     onClick={e=>{if(mode==="edit"){e.stopPropagation(); setSel(b.id); setTab("block");}}}>
+                  <div className="bar">
+                    <button title="Duplicate" onClick={e=>{e.stopPropagation();dup(b.id)}}>⧉</button>
+                    <button title="Delete" onClick={e=>{e.stopPropagation();del(b.id)}}>✕</button>
+                  </div>
+                  <RenderBlock b={b}/>
+                </div>
+              </React.Fragment>
+            ))}
+            {mode==="edit" && (
+              <div className={"dropzone"+(overIdx===page.length?" over":"")} style={{height:overIdx===page.length?40:26}}
+                   onDragOver={e=>{e.preventDefault();setOverIdx(page.length)}} onDragLeave={()=>setOverIdx(o=>o===page.length?null:o)} onDrop={()=>onDrop(page.length)}/>
+            )}
+          </div>
+        </main>
+
+        {mode==="edit" && (
+          <aside className="col inspector">
+            <div className="seg" style={{marginBottom:12}}>
+              <button className={tab==="block"?"active":""} onClick={()=>setTab("block")}>Block</button>
+              <button className={tab==="theme"?"active":""} onClick={()=>setTab("theme")}>Theme</button>
+            </div>
+
+            {tab==="block" && (!selBlock ? <div className="hint">Select a block on the canvas to edit its content. Drag the block itself to reorder.</div> :
+              <BlockInspector b={selBlock} patch={patch}/>
+            )}
+
+            {tab==="theme" && (
+              <div>
+                <h4>Global theme tokens</h4>
+                <div className="hint" style={{marginBottom:12}}>These map to <code className="k">/wp-json/rk/v1/theme-config</code> — the React site reads them as CSS variables. Editing here restyles every block live.</div>
+                <div className="field"><label>Primary color</label><input type="color" value={theme.primary} onChange={e=>setTheme(t=>({...t,primary:e.target.value}))}/></div>
+                <div className="row2">
+                  <div className="field"><label>Page background</label><input type="color" value={theme.bg} onChange={e=>setTheme(t=>({...t,bg:e.target.value}))}/></div>
+                  <div className="field"><label>Text color</label><input type="color" value={theme.ink} onChange={e=>setTheme(t=>({...t,ink:e.target.value}))}/></div>
+                </div>
+                <div className="field"><label>Font family</label>
+                  <select value={theme.font} onChange={e=>setTheme(t=>({...t,font:e.target.value}))}>
+                    <option>Inter</option><option>Serif</option><option>Mono</option>
+                  </select>
+                </div>
+              </div>
+            )}
+          </aside>
+        )}
+      </div>
+
+      <div className="foot">POC — in-memory only. Drag blocks from the left, click to edit on the right, switch to <b>Preview</b> to see the clean render, or <b>Export layout JSON</b> to see exactly what gets stored in WordPress.</div>
+
+      {showJSON && (
+        <div className="modal" onClick={()=>setShowJSON(false)}>
+          <div className="box" onClick={e=>e.stopPropagation()}>
+            <header><b>Layout JSON</b><span className="pill">POST → /wp-json/rk/v1/builder/layout/&#123;pageId&#125;</span><div style={{flex:1}}></div><button className="btn ghost" onClick={()=>setShowJSON(false)}>Close</button></header>
+            <pre>{layoutJSON}</pre>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function BlockInspector({b, patch}){
+  const F = (label, key, type="text") => (
+    <div className="field"><label>{label}</label>
+      {type==="textarea"
+        ? <textarea value={b[key]||""} onChange={e=>patch(b.id,{[key]:e.target.value})}/>
+        : <input type={type} value={b[key]??""} onChange={e=>patch(b.id,{[key]: type==="number"?+e.target.value:e.target.value})}/>}
+    </div>
+  );
+  return (
+    <div>
+      <h4>{BLOCKS[b.type].label} <span className="pill">{b.type}</span></h4>
+      {b.type==="hero" && <>{F("Heading","heading")}{F("Subheading","sub","textarea")}{F("Button label","cta")}</>}
+      {b.type==="heading" && F("Text","text")}
+      {b.type==="text" && F("Body","text","textarea")}
+      {b.type==="image" && <>{F("Image URL","url")}<div className="hint">In WP this opens the Media Library and stores the attachment.</div></>}
+      {b.type==="cta" && <>{F("Heading","heading")}{F("Button label","cta")}</>}
+      {(b.type==="services"||b.type==="portfolio") && <>
+        {F("Section title","title")}
+        <div className="field"><label>Columns</label>
+          <select value={b.cols} onChange={e=>patch(b.id,{cols:+e.target.value})}><option value={2}>2</option><option value={3}>3</option><option value={4}>4</option></select>
+        </div>
+        <div className="hint">Items come from the <b>{b.source}</b> CPT via REST — you edit those in WordPress, not here.</div>
+      </>}
+      {b.type==="spacer" && F("Height (px)","h","number")}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
