@@ -1,0 +1,114 @@
+name: Deploy
+
+# Manual only. Builds an immutable image tagged with the git SHA, pushes it to GHCR, then (over SSH) runs it on the
+# target host with that environment's env file. Configure a GitHub Environment per target ("staging", "production");
+# add required reviewers on "production" for an approval gate.
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Target environment
+        type: choice
+        options: [staging, production]
+        default: staging
+      ref:
+        description: Branch, tag or SHA to deploy
+        default: main
+
+concurrency:
+  group: deploy-${{ inputs.environment }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  packages: write
+  checks: read
+
+jobs:
+  build:
+    name: Build and push image
+    runs-on: ubuntu-latest
+    outputs:
+      image: ${{ steps.meta.outputs.image }}
+      sha: ${{ steps.meta.outputs.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+      - id: meta
+        run: |
+          sha=$(git rev-parse HEAD)
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          echo "image=ghcr.io/${GITHUB_REPOSITORY,,}:${sha}" >> "$GITHUB_OUTPUT"
+      - name: Require a green CI run on this commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          result=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?head_sha=${{ steps.meta.outputs.sha }}&status=completed" --jq '[.workflow_runs[] | select(.conclusion=="success")] | length')
+          if [ "$result" -lt 1 ]; then echo "::error::No successful CI run for ${{ steps.meta.outputs.sha }}. Push it and wait for CI first."; exit 1; fi
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.image }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    name: Deploy to ${{ inputs.environment }}
+    needs: build
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    env:
+      IMAGE: ${{ needs.build.outputs.image }}
+      NAME: rk-builder-${{ inputs.environment }}
+    steps:
+      - name: Configure SSH
+        env:
+          KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$KEY" > ~/.ssh/id_deploy && chmod 600 ~/.ssh/id_deploy
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+      - name: Pull and restart (rolls back automatically if the health check fails)
+        env:
+          HOST: ${{ secrets.DEPLOY_HOST }}
+          SSH_USER: ${{ secrets.DEPLOY_USER }}
+          REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ENV_FILE: ${{ vars.DEPLOY_ENV_FILE }} # e.g. /etc/rk-builder/staging.env (lives on the host, never in git)
+          HOST_PORT: ${{ vars.DEPLOY_HOST_PORT || '3000' }}
+        run: |
+          printf '%s' "$REGISTRY_TOKEN" | ssh -i ~/.ssh/id_deploy -o BatchMode=yes "$SSH_USER@$HOST" \
+            "docker login ghcr.io -u '${{ github.actor }}' --password-stdin >/dev/null"
+          ssh -i ~/.ssh/id_deploy -o BatchMode=yes "$SSH_USER@$HOST" bash -s -- "$IMAGE" "$NAME" "$ENV_FILE" "$HOST_PORT" <<'REMOTE'
+          set -euo pipefail
+          image="$1"; name="$2"; env_file="$3"; port="$4"
+          test -r "$env_file" || { echo "missing env file $env_file on host"; exit 1; }
+          previous=$(docker inspect --format '{{.Config.Image}}' "$name" 2>/dev/null || true)
+          docker pull "$image"
+          docker rm -f "$name" >/dev/null 2>&1 || true
+          run() { docker run -d --name "$name" --restart unless-stopped --env-file "$env_file" -e PORT=3000 -p "127.0.0.1:${port}:3000" "$1" >/dev/null; }
+          healthy() { for _ in $(seq 1 30); do curl -fsS "http://127.0.0.1:${port}/healthz" >/dev/null 2>&1 && return 0; sleep 2; done; return 1; }
+          run "$image"
+          if healthy; then
+            echo "deployed $image"; docker image prune -f >/dev/null
+          else
+            echo "health check failed; logs:"; docker logs --tail 40 "$name" || true
+            docker rm -f "$name" >/dev/null 2>&1 || true
+            if [ -n "$previous" ]; then echo "rolling back to $previous"; run "$previous"; fi
+            exit 1
+          fi
+          REMOTE
+      - name: Verify through the public URL
+        env:
+          URL: ${{ vars.DEPLOY_PUBLIC_URL }}
+        run: |
+          for i in $(seq 1 15); do curl -fsS "$URL/healthz" && exit 0; sleep 4; done
+          echo "::error::$URL/healthz not reachable after deploy"; exit 1

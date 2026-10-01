@@ -114,3 +114,26 @@ integration + wp-admin E2E (Playground). Node/pnpm are pinned (`.nvmrc`, `packag
 - **Frontend:** redeploy the previous immutable image/folder (the server is stateless except in-memory cache and sessions).
   Purge the CDN. Editors will need to sign in again.
 - **Content:** use _History → Restore_ in the builder to roll a single page back; restoring creates a new revision.
+
+## Docker image and the Deploy workflow
+
+`Dockerfile` builds the app in one stage and ships only production dependencies plus `dist/` in a non-root `node` image
+(health check on `/healthz`; configuration only via environment variables). Build locally with
+`docker build -t rk-builder . && docker run --env-file .env -p 3000:3000 rk-builder`.
+**The Dockerfile and workflow have not been executed yet (no Docker in the authoring environment) — treat the first
+staging run as their test.**
+
+`.github/workflows/deploy.yml` is manual (_Actions → Deploy → Run workflow_, choose `staging` or `production` and a
+ref). It refuses to deploy a commit without a green CI run, pushes `ghcr.io/<owner>/<repo>:<sha>`, SSHes to the host,
+runs the container with the host-side env file, health-checks `/healthz`, and re-starts the previous image if the check fails.
+
+Set up once per GitHub Environment (`staging`, `production`; add required reviewers on production):
+
+| Kind     | Name                         | Value                                                                                                        |
+| -------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| secret   | `DEPLOY_HOST`, `DEPLOY_USER` | SSH target (Docker installed, `curl` available)                                                              |
+| secret   | `DEPLOY_SSH_KEY`             | private key authorised for that user                                                                         |
+| secret   | `DEPLOY_KNOWN_HOSTS`         | output of `ssh-keyscan <host>` (pins the host key)                                                           |
+| variable | `DEPLOY_ENV_FILE`            | path on the host, e.g. `/etc/rk-builder/staging.env` (holds the variables from the table above; `chmod 600`) |
+| variable | `DEPLOY_PUBLIC_URL`          | public https URL used for the final `/healthz` check                                                         |
+| variable | `DEPLOY_HOST_PORT`           | optional, default `3000`; the container binds `127.0.0.1` only — put your TLS reverse proxy in front         |
