@@ -1,0 +1,11 @@
+{
+  "kind": "theme",
+  "description": "Colors must be #RRGGBB",
+  "document": {
+    "version": 1,
+    "primary": "red",
+    "bg": "#ffffff",
+    "ink": "#000000",
+    "font": "Georgia"
+  }
+}

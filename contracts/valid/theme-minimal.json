@@ -1,0 +1,11 @@
+{
+  "kind": "theme",
+  "description": "Required theme fields only",
+  "document": {
+    "version": 1,
+    "primary": "#000000",
+    "bg": "#ffffff",
+    "ink": "#111111",
+    "font": "Georgia"
+  }
+}

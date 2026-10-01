@@ -1,0 +1,14 @@
+{
+  "kind": "theme",
+  "description": "footer.columns must be 1-4",
+  "document": {
+    "version": 1,
+    "primary": "#000000",
+    "bg": "#ffffff",
+    "ink": "#000000",
+    "font": "Georgia",
+    "footer": {
+      "columns": 12
+    }
+  }
+}

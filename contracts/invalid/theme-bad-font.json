@@ -1,0 +1,11 @@
+{
+  "kind": "theme",
+  "description": "Arbitrary fonts are rejected",
+  "document": {
+    "version": 1,
+    "primary": "#000000",
+    "bg": "#ffffff",
+    "ink": "#000000",
+    "font": "Comic Sans"
+  }
+}

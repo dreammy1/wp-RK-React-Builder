@@ -1,0 +1,19 @@
+{
+  "kind": "layout",
+  "description": "javascript: link is rejected",
+  "document": {
+    "version": 1,
+    "blocks": [
+      {
+        "id": "b1",
+        "type": "hero",
+        "props": {
+          "heading": "x",
+          "sub": "",
+          "cta": "go",
+          "ctaHref": "javascript:alert(1)"
+        }
+      }
+    ]
+  }
+}

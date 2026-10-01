@@ -1,0 +1,12 @@
+{
+  "kind": "theme",
+  "description": "Unsafe logo URL",
+  "document": {
+    "version": 1,
+    "primary": "#000000",
+    "bg": "#ffffff",
+    "ink": "#000000",
+    "font": "Georgia",
+    "logoUrl": "javascript:alert(1)"
+  }
+}

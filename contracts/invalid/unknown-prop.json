@@ -1,0 +1,17 @@
+{
+  "kind": "layout",
+  "description": "Unknown prop on a known block",
+  "document": {
+    "version": 1,
+    "blocks": [
+      {
+        "id": "b1",
+        "type": "spacer",
+        "props": {
+          "h": 40,
+          "onclick": "x"
+        }
+      }
+    ]
+  }
+}

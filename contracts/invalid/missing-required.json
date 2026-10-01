@@ -1,0 +1,18 @@
+{
+  "kind": "layout",
+  "description": "Hero without heading",
+  "document": {
+    "version": 1,
+    "blocks": [
+      {
+        "id": "b1",
+        "type": "hero",
+        "props": {
+          "sub": "",
+          "cta": "",
+          "ctaHref": ""
+        }
+      }
+    ]
+  }
+}

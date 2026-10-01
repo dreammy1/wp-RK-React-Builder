@@ -1,0 +1,18 @@
+{
+  "kind": "layout",
+  "description": "Non-decorative image requires alt",
+  "document": {
+    "version": 1,
+    "blocks": [
+      {
+        "id": "b1",
+        "type": "image",
+        "props": {
+          "url": "/a.jpg",
+          "alt": "",
+          "decorative": false
+        }
+      }
+    ]
+  }
+}

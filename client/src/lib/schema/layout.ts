@@ -1,0 +1,49 @@
+import { z } from "zod";
+import { heroProps } from "@/blocks/hero/schema";
+import { headingProps } from "@/blocks/heading/schema";
+import { textProps } from "@/blocks/text/schema";
+import { imageProps } from "@/blocks/image/schema";
+import { ctaProps } from "@/blocks/cta/schema";
+import { servicesProps } from "@/blocks/services/schema";
+import { portfolioProps } from "@/blocks/portfolio/schema";
+import { spacerProps } from "@/blocks/spacer/schema";
+import { dividerProps } from "@/blocks/divider/schema";
+import { blockId, LIMITS } from "./primitives";
+
+const b = <T extends string, P extends z.ZodType>(type: T, props: P) =>
+  z.strictObject({ id: blockId, type: z.literal(type), props });
+
+export const BlockSchema = z.discriminatedUnion("type", [
+  b("hero", heroProps),
+  b("heading", headingProps),
+  b("text", textProps),
+  b("image", imageProps),
+  b("cta", ctaProps),
+  b("services", servicesProps),
+  b("portfolio", portfolioProps),
+  b("spacer", spacerProps),
+  b("divider", dividerProps),
+]);
+export type Block = z.infer<typeof BlockSchema>;
+
+export const LayoutSchema = z
+  .strictObject({
+    version: z.literal(LIMITS.schemaVersion),
+    blocks: z.array(BlockSchema).max(LIMITS.maxBlocks),
+  })
+  .superRefine((layout, ctx) => {
+    const seen = new Set<string>();
+    layout.blocks.forEach((block, i) => {
+      if (seen.has(block.id)) {
+        ctx.addIssue({
+          code: "custom",
+          message: `Duplicate block id "${block.id}"`,
+          path: ["blocks", i, "id"],
+        });
+      }
+      seen.add(block.id);
+    });
+  });
+export type LayoutDocument = z.infer<typeof LayoutSchema>;
+
+export const EMPTY_LAYOUT: LayoutDocument = { version: 1, blocks: [] };

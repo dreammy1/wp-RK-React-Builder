@@ -1,0 +1,18 @@
+{
+  "kind": "layout",
+  "description": "Decorative images may omit alt text",
+  "document": {
+    "version": 1,
+    "blocks": [
+      {
+        "id": "img",
+        "type": "image",
+        "props": {
+          "url": "/placeholder.svg",
+          "alt": "",
+          "decorative": true
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "kind": "layout",
+  "description": "Block id has illegal characters",
+  "document": {
+    "version": 1,
+    "blocks": [
+      {
+        "id": "Bad ID!",
+        "type": "spacer",
+        "props": {
+          "h": 40
+        }
+      }
+    ]
+  }
+}

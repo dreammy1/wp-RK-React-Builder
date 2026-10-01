@@ -1,0 +1,23 @@
+{
+  "kind": "layout",
+  "description": "Duplicate block ids",
+  "document": {
+    "version": 1,
+    "blocks": [
+      {
+        "id": "a",
+        "type": "spacer",
+        "props": {
+          "h": 40
+        }
+      },
+      {
+        "id": "a",
+        "type": "spacer",
+        "props": {
+          "h": 40
+        }
+      }
+    ]
+  }
+}

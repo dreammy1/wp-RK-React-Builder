@@ -1,0 +1,28 @@
+{
+  "kind": "layout",
+  "description": "Prototype flat blocks",
+  "document": {
+    "version": 1,
+    "blocks": [
+      {
+        "id": "a1",
+        "type": "hero",
+        "heading": "Hi",
+        "sub": "s",
+        "cta": "Go",
+        "ctaHref": "/x"
+      },
+      {
+        "id": "s1",
+        "type": "services",
+        "title": "Our Services",
+        "source": "services",
+        "cols": 3,
+        "limit": 6,
+        "category": "",
+        "orderBy": "date",
+        "order": "asc"
+      }
+    ]
+  }
+}

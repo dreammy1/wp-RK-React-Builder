@@ -1,0 +1,301 @@
+/* Public site styles. Shared verbatim by the editor canvas and the server-rendered site.
+   Theme values arrive only through --site-* custom properties (see themeToCssVars). */
+.site-root {
+  background: var(--site-bg);
+  color: var(--site-ink);
+  font-family: var(--site-font);
+  line-height: 1.5;
+}
+.site-root *,
+.site-root *::before,
+.site-root *::after {
+  box-sizing: border-box;
+}
+.site-root h1,
+.site-root h2,
+.site-root h3,
+.site-root p {
+  overflow-wrap: anywhere;
+}
+.site-root a {
+  color: inherit;
+}
+.site-root :focus-visible {
+  outline: 3px solid var(--site-ink);
+  outline-offset: 3px;
+}
+
+.site-hero {
+  padding: 64px 42px 72px;
+  min-height: 230px;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--site-primary) 28%, transparent),
+    transparent 65%
+  );
+}
+.hero-rule {
+  font:
+    10px "IBM Plex Mono",
+    ui-monospace,
+    monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  opacity: 0.7;
+  margin-bottom: 32px;
+}
+.site-hero h1 {
+  margin: 0;
+  max-width: 680px;
+  font-size: clamp(30px, 5vw, 44px);
+  line-height: 1.04;
+  letter-spacing: -0.045em;
+}
+.site-hero p {
+  max-width: 520px;
+  margin: 18px 0 26px;
+  font-size: 16px;
+  opacity: 0.82;
+}
+
+.site-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 18px;
+  border-radius: 2px;
+  background: var(--site-ink);
+  color: var(--site-bg) !important;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: transform 0.16s ease-out;
+}
+.site-btn:hover {
+  transform: translateY(-2px);
+}
+.site-btn.inverse {
+  background: var(--site-primary);
+  color: var(--site-ink) !important;
+}
+
+.site-heading {
+  padding: 32px 42px 8px;
+}
+.site-heading h2,
+.site-heading h3,
+.site-grid h2 {
+  margin: 6px 0 0;
+  font-size: 26px;
+  letter-spacing: -0.035em;
+}
+.site-heading h3 {
+  font-size: 20px;
+}
+.site-text {
+  padding: 8px 42px 24px;
+  max-width: 760px;
+  font-size: 16px;
+  line-height: 1.65;
+}
+.site-text p {
+  margin: 0 0 1em;
+}
+.site-image {
+  padding: 16px 42px;
+}
+.site-image img {
+  width: 100%;
+  height: auto;
+  max-height: 420px;
+  object-fit: cover;
+  display: block;
+}
+
+.site-grid {
+  padding: 26px 42px 38px;
+}
+.grid-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 17px;
+}
+.grid-count {
+  font:
+    10px "IBM Plex Mono",
+    ui-monospace,
+    monospace;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.65;
+}
+.grid-note {
+  margin: 0;
+  padding: 18px;
+  border: 1px dashed color-mix(in srgb, var(--site-ink) 35%, transparent);
+  font-size: 14px;
+}
+.cards {
+  display: grid;
+  gap: 14px;
+}
+.content-card {
+  background: color-mix(in srgb, var(--site-bg) 70%, #fff);
+  border: 1px solid color-mix(in srgb, var(--site-ink) 16%, transparent);
+}
+.content-card img,
+.card-placeholder {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+  background: color-mix(in srgb, var(--site-ink) 10%, var(--site-bg));
+}
+.content-card > div:last-child {
+  padding: 14px;
+}
+.content-card h3 {
+  margin: 0 0 6px;
+  font-size: 16px;
+  letter-spacing: -0.02em;
+}
+.content-card p {
+  margin: 0;
+  font-size: 13px;
+  opacity: 0.78;
+}
+.content-card.skeleton {
+  min-height: 170px;
+  animation: site-pulse 1.4s ease-in-out infinite;
+}
+@keyframes site-pulse {
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.site-cta {
+  margin: 9px 42px 32px;
+  padding: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  flex-wrap: wrap;
+  background: var(--site-ink);
+  color: var(--site-bg);
+}
+.site-cta h3 {
+  margin: 0;
+  font-size: 22px;
+  letter-spacing: -0.035em;
+}
+.site-divider {
+  margin: 20px 42px;
+  border: 0;
+  border-top: 2px solid color-mix(in srgb, var(--site-ink) 30%, transparent);
+}
+.site-divider.dashed {
+  border-top-style: dashed;
+}
+
+.site-footer {
+  padding: 22px 42px;
+  font:
+    10px "IBM Plex Mono",
+    ui-monospace,
+    monospace;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  display: flex;
+  justify-content: space-between;
+  opacity: 0.7;
+}
+
+@media (max-width: 760px) {
+  .site-hero,
+  .site-heading,
+  .site-text,
+  .site-image,
+  .site-grid,
+  .site-footer {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+  .site-cta,
+  .site-divider {
+    margin-left: 20px;
+    margin-right: 20px;
+  }
+  .cards {
+    grid-template-columns: 1fr !important;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .site-btn {
+    transition: none;
+  }
+  .site-btn:hover {
+    transform: none;
+  }
+  .content-card.skeleton {
+    animation: none;
+  }
+}
+
+/* Server-rendered chrome */
+.site-header {
+  display: flex;
+  align-items: center;
+  padding: 14px 42px;
+  border-bottom: 1px solid color-mix(in srgb, var(--site-ink) 14%, transparent);
+  background: var(--site-bg);
+}
+.site-header.sticky {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+.site-brand {
+  text-decoration: none;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+.site-logo {
+  height: 32px;
+  width: auto;
+  display: block;
+}
+.site-social {
+  display: flex;
+  gap: 14px;
+}
+.preview-banner {
+  padding: 8px 42px;
+  background: var(--site-ink);
+  color: var(--site-bg);
+  font:
+    12px "IBM Plex Mono",
+    monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.status-page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  padding: 24px;
+}
+.status-page h1 {
+  font-size: 34px;
+  margin: 0 0 8px;
+}
+@media (max-width: 760px) {
+  .site-header,
+  .preview-banner {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+}

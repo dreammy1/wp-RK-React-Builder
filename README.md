@@ -1,42 +1,93 @@
 # RK React Builder
 
-RK React Builder is a focused React visual workbench for composing headless WordPress pages from reusable blocks. It keeps the editor canvas and public renderer on the same block model so that the document being arranged is the document that ships.
+A focused visual page builder for headless WordPress. An editor picks a WordPress page, arranges blocks (hero,
+heading, text, image, CTA, live services/portfolio grids, spacer, divider), tweaks a global theme, previews, saves a
+**draft**, and deliberately **publishes**. The public site is server-rendered from the same document model.
 
-## Included now
+- **Builder** — Vite + React + TypeScript, registry-driven blocks, Zod validation, undo/redo, keyboard reorder, local
+  draft recovery, revision history, media picker, conflict handling.
+- **Server** — Node/Express: public SSR, session-protected WordPress proxy, cache, metrics, security headers.
+- **Plugin** — `wp-plugin/rk-builder`: storage, REST, permissions, revisions, locks, CPTs, CORS, preview tokens.
 
-The frontend includes an asymmetric three-zone editor with a block palette, live canvas, drag-to-reorder, insertion indicators, duplicate/delete controls, a contextual inspector, global theme-token editing, preview mode, JSON export, local fallback persistence, and a configurable WordPress REST write path. The demo content models the `service` and `portfolio` CPT sources from the supplied architecture.
+Details: [ARCHITECTURE.md](ARCHITECTURE.md) · [SECURITY.md](SECURITY.md) · [DEPLOYMENT.md](DEPLOYMENT.md) ·
+[OPERATIONS.md](OPERATIONS.md) · [PRODUCTION_IMPLEMENTATION_PLAN.md](PRODUCTION_IMPLEMENTATION_PLAN.md)
 
-The original architecture plan, clickable HTML proof-of-concept, and WordPress plugin source are preserved in `ARCHITECTURE.md`, `POC_REFERENCE.html`, and `wp-plugin/rk-builder/rk-builder.php`.
-
-## Run locally
+## Quick start (no WordPress needed)
 
 ```bash
-pnpm install
-pnpm dev
+nvm use            # Node 24 (.nvmrc); >=22.12 works
+corepack enable    # pnpm 10.4.1 is pinned in package.json
+pnpm install --frozen-lockfile
+cp .env.example .env
+
+pnpm dev:mock-wp   # terminal 1 — in-memory WordPress API on :8099 (user "editor", app password "mock-app-password")
+pnpm dev           # terminal 2 — Node server :3001 (public site, API) + Vite :3000 (builder)
 ```
 
-Use `pnpm run check` for TypeScript validation and `pnpm run build` for a production build.
+- Builder: <http://localhost:3000/builder> — password from `BUILDER_EDITOR_PASSWORD` in `.env`
+  (`change-me-please-123` in `.env.example`).
+- Public site: <http://localhost:3001/> (Home is published in the mock). Pages: `/about` is a draft → 404 until you publish.
+- `?demo=1` (e.g. `/builder?page=42&demo=1`) shows an **explicit** offline content fixture; it is never a fallback.
 
-## WordPress connection
+## With real WordPress
 
-Open the **Theme** tab in the editor and enter the WordPress site origin in **REST base URL**, for example `https://cms.example.com`. The Save action then attempts the supplied plugin endpoints:
+1. Install `wp-plugin/rk-builder` (zip: `wp-plugin/rk-builder-wp-plugin.zip`) and activate it. It registers the
+   `service` and `portfolio` post types, `service_cat`/`portfolio_cat`, and the REST API.
+2. Create an **application password** for the editing user (Users → Profile → Application Passwords).
+3. Set in `.env`: `WORDPRESS_PUBLIC_URL`, `WORDPRESS_API_URL` (`https://cms.example.com/wp-json/`),
+   `WORDPRESS_APP_USER`, `WORDPRESS_APP_PASSWORD`, `BUILDER_EDITOR_PASSWORD`, `PUBLIC_SITE_URL`, `REVALIDATE_SECRET`.
+4. In `wp-config.php` let WordPress purge the frontend and allow your origin:
+   ```php
+   define( 'RK_BUILDER_REVALIDATE_URL',    'https://www.example.com/api/revalidate' );
+   define( 'RK_BUILDER_REVALIDATE_SECRET', '<same value as REVALIDATE_SECRET>' );
+   define( 'RK_BUILDER_ALLOWED_ORIGINS',   'https://www.example.com' );   // only if a browser calls WP cross-origin
+   ```
 
-- `POST /wp-json/rk/v1/builder/layout/42`
-- `POST /wp-json/rk/v1/theme-config`
+See [DEPLOYMENT.md](DEPLOYMENT.md) for the embedded wp-admin ("nonce") mode and production hardening.
 
-If no base URL is configured, Save stores the current layout in browser local storage as a safe demo fallback. Authentication, CORS, and capability checks remain WordPress responsibilities and should be configured before production use.
+## Using the builder
 
-## Structure
+- **Pages** (`/builder`) — search/filter by title, slug, status; shows modified time and revision (and live revision).
+- **Edit** — add from the palette (click, or drag), select, edit in the inspector, duplicate, delete (Undo toast),
+  reorder by drag **or** the ↑/↓ buttons (fully keyboard-operable). `Ctrl/⌘+Z` undo, `Ctrl/⌘+Shift+Z` redo, `Ctrl/⌘+S` save.
+- **Save draft** never publishes. Status text is explicit: _Draft saved to WordPress_ vs _Saved on this device only_.
+- **Preview** (toggle) shows unsaved edits; **Preview link** opens the real frontend with a 15-minute draft token.
+- **Publish / Update live page / Unpublish** — one dialog; saves first if needed.
+- **History** — preview any revision; restore creates a new revision (nothing is deleted; last 20 kept).
+- **Theme tab** — colors, font (3 approved), logo (media picker), social links, sticky header, footer columns.
+  Administrators only.
+- **Image block** — choose from the WordPress media library; alt text is required unless marked decorative.
 
-- `client/src/lib/builder.ts` contains the shared layout types, block defaults, demo content, registry metadata, and REST client.
-- `client/src/App.tsx` contains the editor shell, inspector, public renderer, preview route state, and export modal.
-- `client/src/index.css` contains the Print Studio design system and responsive rules.
-- `wp-plugin/` contains the supplied backend stub for the WordPress data layer.
+## Commands
 
-## Design direction
+|                                                  |                                                                                                |
+| ------------------------------------------------ | ---------------------------------------------------------------------------------------------- |
+| `pnpm verify`                                    | typecheck + lint + format check + unit/contract tests + PHP tests + build                      |
+| `pnpm check` · `pnpm lint` · `pnpm format:check` | static checks                                                                                  |
+| `pnpm test` · `pnpm test:php`                    | Vitest (schemas, reducer, API client, SSR, proxy) · plugin tests (plain PHP)                   |
+| `pnpm build && pnpm test:e2e`                    | Playwright against the mock WordPress (editing, publishing, a11y, recovery)                    |
+| `pnpm test:wp`                                   | **Real WordPress**: client + proxy + plugin + SSR through WordPress Playground (needs network) |
+| `pnpm test:wp-admin`                             | **Real WordPress wp-admin**: nonce mode in a browser (needs network)                           |
+| `pnpm smoke:wp`                                  | Plugin REST smoke test against real WordPress                                                  |
+| `pnpm audit`                                     | dependency audit (prod, high severity)                                                         |
 
-The interface follows a Print Studio language: warm paper surfaces, graphite production rails, IBM Plex Mono metadata, Space Grotesk hierarchy, visible alignment cues, and Registration Lime (`#C7F36B`) as the owned interaction color. It intentionally avoids generic centered dashboard patterns and keeps the content model visible to the editor.
+First run of the Playground-based commands downloads WordPress and `@wp-playground/cli`; Playwright needs
+`pnpm exec playwright install chromium` once.
 
-## Scope note
+## Troubleshooting
 
-This repository is a frontend-first foundation. The supplied WordPress PHP is retained as an integration asset, but server logic in the managed frontend remains untouched. Production hardening should add authenticated load/save flows, WordPress nonce/application-password handling, revision history, media picking, and server-side rendering when the frontend is moved to a Next.js deployment.
+| Symptom                            | Fix                                                                                                |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------- |
+| "Builder unavailable" on load      | The Node server isn't running or `/api/config` is blocked; check `pnpm dev` output                 |
+| Sign-in says _not accepted_        | `BUILDER_EDITOR_PASSWORD` mismatch (restart the server after editing `.env`)                       |
+| "Too many attempts"                | Login limiter: 5 per 15 min per IP (`LOGIN_RATE_LIMIT_MAX`)                                        |
+| Saves fail with _Not permitted_    | The WordPress user lacks `edit_post`; theme saves need `manage_options`                            |
+| Every page 404s publicly           | The page is not published; publishing sets `post_status=publish`                                   |
+| Public page stale after publishing | Check `REVALIDATE_SECRET` / `RK_BUILDER_REVALIDATE_*`; otherwise TTL (60 s) applies                |
+| Images missing in grids            | Set a featured image on the Service/Portfolio post; absolute image URLs must be on an allowed host |
+
+More in [OPERATIONS.md](OPERATIONS.md).
+
+## License
+
+MIT

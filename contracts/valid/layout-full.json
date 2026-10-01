@@ -1,0 +1,96 @@
+{
+  "kind": "layout",
+  "description": "Every block type with representative props",
+  "document": {
+    "version": 1,
+    "blocks": [
+      {
+        "id": "hero-01",
+        "type": "hero",
+        "props": {
+          "heading": "Powering what’s next",
+          "sub": "Licensed electrical and energy contractors serving the islands.",
+          "cta": "Get a quote",
+          "ctaHref": "/contact"
+        }
+      },
+      {
+        "id": "heading-01",
+        "type": "heading",
+        "props": {
+          "text": "What we do",
+          "level": 2
+        }
+      },
+      {
+        "id": "text-01",
+        "type": "text",
+        "props": {
+          "text": "First paragraph.\n\nSecond paragraph with <b>no html</b> semantics & ampersand."
+        }
+      },
+      {
+        "id": "image-01",
+        "type": "image",
+        "props": {
+          "mediaId": 12,
+          "url": "https://cms.example.com/wp-content/uploads/a.jpg",
+          "alt": "A crew installing solar panels",
+          "decorative": false,
+          "width": 1200,
+          "height": 800,
+          "srcset": "https://cms.example.com/wp-content/uploads/a-600.jpg 600w, https://cms.example.com/wp-content/uploads/a.jpg 1200w"
+        }
+      },
+      {
+        "id": "cta-01",
+        "type": "cta",
+        "props": {
+          "heading": "Ready to start?",
+          "cta": "Contact us",
+          "ctaHref": "mailto:hello@example.com"
+        }
+      },
+      {
+        "id": "services-01",
+        "type": "services",
+        "props": {
+          "title": "Our Services",
+          "source": "service",
+          "limit": 6,
+          "cols": 3,
+          "category": "",
+          "orderBy": "menu_order",
+          "order": "asc"
+        }
+      },
+      {
+        "id": "portfolio-01",
+        "type": "portfolio",
+        "props": {
+          "title": "Recent Work",
+          "source": "portfolio",
+          "limit": 9,
+          "cols": 4,
+          "category": "residential",
+          "orderBy": "date",
+          "order": "desc"
+        }
+      },
+      {
+        "id": "spacer-01",
+        "type": "spacer",
+        "props": {
+          "h": 64
+        }
+      },
+      {
+        "id": "divider-01",
+        "type": "divider",
+        "props": {
+          "style": "dashed"
+        }
+      }
+    ]
+  }
+}

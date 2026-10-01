@@ -1,0 +1,22 @@
+{
+  "kind": "layout",
+  "description": "services block must use the service source",
+  "document": {
+    "version": 1,
+    "blocks": [
+      {
+        "id": "b1",
+        "type": "services",
+        "props": {
+          "title": "t",
+          "source": "portfolio",
+          "limit": 6,
+          "cols": 3,
+          "category": "",
+          "orderBy": "date",
+          "order": "asc"
+        }
+      }
+    ]
+  }
+}

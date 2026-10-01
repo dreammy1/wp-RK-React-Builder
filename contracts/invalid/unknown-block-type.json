@@ -1,0 +1,14 @@
+{
+  "kind": "layout",
+  "description": "Unsupported block type (columns deferred past v1)",
+  "document": {
+    "version": 1,
+    "blocks": [
+      {
+        "id": "b1",
+        "type": "columns",
+        "props": {}
+      }
+    ]
+  }
+}

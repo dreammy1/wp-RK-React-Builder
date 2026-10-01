@@ -1,0 +1,8 @@
+{
+  "kind": "layout",
+  "description": "Empty page",
+  "document": {
+    "version": 1,
+    "blocks": []
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "kind": "layout",
+  "description": "// links are rejected",
+  "document": {
+    "version": 1,
+    "blocks": [
+      {
+        "id": "b1",
+        "type": "cta",
+        "props": {
+          "heading": "x",
+          "cta": "go",
+          "ctaHref": "//evil.example/x"
+        }
+      }
+    ]
+  }
+}

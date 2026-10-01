@@ -1,0 +1,18 @@
+{
+  "kind": "layout",
+  "description": "data: image is rejected",
+  "document": {
+    "version": 1,
+    "blocks": [
+      {
+        "id": "b1",
+        "type": "image",
+        "props": {
+          "url": "data:image/svg+xml;base64,AAAA",
+          "alt": "x",
+          "decorative": false
+        }
+      }
+    ]
+  }
+}

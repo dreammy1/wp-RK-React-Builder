@@ -1,55 +1,77 @@
-/* RK React Builder — Print Studio direction: production desk layout, editorial labels, paper canvas, registration-lime actions. */
-import { useMemo, useRef, useState } from "react";
-import { Download, Eye, GripVertical, Layers3, MoreHorizontal, Palette, Plus, RotateCcw, Save, Settings2, Trash2, Copy, X, ArrowUpRight, Check, AlertCircle, ExternalLink } from "lucide-react";
-import { blockMeta, DEMO_CONTENT, DEMO_THEME, demoLayout, makeBlock, wpApi, type Block, type BlockType, type Layout, type ThemeConfig } from "@/lib/builder";
-import "./index.css";
+import { useEffect, useState } from "react";
+import { api } from "@/lib/api/builder";
+import { describeError, isApiError } from "@/lib/api/errors";
+import { sendTelemetry } from "@/lib/telemetry";
+import { getApiConfig } from "@/lib/api/http";
+import { useRoute } from "@/lib/router";
+import { EditorPage } from "@/components/editor/EditorPage";
+import { LoginScreen } from "@/components/Login";
+import { PageSelector } from "@/components/PageSelector";
 
-type Mode = "edit" | "preview";
-type Tab = "block" | "theme";
+type Boot =
+  | { phase: "booting" }
+  | { phase: "error"; message: string }
+  | { phase: "login" }
+  | { phase: "ready" };
 
-function SiteBlock({ block, theme }: { block: Block; theme: ThemeConfig }) {
-  const items = block.type === "services" ? DEMO_CONTENT.services : DEMO_CONTENT.portfolio;
-  if (block.type === "hero") return <section className="site-hero"><div className="hero-rule">01 / proposition</div><h1>{block.heading}</h1><p>{block.sub}</p>{block.cta && <button className="site-btn">{block.cta}<ArrowUpRight size={15} /></button>}</section>;
-  if (block.type === "heading") return <section className="site-heading"><span className="eyebrow">section / 0{block.id.length}</span><h2>{block.text}</h2></section>;
-  if (block.type === "text") return <section className="site-text">{block.text}</section>;
-  if (block.type === "image") return <section className="site-image"><img src={String(block.url || "/manus-storage/rk-builder-hero-texture_2b0d6f76.jpg")} alt={String(block.alt || "")} /></section>;
-  if (block.type === "cta") return <section className="site-cta"><div><span className="eyebrow">next / move forward</span><h3>{block.heading}</h3></div><button className="site-btn inverse">{block.cta}<ArrowUpRight size={15} /></button></section>;
-  if (block.type === "spacer") return <div style={{ height: Number(block.h || 40) }} className="site-spacer" />;
-  return <section className="site-grid"><div className="grid-head"><div><span className="eyebrow">live source / {block.source}</span><h2>{block.title}</h2></div><span className="grid-count">0{items.length} entries</span></div><div className="cards" style={{ gridTemplateColumns: `repeat(${Math.min(Number(block.cols || 3), 4)}, minmax(0, 1fr))` }}>{items.map((item) => <article className="content-card" key={item.id}>{item.image ? <img src={item.image} alt="" /> : <div className="card-placeholder"><span>RK / {String(item.id).padStart(2, "0")}</span></div>}<div><h4>{item.title}</h4><p>{item.excerpt}</p></div></article>)}</div></section>;
+export default function App() {
+  const { route, navigate } = useRoute();
+  const [boot, setBoot] = useState<Boot>({ phase: "booting" });
+
+  useEffect(() => {
+    api
+      .bootstrap()
+      .then(r => setBoot({ phase: r.authenticated ? "ready" : "login" }))
+      .catch(e => {
+        sendTelemetry({
+          type: "load_failure",
+          detail: `boot: ${isApiError(e) ? e.kind : "unknown"}`,
+        });
+        setBoot({ phase: "error", message: describeError(e) });
+      });
+  }, []);
+
+  if (boot.phase === "booting")
+    return (
+      <main className="center-screen">
+        <p role="status">Starting…</p>
+      </main>
+    );
+  if (boot.phase === "error")
+    return (
+      <main className="center-screen">
+        <div className="card-panel" role="alert">
+          <h1>Builder unavailable</h1>
+          <p className="muted">{boot.message}</p>
+          <button className="save-btn" onClick={() => location.reload()}>
+            Retry
+          </button>
+        </div>
+      </main>
+    );
+  if (boot.phase === "login")
+    return <LoginScreen onDone={() => setBoot({ phase: "ready" })} />;
+
+  if (route.name === "builder") {
+    return (
+      <EditorPage
+        key={route.pageId}
+        pageId={route.pageId}
+        demo={route.demo}
+        navigate={navigate}
+      />
+    );
+  }
+  return (
+    <PageSelector
+      navigate={navigate}
+      onSignOut={
+        getApiConfig().mode === "proxy"
+          ? () => {
+              void api.logout().then(() => setBoot({ phase: "login" }));
+            }
+          : undefined
+      }
+    />
+  );
 }
-
-function Field({ label, value, onChange, multiline = false, type = "text" }: { label: string; value: string | number | undefined; onChange: (v: string) => void; multiline?: boolean; type?: string }) {
-  return <label className="field"><span>{label}</span>{multiline ? <textarea value={value ?? ""} onChange={(e) => onChange(e.target.value)} rows={4} /> : <input type={type} value={value ?? ""} onChange={(e) => onChange(e.target.value)} />}</label>;
-}
-
-function Inspector({ block, onPatch, onDelete }: { block?: Block; onPatch: (v: Partial<Block>) => void; onDelete: () => void }) {
-  if (!block) return <div className="inspector-empty"><Settings2 size={20} /><strong>Select a block</strong><p>Choose a section on the canvas to edit its content and configuration.</p></div>;
-  const patch = (key: string) => (v: string) => onPatch({ [key]: v });
-  return <div className="inspector-content"><div className="inspector-title"><div><span className="eyebrow">selected / {block.type}</span><h3>{blockMeta[block.type].label}</h3></div><button className="icon-btn danger" onClick={onDelete} aria-label="Delete block"><Trash2 size={15} /></button></div><div className="field-stack">{block.type === "hero" && <><Field label="Headline" value={block.heading} onChange={patch("heading")} /><Field label="Supporting copy" value={block.sub} onChange={patch("sub")} multiline /><Field label="Button label" value={block.cta} onChange={patch("cta")} /><Field label="Button href" value={block.ctaHref} onChange={patch("ctaHref")} /></>}{block.type === "heading" && <Field label="Heading" value={block.text} onChange={patch("text")} />}{block.type === "text" && <Field label="Body copy" value={block.text} onChange={patch("text")} multiline />}{block.type === "image" && <><Field label="Image URL" value={block.url} onChange={patch("url")} /><Field label="Alt text" value={block.alt} onChange={patch("alt")} /></>}{block.type === "cta" && <><Field label="Heading" value={block.heading} onChange={patch("heading")} /><Field label="Button label" value={block.cta} onChange={patch("cta")} /></>}{(block.type === "services" || block.type === "portfolio") && <><Field label="Section title" value={block.title} onChange={patch("title")} /><label className="field"><span>Columns</span><select value={block.cols} onChange={(e) => onPatch({ cols: Number(e.target.value) })}><option value="2">2 columns</option><option value="3">3 columns</option><option value="4">4 columns</option></select></label><div className="readonly-note"><Layers3 size={14} /> Content is read live from WordPress</div></>}{block.type === "spacer" && <Field label="Height (px)" type="number" value={block.h} onChange={(v) => onPatch({ h: Number(v) })} />}</div><div className="inspector-foot"><span className="eyebrow">block id</span><code>{block.id}</code></div></div>;
-}
-
-function App() {
-  const [layout, setLayout] = useState<Layout>(demoLayout);
-  const [theme, setTheme] = useState<ThemeConfig>(DEMO_THEME);
-  const [selected, setSelected] = useState<string | null>(layout.blocks[0]?.id || null);
-  const [mode, setMode] = useState<Mode>("edit");
-  const [tab, setTab] = useState<Tab>("block");
-  const [jsonOpen, setJsonOpen] = useState(false);
-  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
-  const [dragType, setDragType] = useState<BlockType | null>(null);
-  const [dragIndex, setDragIndex] = useState<number | null>(null);
-  const [dropIndex, setDropIndex] = useState<number | null>(null);
-  const [wpBase, setWpBase] = useState(() => localStorage.getItem("rk_wp_base") || "");
-  const selectedBlock = layout.blocks.find((b) => b.id === selected);
-  const style = useMemo(() => ({ "--site-primary": theme.primary, "--site-bg": theme.bg, "--site-ink": theme.ink, "--site-font": theme.font === "Georgia" ? "Georgia, serif" : theme.font === "IBM Plex Mono" ? "'IBM Plex Mono', monospace" : "'Space Grotesk', sans-serif" } as React.CSSProperties), [theme]);
-  const setBlocks = (blocks: Block[]) => setLayout({ ...layout, blocks });
-  const addAt = (type: BlockType, index: number) => { const next = makeBlock(type); const blocks = [...layout.blocks]; blocks.splice(index, 0, next); setBlocks(blocks); setSelected(next.id); setTab("block"); };
-  const onDrop = (index: number) => { if (dragType) addAt(dragType, index); else if (dragIndex !== null) { const blocks = [...layout.blocks]; const [moved] = blocks.splice(dragIndex, 1); blocks.splice(dragIndex < index ? index - 1 : index, 0, moved); setBlocks(blocks); } setDragType(null); setDragIndex(null); setDropIndex(null); };
-  const patchSelected = (patch: Partial<Block>) => selected && setBlocks(layout.blocks.map((b) => b.id === selected ? { ...b, ...patch } : b));
-  const removeSelected = () => { if (!selected) return; setBlocks(layout.blocks.filter((b) => b.id !== selected)); setSelected(null); };
-  const duplicate = (index: number) => { const copy = { ...layout.blocks[index], id: Math.random().toString(36).slice(2, 9) }; const blocks = [...layout.blocks]; blocks.splice(index + 1, 0, copy); setBlocks(blocks); setSelected(copy.id); };
-  const save = async () => { setSaveState("saving"); localStorage.setItem("rk_wp_base", wpBase); try { await wpApi.saveLayout("42", layout); await wpApi.saveTheme(theme); setSaveState("saved"); } catch { localStorage.setItem("rk_layout", JSON.stringify(layout)); setSaveState(wpBase ? "error" : "saved"); } setTimeout(() => setSaveState("idle"), 2600); };
-  const loadDemo = () => { setLayout(demoLayout); setTheme(DEMO_THEME); setSelected(demoLayout.blocks[0].id); };
-  return (<div className="app-shell" style={style}><header className="topbar"><div className="brand"><div className="brand-mark"><span className="mark-cut mark-cut-a" /><span className="mark-cut mark-cut-b" /><img src="/manus-storage/rk-builder-mark_0797408f.png" alt="" /></div><div><strong>RK / BUILDER</strong><span>React workspace</span></div></div><div className="doc-meta"><span className="live-dot" /> <span>PAGE / 42</span><span className="slash">/</span><span>HOME</span></div><div className="top-actions"><div className="mode-switch"><button className={mode === "edit" ? "active" : ""} onClick={() => setMode("edit")}><Layers3 size={14} /> Edit</button><button className={mode === "preview" ? "active" : ""} onClick={() => { setMode("preview"); setSelected(null); }}><Eye size={14} /> Preview</button></div><button className="top-btn" onClick={() => setJsonOpen(true)}><Download size={14} /> Export</button><button className="save-btn" onClick={save}><Save size={14} /> {saveState === "saving" ? "Saving" : saveState === "saved" ? "Saved" : "Save to WordPress"}</button></div></header>{saveState === "error" && <div className="notice error"><AlertCircle size={15} /> WordPress could not be reached. Your layout is saved locally.</div>}{mode === "preview" ? <main className="preview-stage"><div className="preview-toolbar"><span><Eye size={14} /> Public preview</span><button onClick={() => setMode("edit")}>Return to editor <RotateCcw size={14} /></button></div><div className="site-canvas preview-canvas">{layout.blocks.map((block) => <SiteBlock key={block.id} block={block} theme={theme} />)}<footer className="site-footer"><span>RK / REACT BUILDER</span><span>Rendered from layout v{layout.version}</span></footer></div></main> : <div className="workspace"><aside className="palette"><div className="rail-head"><span className="eyebrow">insert / block</span><button className="icon-btn"><MoreHorizontal size={16} /></button></div><div className="palette-list">{(Object.keys(blockMeta) as BlockType[]).map((type) => <button className="palette-item" key={type} draggable onDragStart={() => setDragType(type)} onDragEnd={() => setDragType(null)} onClick={() => addAt(type, layout.blocks.length)}><span className="block-symbol">{blockMeta[type].icon}</span><span><strong>{blockMeta[type].label}</strong><small>{blockMeta[type].description}</small></span><Plus size={14} /></button>)}</div><div className="rail-note"><span className="eyebrow">data model</span><p>Grids stay connected to WordPress. Edit content in WP, arrange sections here.</p><code>_rk_layout / v1</code></div><button className="load-demo" onClick={loadDemo}>Reset demo layout <RotateCcw size={13} /></button></aside><main className="canvas-area"><div className="canvas-topline"><div><span className="eyebrow">canvas / home page</span><h1>Assemble the page<span className="lime">.</span></h1></div><div className="canvas-stats"><span><b>{layout.blocks.length}</b> blocks</span><span><b>1</b> revision</span></div></div><div className="canvas-frame"><div className="ruler ruler-top"><span>0</span><span>320</span><span>640</span><span>960</span><span>1280</span></div><div className="site-canvas editor-canvas">{layout.blocks.length === 0 && <div className="empty-canvas"><span>+</span><strong>Drop your first block here</strong><p>Choose a block from the palette or drag it into this canvas.</p></div>}{layout.blocks.map((block, index) => <div key={block.id}><div className={`drop-zone ${dropIndex === index ? "visible" : ""}`} onDragOver={(e) => { e.preventDefault(); setDropIndex(index); }} onDrop={() => onDrop(index)} /> <div className={`canvas-block ${selected === block.id ? "selected" : ""}`} draggable onDragStart={() => { setDragIndex(index); setDragType(null); }} onDragEnd={() => { setDragIndex(null); setDropIndex(null); }} onClick={() => { setSelected(block.id); setTab("block"); }}><div className="block-handle"><GripVertical size={14} /><span>{String(index + 1).padStart(2, "0")} / {blockMeta[block.type].label}</span><div><button onClick={(e) => { e.stopPropagation(); duplicate(index); }} aria-label="Duplicate"><Copy size={13} /></button><button onClick={(e) => { e.stopPropagation(); setSelected(block.id); removeSelected(); }} aria-label="Delete"><X size={13} /></button></div></div><SiteBlock block={block} theme={theme} /></div></div>)}<div className={`drop-zone end ${dropIndex === layout.blocks.length ? "visible" : ""}`} onDragOver={(e) => { e.preventDefault(); setDropIndex(layout.blocks.length); }} onDrop={() => onDrop(layout.blocks.length)} /></div></div><div className="canvas-caption"><span>Live canvas / selection mode</span><span>Drag blocks to reorder</span></div></main><aside className="inspector"><div className="inspector-tabs"><button className={tab === "block" ? "active" : ""} onClick={() => setTab("block")}>Inspector</button><button className={tab === "theme" ? "active" : ""} onClick={() => setTab("theme")}><Palette size={14} /> Theme</button></div>{tab === "block" ? <Inspector block={selectedBlock} onPatch={patchSelected} onDelete={removeSelected} /> : <div className="theme-panel"><div className="eyebrow">global / tokens</div><h3>Theme system</h3><p>One config, every block. These tokens are sent to the public renderer.</p><label className="color-field"><span>Primary signal</span><div><input type="color" value={theme.primary} onChange={(e) => setTheme({ ...theme, primary: e.target.value })} /><code>{theme.primary}</code></div></label><label className="color-field"><span>Canvas background</span><div><input type="color" value={theme.bg} onChange={(e) => setTheme({ ...theme, bg: e.target.value })} /><code>{theme.bg}</code></div></label><label className="color-field"><span>Ink color</span><div><input type="color" value={theme.ink} onChange={(e) => setTheme({ ...theme, ink: e.target.value })} /><code>{theme.ink}</code></div></label><label className="field"><span>Type system</span><select value={theme.font} onChange={(e) => setTheme({ ...theme, font: e.target.value as ThemeConfig["font"] })}><option>Space Grotesk</option><option>IBM Plex Mono</option><option>Georgia</option></select></label><div className="theme-preview"><span style={{ background: theme.primary }} /><span style={{ background: theme.bg }} /><span style={{ background: theme.ink }} /></div><div className="wp-connect"><div className="eyebrow">connection / wordpress</div><Field label="REST base URL" value={wpBase} onChange={setWpBase} /><small>{wpBase ? "Writes will POST to the configured site." : "Leave blank for demo mode with local fallback."}</small></div></div>} </aside></div>}{jsonOpen && <div className="modal-backdrop" onClick={() => setJsonOpen(false)}><section className="json-modal" onClick={(e) => e.stopPropagation()}><header><div><span className="eyebrow">export / layout json</span><h2>Document payload</h2></div><button className="icon-btn" onClick={() => setJsonOpen(false)}><X size={16} /></button></header><pre>{JSON.stringify({ ...layout, theme }, null, 2)}</pre><footer><span><Check size={14} /> Valid layout v1</span><button className="save-btn" onClick={() => navigator.clipboard?.writeText(JSON.stringify({ ...layout, theme }, null, 2))}>Copy JSON</button></footer></section></div>}</div>);
-}
-export default App;

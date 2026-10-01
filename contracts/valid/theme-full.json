@@ -1,0 +1,23 @@
+{
+  "kind": "theme",
+  "description": "All theme fields",
+  "document": {
+    "version": 1,
+    "primary": "#C7F36B",
+    "bg": "#F8F5ED",
+    "ink": "#1B2430",
+    "font": "IBM Plex Mono",
+    "logoMediaId": 7,
+    "logoUrl": "https://cms.example.com/wp-content/uploads/logo.png",
+    "social": {
+      "instagram": "https://instagram.com/rk",
+      "linkedin": "https://linkedin.com/company/rk"
+    },
+    "header": {
+      "sticky": true
+    },
+    "footer": {
+      "columns": 3
+    }
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "kind": "layout",
+  "description": "cols must be 2-4",
+  "document": {
+    "version": 1,
+    "blocks": [
+      {
+        "id": "b1",
+        "type": "services",
+        "props": {
+          "title": "t",
+          "source": "service",
+          "limit": 6,
+          "cols": 9,
+          "category": "",
+          "orderBy": "date",
+          "order": "asc"
+        }
+      }
+    ]
+  }
+}

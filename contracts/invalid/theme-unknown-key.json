@@ -1,0 +1,12 @@
+{
+  "kind": "theme",
+  "description": "Unknown theme keys (e.g. customCss) are rejected",
+  "document": {
+    "version": 1,
+    "primary": "#000000",
+    "bg": "#ffffff",
+    "ink": "#000000",
+    "font": "Georgia",
+    "customCss": "body{display:none}"
+  }
+}
