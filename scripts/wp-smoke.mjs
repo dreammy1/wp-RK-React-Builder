@@ -300,3 +300,4 @@ try {
 } finally {
   cleanup();
 }
+process.exit(process.exitCode ?? 0);

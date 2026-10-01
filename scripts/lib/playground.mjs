@@ -90,13 +90,13 @@ export async function startPlayground({
       "--wp=latest",
       "--php=8.3",
     ],
-    { stdio: ["ignore", "pipe", "pipe"], shell: false }
+    { stdio: ["ignore", "pipe", "pipe"], shell: false, detached: true }
   );
   server.stdout.on("data", d => logs.push(String(d)));
   server.stderr.on("data", d => logs.push(String(d)));
   const stop = () => {
     try {
-      server.kill("SIGTERM");
+      process.kill(-server.pid, "SIGKILL"); // npx spawns a grandchild: kill the whole group
     } catch {
       /* best effort */
     }

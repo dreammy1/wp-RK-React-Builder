@@ -91,5 +91,8 @@ jobs:
       - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm build
       - run: pnpm smoke:wp
+        timeout-minutes: 8
       - run: pnpm test:wp
+        timeout-minutes: 8
       - run: pnpm test:wp-admin
+        timeout-minutes: 8
