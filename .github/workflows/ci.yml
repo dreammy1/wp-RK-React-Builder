@@ -32,7 +32,7 @@ jobs:
       - run: pnpm format:check
       - run: pnpm test
       - run: pnpm build
-      - run: pnpm audit
+      - run: pnpm audit:prod
       - uses: actions/upload-artifact@v4
         with:
           name: dist

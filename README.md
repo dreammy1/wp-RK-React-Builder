@@ -69,7 +69,7 @@ See [DEPLOYMENT.md](DEPLOYMENT.md) for the embedded wp-admin ("nonce") mode and 
 | `pnpm test:wp`                                   | **Real WordPress**: client + proxy + plugin + SSR through WordPress Playground (needs network) |
 | `pnpm test:wp-admin`                             | **Real WordPress wp-admin**: nonce mode in a browser (needs network)                           |
 | `pnpm smoke:wp`                                  | Plugin REST smoke test against real WordPress                                                  |
-| `pnpm audit`                                     | dependency audit (prod, high severity)                                                         |
+| `pnpm audit:prod`                                | dependency audit (prod, high severity)                                                         |
 
 First run of the Playground-based commands downloads WordPress and `@wp-playground/cli`; Playwright needs
 `pnpm exec playwright install chromium` once.
