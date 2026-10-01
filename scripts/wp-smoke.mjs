@@ -247,8 +247,10 @@ try {
         "GET",
         `/public/page/smoke?preview=${encodeURIComponent(t.json.token.slice(0, -2) + "xx")}`
       );
-      assert.equal(bad.json.preview, undefined);
-      assert.equal(bad.json.layout.blocks.length, 9);
+      assert.equal(bad.status, 404);
+      assert.equal(bad.json.code, "rk_preview_invalid");
+      assert.equal(bad.json.data.status, 404);
+      assert.equal(bad.json.layout, undefined);
     }
   );
   await check("unpublish -> public 404 again", async () => {

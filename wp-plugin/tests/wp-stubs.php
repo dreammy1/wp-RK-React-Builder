@@ -26,6 +26,7 @@ function rk_test_reset() {
 		),
 	);
 	$GLOBALS['wpdb'] = new RK_Test_WPDB();
+	$_GET = $_POST = $_REQUEST = array(); // admin tests set these per case
 }
 
 /* ---------------- classes ---------------- */
@@ -85,6 +86,15 @@ class RK_Test_WPDB {
 			if ( array_key_exists( $key, $GLOBALS['RK']['options'] ) ) { return 0; }
 			$GLOBALS['RK']['options'][ $key ] = stripslashes( $m[2] );
 			return 1;
+		}
+		if ( preg_match( "/^DELETE FROM \S+ WHERE option_name LIKE '((?:[^'\\\\]|\\\\.)*)'/", $sql, $m ) ) {
+			$pre = rtrim( stripslashes( $m[1] ), '%' );
+			$pre = str_replace( array( '\\_', '\\%' ), array( '_', '%' ), $pre );
+			$n   = 0;
+			foreach ( array_keys( $GLOBALS['RK']['options'] ) as $k ) {
+				if ( 0 === strpos( $k, $pre ) ) { unset( $GLOBALS['RK']['options'][ $k ] ); $n++; }
+			}
+			return $n;
 		}
 		return 0;
 	}
@@ -244,6 +254,10 @@ function rk_test_query( $args ) {
 		if ( isset( $args['post_type'] ) && $p->post_type !== $args['post_type'] ) { continue; }
 		if ( isset( $args['post_status'] ) && 'any' !== $args['post_status'] && ! in_array( $p->post_status, (array) $args['post_status'], true ) ) { continue; }
 		if ( isset( $args['name'] ) && $p->post_name !== $args['name'] ) { continue; }
+		if ( isset( $args['meta_key'] ) ) {
+			$mv = isset( $GLOBALS['RK']['meta'][ $p->ID ][ $args['meta_key'] ] ) ? $GLOBALS['RK']['meta'][ $p->ID ][ $args['meta_key'] ] : null;
+			if ( null === $mv || ( isset( $args['meta_value'] ) && (string) $mv !== (string) $args['meta_value'] ) ) { continue; }
+		}
 		if ( isset( $args['author'] ) && (int) $p->post_author !== (int) $args['author'] ) { continue; }
 		if ( isset( $args['s'] ) && false === stripos( $p->post_title, $args['s'] ) ) { continue; }
 		if ( array_key_exists( 'has_password', $args ) && false === $args['has_password'] && '' !== (string) $p->post_password ) { continue; }
@@ -271,7 +285,10 @@ function rk_test_query( $args ) {
 	$paged = isset( $args['paged'] ) ? max( 1, (int) $args['paged'] ) : 1;
 	return array( array_slice( $out, ( $paged - 1 ) * $per, $per ), $found );
 }
-function get_posts( $args ) { list( $posts ) = rk_test_query( $args ); return $posts; }
+function get_posts( $args ) {
+	list( $posts ) = rk_test_query( $args );
+	return ( isset( $args['fields'] ) && 'ids' === $args['fields'] ) ? array_map( function ( $p ) { return (int) $p->ID; }, $posts ) : $posts;
+}
 
 /* ---------------- REST dispatch (mini WP_REST_Server) ---------------- */
 
@@ -313,3 +330,46 @@ function rk_test_request( $method, $path, $opts = array() ) {
 	}
 	return new WP_Error( 'rest_no_route', 'No route was found matching the URL and request method.', array( 'status' => 404 ) );
 }
+
+require __DIR__ . '/wp-stubs-admin.php'; // stubs for the admin/settings/setup/migration tests (all guarded)
+
+/* ---------------- public rendering / preview / SEO stubs (added for the PHP renderer) ---------------- */
+
+/** Pretend the main query is this page: rk_test_set_query( array( 'singular' => true, 'id' => $id, 'loop' => true ) ). Reset by rk_test_reset(). */
+function rk_test_set_query( array $q ) {
+	$GLOBALS['RK']['q'] = array_merge( array( 'singular' => false, 'main' => true, 'loop' => false, 'id' => 0, 'admin' => false ), $q );
+}
+function rk_test_q( $k ) { return isset( $GLOBALS['RK']['q'][ $k ] ) ? $GLOBALS['RK']['q'][ $k ] : ( 'main' === $k ? true : ( 'id' === $k ? 0 : false ) ); }
+
+class RK_Test_WP_Query_Global {
+	public $is_404 = false; public $posts = array( 'home-post' ); public $post_count = 1; public $found_posts = 1;
+	public function set_404() { $this->is_404 = true; }
+}
+$GLOBALS['wp_query'] = new RK_Test_WP_Query_Global();
+
+if ( ! function_exists( 'is_singular' ) ) { function is_singular( $t = '' ) { return (bool) rk_test_q( 'singular' ); } }
+if ( ! function_exists( 'is_main_query' ) ) { function is_main_query() { return (bool) rk_test_q( 'main' ); } }
+if ( ! function_exists( 'in_the_loop' ) ) { function in_the_loop() { return (bool) rk_test_q( 'loop' ); } }
+if ( ! function_exists( 'get_queried_object_id' ) ) { function get_queried_object_id() { return (int) rk_test_q( 'id' ); } }
+if ( ! function_exists( 'get_the_ID' ) ) { function get_the_ID() { return (int) rk_test_q( 'id' ); } }
+if ( ! function_exists( 'is_admin' ) ) { function is_admin() { return (bool) rk_test_q( 'admin' ); } }
+if ( ! function_exists( 'doing_filter' ) ) { function doing_filter( $t = null ) { return false; } }
+if ( ! function_exists( 'remove_action' ) ) { function remove_action( $tag, $fn, $prio = 10 ) { return remove_filter( $tag, $fn, $prio ); } }
+if ( ! function_exists( 'wp_enqueue_style' ) ) {
+	function wp_enqueue_style( $h, $src = '', $deps = array(), $ver = false ) { $GLOBALS['RK']['styles'][ $h ] = array( 'src' => $src, 'ver' => $ver, 'inline' => array() ); }
+}
+if ( ! function_exists( 'wp_add_inline_style' ) ) {
+	function wp_add_inline_style( $h, $css ) { $GLOBALS['RK']['styles'][ $h ]['inline'][] = $css; return true; }
+}
+if ( ! function_exists( 'get_bloginfo' ) ) { function get_bloginfo( $k = '' ) { return 'charset' === $k ? 'UTF-8' : 'Test Site'; } }
+if ( ! function_exists( 'bloginfo' ) ) { function bloginfo( $k = '' ) { echo esc_html( get_bloginfo( $k ) ); } }
+if ( ! function_exists( 'language_attributes' ) ) { function language_attributes() { echo 'lang="en-US"'; } }
+if ( ! function_exists( 'body_class' ) ) { function body_class( $c = '' ) { echo 'class="' . esc_attr( $c ) . '"'; } }
+if ( ! function_exists( 'wp_body_open' ) ) { function wp_body_open() { do_action( 'wp_body_open' ); } }
+if ( ! function_exists( 'wp_head' ) ) { function wp_head() { do_action( 'wp_head' ); } }
+if ( ! function_exists( 'wp_footer' ) ) { function wp_footer() { do_action( 'wp_footer' ); } }
+if ( ! function_exists( 'status_header' ) ) { function status_header( $c ) { $GLOBALS['RK']['status'] = (int) $c; } }
+if ( ! function_exists( 'nocache_headers' ) ) { function nocache_headers() { $GLOBALS['RK']['nocache'] = true; } }
+if ( ! function_exists( 'add_theme_support' ) ) { function add_theme_support( $f ) { $GLOBALS['RK']['theme_support'][ $f ] = true; } }
+if ( ! function_exists( 'current_theme_supports' ) ) { function current_theme_supports( $f ) { return ! empty( $GLOBALS['RK']['theme_support'][ $f ] ); } }
+if ( ! function_exists( 'wp_is_post_revision' ) ) { function wp_is_post_revision( $id ) { return false; } }

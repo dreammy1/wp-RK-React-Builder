@@ -9,7 +9,7 @@ const parseId = (raw: string | null) =>
 
 /**
  * Standalone: `/builder?page=42`.
- * Embedded in wp-admin (nonce mode): `…/admin.php?page=rk-builder&rk_page=42`.
+ * Embedded in wp-admin: `…/admin.php?page=rk-builder&page_id=42` (`rk_page` is accepted as an alias).
  */
 export function parseRoute(
   pathname: string,
@@ -18,7 +18,7 @@ export function parseRoute(
 ): Route {
   const params = new URLSearchParams(search);
   if (embedded) {
-    const id = parseId(params.get("rk_page"));
+    const id = parseId(params.get("page_id") ?? params.get("rk_page"));
     return id
       ? { name: "builder", pageId: id, demo: params.get("demo") === "1" }
       : { name: "pages" };
@@ -35,7 +35,7 @@ export function pageHref(id?: number): string {
   const boot = getBoot();
   if (boot) {
     const base = boot.adminUrl ?? `${location.pathname}?page=rk-builder`;
-    return id ? `${base}&rk_page=${id}` : base;
+    return id ? `${base}&page_id=${id}` : base;
   }
   return id ? `/builder?page=${id}` : "/builder";
 }

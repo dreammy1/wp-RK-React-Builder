@@ -4,7 +4,8 @@
  * reflected, there is no wildcard, and `null` origins are rejected.
  *
  * Sources (merged): constant RK_BUILDER_ALLOWED_ORIGINS (array or comma string), option
- * `rk_builder_allowed_origins`, filter `rk_builder_allowed_origins`.
+ * `rk_builder_allowed_origins`, the "Allowed origins" setting (Settings > RK Builder, only needed
+ * for direct cross-origin browser use), filter `rk_builder_allowed_origins`.
  *
  * @package RK_Builder
  */
@@ -13,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 
 /** Normalise to a list of "scheme://host[:port]" origins; drops anything else (incl. wildcards). */
 function rk_builder_normalize_origins( $value ) {
-	if ( is_string( $value ) ) { $value = explode( ',', $value ); }
+	if ( is_string( $value ) ) { $value = preg_split( '/[\s,]+/', $value ); }
 	$out = array();
 	foreach ( (array) $value as $o ) {
 		if ( ! is_string( $o ) ) { continue; }
@@ -27,6 +28,7 @@ function rk_builder_allowed_origins() {
 	$list = array();
 	if ( defined( 'RK_BUILDER_ALLOWED_ORIGINS' ) ) { $list = array_merge( $list, rk_builder_normalize_origins( RK_BUILDER_ALLOWED_ORIGINS ) ); }
 	$list = array_merge( $list, rk_builder_normalize_origins( get_option( 'rk_builder_allowed_origins', array() ) ) );
+	$list = array_merge( $list, rk_builder_normalize_origins( rk_builder_setting( 'allowed_origins', '' ) ) );
 	$list = apply_filters( 'rk_builder_allowed_origins', $list );
 	return rk_builder_normalize_origins( $list );
 }

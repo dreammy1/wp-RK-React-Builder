@@ -18,7 +18,6 @@
 
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 
-if ( ! defined( 'RK_BUILDER_MAX_REVISIONS' ) ) { define( 'RK_BUILDER_MAX_REVISIONS', 20 ); }
 if ( ! defined( 'RK_BUILDER_LOCK_TTL' ) ) { define( 'RK_BUILDER_LOCK_TTL', 30 ); }
 
 function rk_builder_now() {
@@ -29,15 +28,21 @@ function rk_builder_iso( $ts ) {
 	return gmdate( 'Y-m-d\TH:i:s\Z', (int) $ts );
 }
 
-/** Retention: last N revisions (default 20). Filter `rk_builder_max_revisions`, clamped to 1..200. */
+/**
+ * Retention: last N revisions (default 20). Priority: the filter `rk_builder_max_revisions`, over the
+ * RK_BUILDER_MAX_REVISIONS constant (if defined), over the "Maximum revisions" setting. Clamped to 1..200.
+ */
 function rk_builder_max_revisions() {
-	$n = (int) apply_filters( 'rk_builder_max_revisions', RK_BUILDER_MAX_REVISIONS );
+	$base = defined( 'RK_BUILDER_MAX_REVISIONS' ) ? RK_BUILDER_MAX_REVISIONS : rk_builder_setting( 'max_revisions', 20 );
+	$n    = (int) apply_filters( 'rk_builder_max_revisions', $base );
 	return max( 1, min( 200, $n ) );
 }
 
 /**
  * Hosts allowed in absolute image URLs: the site's own host, the uploads host, plus the
- * RK_BUILDER_ALLOWED_IMAGE_HOSTS constant and the `rk_builder_allowed_image_hosts` filter.
+ * RK_BUILDER_ALLOWED_IMAGE_HOSTS constant, the "Allowed image hosts" setting and the
+ * `rk_builder_allowed_image_hosts` filter (which sees, and may change, the merged list).
+ * validation.php stays pure: callers pass this list in.
  */
 function rk_builder_allowed_image_hosts() {
 	$hosts = array();
@@ -53,6 +58,7 @@ function rk_builder_allowed_image_hosts() {
 		$const = RK_BUILDER_ALLOWED_IMAGE_HOSTS;
 		$hosts = array_merge( $hosts, is_array( $const ) ? $const : explode( ',', (string) $const ) );
 	}
+	$hosts = array_merge( $hosts, rk_builder_split_list( rk_builder_setting( 'allowed_image_hosts', '' ) ) );
 	$hosts = apply_filters( 'rk_builder_allowed_image_hosts', $hosts );
 	return rk_builder_normalize_hosts( is_array( $hosts ) ? $hosts : array() );
 }

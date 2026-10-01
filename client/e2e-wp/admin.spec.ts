@@ -53,7 +53,7 @@ test("logged-in editor uses the cookie + nonce flow end to end", async ({
   expect(boot.mode).toBe("nonce");
 
   await page.getByRole("link", { name: "Smoke Page" }).click();
-  await expect(page).toHaveURL(new RegExp(`rk_page=${state().pageId}$`));
+  await expect(page).toHaveURL(new RegExp(`page_id=${state().pageId}$`));
   await expect(page.getByTestId("save-status")).toBeVisible();
 
   await page.getByRole("button", { name: "Add Hero block" }).click();

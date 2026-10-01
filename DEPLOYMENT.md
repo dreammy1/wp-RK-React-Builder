@@ -1,5 +1,26 @@
 # Deployment
 
+## Option A — All-in-one plugin (recommended; no Node, Docker or SSH)
+
+Upload `rk-builder-all-in-one.zip` (Releases page, CI artifact, or `pnpm build:plugin`) via
+_Plugins → Add New → Upload Plugin_, activate, follow the setup check. Full customer-facing steps, settings, migration,
+update and uninstall behaviour: **[INSTALL.md](INSTALL.md)**. Staging checklist for this mode:
+
+1. Install the ZIP on staging WordPress (PHP 8.1+, pretty permalinks); **Settings → RK Builder → Setup** shows no ✗.
+2. Open _RK Builder_, edit a page, **Save draft**, reload — props intact; **Preview link** shows the draft, `noindex`, and 404s when altered.
+3. **Publish** — the normal page URL shows the PHP-rendered layout (view source: `data-rk-block`, canonical, Open Graph, no editor JS). Draft saves do not change it.
+4. With your cache plugin on, publish a change and confirm it appears immediately (or use _Purge public cache now_).
+5. As an Editor, theme controls are disabled; as a Subscriber the RK Builder screen is refused.
+6. Back up → update by uploading the next ZIP → confirm data intact → practise rollback with the previous ZIP.
+
+Releases: bump `RK_BUILDER_VERSION` **and** the plugin header (the packager refuses a mismatch), merge, then push a tag
+`vX.Y.Z`; the _Release plugin_ workflow runs `pnpm verify`, builds the ZIP and attaches it to a GitHub release.
+
+## Option B — Headless: Node/Docker frontend
+
+Use this only if you want the public site on a separate Node server (e.g. a different domain or framework-style
+SSR). Everything below this heading describes that mode.
+
 ## Environments
 
 | Environment          | WordPress                                         | Frontend (Node)                        | Notes                                         |

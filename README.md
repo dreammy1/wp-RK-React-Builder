@@ -1,18 +1,38 @@
 # RK React Builder
 
-A focused visual page builder for headless WordPress. An editor picks a WordPress page, arranges blocks (hero,
+A focused visual page builder for WordPress, shipped as **one installable plugin** (no Node, Docker or SSH needed), with an
+optional headless mode (Node/Docker frontend) for teams that want it.
+
+> **Just want to install it?** Read [INSTALL.md](INSTALL.md): upload the ZIP in _Plugins → Add New → Upload_, activate, done.
+
+A focused visual page builder for WordPress. An editor picks a WordPress page, arranges blocks (hero,
 heading, text, image, CTA, live services/portfolio grids, spacer, divider), tweaks a global theme, previews, saves a
 **draft**, and deliberately **publishes**. The public site is server-rendered from the same document model.
 
 - **Builder** — Vite + React + TypeScript, registry-driven blocks, Zod validation, undo/redo, keyboard reorder, local
   draft recovery, revision history, media picker, conflict handling.
-- **Server** — Node/Express: public SSR, session-protected WordPress proxy, cache, metrics, security headers.
-- **Plugin** — `wp-plugin/rk-builder`: storage, REST, permissions, revisions, locks, CPTs, CORS, preview tokens.
+- **Plugin** — `wp-plugin/rk-builder`: storage, REST, permissions, revisions, locks, CPTs, preview links, **PHP public
+  rendering**, SEO metadata, cache purging, settings, setup wizard and migration tool. The built React editor ships
+  inside it (`assets/`) and runs in wp-admin on the WordPress login cookie + REST nonce.
+- **Server (optional, headless mode)** — Node/Express: public SSR, session-protected WordPress proxy, cache, metrics.
 
 Details: [ARCHITECTURE.md](ARCHITECTURE.md) · [SECURITY.md](SECURITY.md) · [DEPLOYMENT.md](DEPLOYMENT.md) ·
 [OPERATIONS.md](OPERATIONS.md) · [PRODUCTION_IMPLEMENTATION_PLAN.md](PRODUCTION_IMPLEMENTATION_PLAN.md)
 
-## Quick start (no WordPress needed)
+## Two ways to run it
+
+|              | **All-in-one (default)**                        | Headless (optional)                               |
+| ------------ | ----------------------------------------------- | ------------------------------------------------- |
+| Needs        | WordPress hosting only                          | + a Node/Docker host                              |
+| Editor       | wp-admin → RK Builder                           | wp-admin (nonce) or `/builder` on the Node server |
+| Public pages | PHP, inside your theme or a standalone template | Node SSR on its own domain                        |
+| Auth         | WordPress login + REST nonce                    | same, or Node session + app password proxy        |
+| Install      | upload one ZIP                                  | see [DEPLOYMENT.md](DEPLOYMENT.md)                |
+
+Build the installable ZIP yourself: `pnpm install --frozen-lockfile && pnpm build:plugin` → `dist/rk-builder-all-in-one.zip`
+(also published by the _Release plugin_ workflow when you push a `vX.Y.Z` tag that matches the plugin version).
+
+## Developer quick start (no WordPress needed)
 
 ```bash
 nvm use            # Node 24 (.nvmrc); >=22.12 works
@@ -60,16 +80,18 @@ See [DEPLOYMENT.md](DEPLOYMENT.md) for the embedded wp-admin ("nonce") mode and 
 
 ## Commands
 
-|                                                  |                                                                                                |
-| ------------------------------------------------ | ---------------------------------------------------------------------------------------------- |
-| `pnpm verify`                                    | typecheck + lint + format check + unit/contract tests + PHP tests + build                      |
-| `pnpm check` · `pnpm lint` · `pnpm format:check` | static checks                                                                                  |
-| `pnpm test` · `pnpm test:php`                    | Vitest (schemas, reducer, API client, SSR, proxy) · plugin tests (plain PHP)                   |
-| `pnpm build && pnpm test:e2e`                    | Playwright against the mock WordPress (editing, publishing, a11y, recovery)                    |
-| `pnpm test:wp`                                   | **Real WordPress**: client + proxy + plugin + SSR through WordPress Playground (needs network) |
-| `pnpm test:wp-admin`                             | **Real WordPress wp-admin**: nonce mode in a browser (needs network)                           |
-| `pnpm smoke:wp`                                  | Plugin REST smoke test against real WordPress                                                  |
-| `pnpm audit:prod`                                | dependency audit (prod, high severity)                                                         |
+|                                                  |                                                                                                                                     |
+| ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm verify`                                    | typecheck + lint + format check + unit/contract tests + PHP tests + build                                                           |
+| `pnpm check` · `pnpm lint` · `pnpm format:check` | static checks                                                                                                                       |
+| `pnpm test` · `pnpm test:php`                    | Vitest (schemas, reducer, API client, SSR, proxy) · plugin tests (plain PHP)                                                        |
+| `pnpm build && pnpm test:e2e`                    | Playwright against the mock WordPress (editing, publishing, a11y, recovery)                                                         |
+| `pnpm build:plugin`                              | build the all-in-one plugin ZIP (`dist/rk-builder-all-in-one.zip`)                                                                  |
+| `pnpm test:all-in-one`                           | **Packaged plugin on real WordPress, no Node server**: wp-admin builder, publish, PHP-rendered page, preview, roles (needs network) |
+| `pnpm test:wp`                                   | **Real WordPress**: client + proxy + plugin + SSR through WordPress Playground (needs network)                                      |
+| `pnpm test:wp-admin`                             | **Real WordPress wp-admin**: nonce mode in a browser (needs network)                                                                |
+| `pnpm smoke:wp`                                  | Plugin REST smoke test against real WordPress                                                                                       |
+| `pnpm audit:prod`                                | dependency audit (prod, high severity)                                                                                              |
 
 First run of the Playground-based commands downloads WordPress and `@wp-playground/cli`; Playwright needs
 `pnpm exec playwright install chromium` once.

@@ -26,9 +26,14 @@ describe("parseRoute", () => {
     }
     expect(parseRoute("/elsewhere", "?page=42")).toEqual({ name: "pages" });
   });
-  it("embedded in wp-admin: uses rk_page and ignores the path", () => {
+  it("embedded in wp-admin accepts the legacy rk_page alias", () => {
     expect(
       parseRoute("/wp-admin/admin.php", "?page=rk-builder&rk_page=7", true)
+    ).toMatchObject({ pageId: 7 });
+  });
+  it("embedded in wp-admin: uses page_id (rk_page alias) and ignores the path", () => {
+    expect(
+      parseRoute("/wp-admin/admin.php", "?page=rk-builder&page_id=7", true)
     ).toEqual({ name: "builder", pageId: 7, demo: false });
     expect(parseRoute("/wp-admin/admin.php", "?page=rk-builder", true)).toEqual(
       { name: "pages" }

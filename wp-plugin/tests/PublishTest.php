@@ -184,7 +184,7 @@ rk_test( 'preview: expired, tampered, malformed and wrong-page tokens do not unl
 	t_ok( rk_public( 'wip', array( 'preview' => $token ) ) );
 
 	// wrong page
-	t_err( rk_public( 'other', array( 'preview' => $token ) ), 'rk_not_found', 404 );
+	t_err( rk_public( 'other', array( 'preview' => $token ) ), 'rk_preview_invalid', 404 );
 
 	// tampered signature / payload (re-sign with a different secret, flip bits, change page id)
 	list( $p, $s ) = explode( '.', $token );
@@ -196,7 +196,7 @@ rk_test( 'preview: expired, tampered, malformed and wrong-page tokens do not unl
 	t_assert( ! rk_builder_verify_preview_token( $p . '.' . $wrong_key, $id ), 'signed with another key' );
 	foreach ( array( '', 'x', '.', 'a.b.c', $p, $p . '.', '.' . $s, $p . '.' . $s . '=' ) as $junk ) {
 		t_assert( ! rk_builder_verify_preview_token( $junk, $id ), 'junk token' );
-		t_err( rk_public( 'wip', array( 'preview' => $junk ) ), 'rk_not_found', 404 );
+		t_err( rk_public( 'wip', array( 'preview' => $junk ) ), 'rk_preview_invalid', 404 );
 	}
 	t_assert( ! rk_builder_verify_preview_token( str_repeat( 'a', 600 ), $id ), 'oversized token' );
 	t_err( rk_get( '/rk/v1/public/page/wip', array( 'preview' => array( 'x' ) ) ), 'rest_invalid_param', 400 );
@@ -204,7 +204,7 @@ rk_test( 'preview: expired, tampered, malformed and wrong-page tokens do not unl
 	// expired
 	add_filter( 'rk_builder_now', function ( $t ) { return $t + 901; } );
 	t_assert( ! rk_builder_verify_preview_token( $token, $id ), 'expired' );
-	t_err( rk_public( 'wip', array( 'preview' => $token ) ), 'rk_not_found', 404 );
+	t_err( rk_public( 'wip', array( 'preview' => $token ) ), 'rk_preview_invalid', 404 );
 } );
 
 rk_test( 'preview tokens use RK_BUILDER_PREVIEW_SECRET (constant) and constant-time compare', function () {

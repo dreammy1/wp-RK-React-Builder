@@ -13,39 +13,46 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
  * ------------------------------------------------------------------ */
 
 function rk_builder_register_content_types() {
-	register_post_type( 'service', array(
-		'labels'       => array( 'name' => 'Services', 'singular_name' => 'Service' ),
-		'public'       => true,
-		'show_in_rest' => true,
-		'rest_base'    => 'service',
-		'menu_icon'    => 'dashicons-hammer',
-		'supports'     => array( 'title', 'editor', 'excerpt', 'thumbnail', 'page-attributes' ),
-	) );
-	register_post_type( 'portfolio', array(
-		'labels'       => array( 'name' => 'Portfolio', 'singular_name' => 'Project' ),
-		'public'       => true,
-		'show_in_rest' => true,
-		'rest_base'    => 'portfolio',
-		'menu_icon'    => 'dashicons-portfolio',
-		'supports'     => array( 'title', 'editor', 'excerpt', 'thumbnail', 'page-attributes' ),
-	) );
-	register_taxonomy( 'service_cat', 'service', array(
-		'labels'       => array( 'name' => 'Service Categories', 'singular_name' => 'Service Category' ),
-		'public'       => true,
-		'show_in_rest' => true,
-		'hierarchical' => true,
-	) );
-	register_taxonomy( 'portfolio_cat', 'portfolio', array(
-		'labels'       => array( 'name' => 'Project Categories', 'singular_name' => 'Project Category' ),
-		'public'       => true,
-		'show_in_rest' => true,
-		'hierarchical' => true,
-	) );
+	if ( rk_builder_setting( 'enable_service_cpt', true ) ) {
+		register_post_type( 'service', array(
+			'labels'       => array( 'name' => 'Services', 'singular_name' => 'Service' ),
+			'public'       => true,
+			'show_in_rest' => true,
+			'rest_base'    => 'service',
+			'menu_icon'    => 'dashicons-hammer',
+			'supports'     => array( 'title', 'editor', 'excerpt', 'thumbnail', 'page-attributes' ),
+		) );
+		register_taxonomy( 'service_cat', 'service', array(
+			'labels'       => array( 'name' => 'Service Categories', 'singular_name' => 'Service Category' ),
+			'public'       => true,
+			'show_in_rest' => true,
+			'hierarchical' => true,
+		) );
+	}
+	if ( rk_builder_setting( 'enable_portfolio_cpt', true ) ) {
+		register_post_type( 'portfolio', array(
+			'labels'       => array( 'name' => 'Portfolio', 'singular_name' => 'Project' ),
+			'public'       => true,
+			'show_in_rest' => true,
+			'rest_base'    => 'portfolio',
+			'menu_icon'    => 'dashicons-portfolio',
+			'supports'     => array( 'title', 'editor', 'excerpt', 'thumbnail', 'page-attributes' ),
+		) );
+		register_taxonomy( 'portfolio_cat', 'portfolio', array(
+			'labels'       => array( 'name' => 'Project Categories', 'singular_name' => 'Project Category' ),
+			'public'       => true,
+			'show_in_rest' => true,
+			'hierarchical' => true,
+		) );
+	}
 }
 
-/** type => taxonomy */
+/** type => taxonomy, for the content types enabled in the settings (both by default). */
 function rk_builder_content_types() {
-	return array( 'service' => 'service_cat', 'portfolio' => 'portfolio_cat' );
+	$types = array();
+	if ( rk_builder_setting( 'enable_service_cpt', true ) ) { $types['service'] = 'service_cat'; }
+	if ( rk_builder_setting( 'enable_portfolio_cpt', true ) ) { $types['portfolio'] = 'portfolio_cat'; }
+	return $types;
 }
 
 /** Featured image info `{url,width,height,alt,srcset?}` or null. */
@@ -91,6 +98,50 @@ function rk_builder_validate_content_category( $v ) { return is_string( $v ) && 
 function rk_builder_validate_content_orderby( $v ) { return is_string( $v ) && in_array( $v, array( 'date', 'title', 'menu_order' ), true ); }
 function rk_builder_validate_content_order( $v ) { return is_string( $v ) && in_array( strtolower( $v ), array( 'asc', 'desc' ), true ); }
 
+/**
+ * Shared by GET /content/{type} and the PHP grid renderer: PUBLISHED, non-password-protected posts only.
+ *
+ * @param string $type One of rk_builder_content_types().
+ * @param array  $opts limit (1..24), category (slug or ''), orderby (date|title|menu_order), order (asc|desc).
+ * @return array{items:array[],total:int}|null null for an unknown/disabled type.
+ */
+function rk_builder_query_content( $type, array $opts = array() ) {
+	$types = rk_builder_content_types();
+	if ( ! is_string( $type ) || ! isset( $types[ $type ] ) ) { return null; }
+	$limit    = isset( $opts['limit'] ) ? max( 1, min( 24, (int) $opts['limit'] ) ) : (int) rk_builder_setting( 'default_grid_limit', 6 );
+	$category = isset( $opts['category'] ) && is_string( $opts['category'] ) && rk_builder_validate_content_category( $opts['category'] ) ? $opts['category'] : '';
+	$orderby  = isset( $opts['orderby'] ) && rk_builder_validate_content_orderby( $opts['orderby'] ) ? $opts['orderby'] : 'date';
+	$order    = isset( $opts['order'] ) && rk_builder_validate_content_order( $opts['order'] ) ? strtoupper( $opts['order'] ) : ( 'date' === $orderby ? 'DESC' : 'ASC' );
+
+	$args = array(
+		'post_type'           => $type,
+		'post_status'         => 'publish',
+		'has_password'        => false,
+		'posts_per_page'      => $limit,
+		'orderby'             => $orderby,
+		'order'               => $order,
+		'ignore_sticky_posts' => true,
+	);
+	if ( 'menu_order' === $orderby ) { $args['orderby'] = array( 'menu_order' => $order, 'title' => 'ASC' ); }
+	if ( '' !== $category ) {
+		$args['tax_query'] = array( array( 'taxonomy' => $types[ $type ], 'field' => 'slug', 'terms' => array( $category ) ) );
+	}
+	$query = new WP_Query( $args );
+	$items = array();
+	foreach ( $query->posts as $post ) {
+		$slugs   = wp_get_object_terms( $post->ID, $types[ $type ], array( 'fields' => 'slugs' ) );
+		$items[] = array(
+			'id'         => (int) $post->ID,
+			'title'      => rk_builder_plain( get_the_title( $post ) ),
+			'excerpt'    => rk_builder_excerpt( $post ),
+			'link'       => (string) get_permalink( $post->ID ),
+			'categories' => is_wp_error( $slugs ) ? array() : array_values( array_map( 'strval', (array) $slugs ) ),
+			'image'      => rk_builder_featured_image( $post->ID ),
+		);
+	}
+	return array( 'items' => $items, 'total' => (int) $query->found_posts );
+}
+
 function rk_builder_handle_content( $req ) {
 	$types = rk_builder_content_types();
 	$type  = (string) $req['type'];
@@ -109,38 +160,13 @@ function rk_builder_handle_content( $req ) {
 			return new WP_Error( 'rest_invalid_param', 'Invalid parameter: ' . $name, array( 'status' => 400, 'params' => array( $name => 'Invalid value.' ) ) );
 		}
 	}
-	$limit    = null !== $req->get_param( 'limit' ) ? (int) $req->get_param( 'limit' ) : 6;
-	$category = (string) $req->get_param( 'category' );
-	$orderby  = null !== $req->get_param( 'orderby' ) ? (string) $req->get_param( 'orderby' ) : 'date';
-	$order    = null !== $req->get_param( 'order' ) ? strtoupper( (string) $req->get_param( 'order' ) ) : ( 'date' === $orderby ? 'DESC' : 'ASC' );
-
-	$args = array(
-		'post_type'           => $type,
-		'post_status'         => 'publish',
-		'has_password'        => false,
-		'posts_per_page'      => $limit,
-		'orderby'             => $orderby,
-		'order'               => $order,
-		'ignore_sticky_posts' => true,
-	);
-	if ( 'menu_order' === $orderby ) { $args['orderby'] = array( 'menu_order' => $order, 'title' => 'ASC' ); }
-	if ( '' !== $category ) {
-		$args['tax_query'] = array( array( 'taxonomy' => $types[ $type ], 'field' => 'slug', 'terms' => array( $category ) ) );
-	}
-	$query = new WP_Query( $args );
-	$items = array();
-	foreach ( $query->posts as $post ) {
-		$slugs = wp_get_object_terms( $post->ID, $types[ $type ], array( 'fields' => 'slugs' ) );
-		$items[] = array(
-			'id'         => (int) $post->ID,
-			'title'      => rk_builder_plain( get_the_title( $post ) ),
-			'excerpt'    => rk_builder_excerpt( $post ),
-			'link'       => (string) get_permalink( $post->ID ),
-			'categories' => is_wp_error( $slugs ) ? array() : array_values( array_map( 'strval', (array) $slugs ) ),
-			'image'      => rk_builder_featured_image( $post->ID ),
-		);
-	}
-	$response = rest_ensure_response( array( 'items' => $items, 'total' => (int) $query->found_posts ) );
+	$result = rk_builder_query_content( $type, array(
+		'limit'    => null !== $req->get_param( 'limit' ) ? (int) $req->get_param( 'limit' ) : (int) rk_builder_setting( 'default_grid_limit', 6 ),
+		'category' => (string) $req->get_param( 'category' ),
+		'orderby'  => null !== $req->get_param( 'orderby' ) ? (string) $req->get_param( 'orderby' ) : 'date',
+		'order'    => null !== $req->get_param( 'order' ) ? (string) $req->get_param( 'order' ) : null,
+	) );
+	$response = rest_ensure_response( $result );
 	$response->header( 'Cache-Control', 'public, max-age=0, s-maxage=60' );
 	return $response;
 }
@@ -189,14 +215,17 @@ function rk_builder_handle_public_page( $req ) {
 		'suppress_filters' => true,
 	) );
 	$token = $req->get_param( 'preview' );
-	$token = is_string( $token ) ? $token : '';
 
 	$page    = null;
 	$preview = false;
-	foreach ( $candidates as $c ) {
-		if ( '' !== $token && rk_builder_verify_preview_token( $token, (int) $c->ID ) ) { $page = $c; $preview = true; break; }
-	}
-	if ( ! $page ) {
+	if ( null !== $token ) {
+		// A preview was asked for: it must be valid, otherwise 404. Never fall back to the published snapshot.
+		$token = is_string( $token ) ? $token : '';
+		foreach ( $candidates as $c ) {
+			if ( '' !== $token && rk_builder_verify_preview_token( $token, (int) $c->ID ) ) { $page = $c; $preview = true; break; }
+		}
+		if ( ! $page ) { return rk_builder_error( 'rk_preview_invalid', 'The preview link is invalid or has expired.', 404 ); }
+	} else {
 		foreach ( $candidates as $c ) {
 			if ( 'publish' === $c->post_status && '' === (string) $c->post_password ) { $page = $c; break; }
 		}

@@ -25,7 +25,11 @@
     "verify": "pnpm check && pnpm lint && pnpm format:check && pnpm test && pnpm test:php && pnpm build",
     "test:wp": "RK_WP_INTEGRATION=1 vitest run scripts/wp-integration.test.ts",
     "test:wp-admin": "RK_E2E_WP=1 playwright test -c playwright.wp.config.ts",
-    "smoke:wp": "node scripts/wp-smoke.mjs"
+    "smoke:wp": "node scripts/wp-smoke.mjs",
+    "build:plugin": "pnpm build && node scripts/package-plugin.mjs",
+    "package:plugin": "node scripts/package-plugin.mjs",
+    "test:plugin": "pnpm test && pnpm test:php",
+    "test:all-in-one": "RK_E2E_ALLINONE=1 playwright test -c playwright.allinone.config.ts"
   },
   "dependencies": {
     "express": "^4.22.3",

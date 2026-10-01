@@ -46,10 +46,15 @@ wp_insert_post(array('post_type'=>'service','post_status'=>'draft','post_title'=
 $p = wp_insert_post(array('post_type'=>'portfolio','post_status'=>'publish','post_title'=>'Beach House','post_excerpt'=>'Full rewire'));
 set_post_thumbnail($p, $att);
 wp_set_password('rk-e2e-admin-password', $admin->ID);
+wp_set_password('rk-e2e-editor-password', $ed);
+wp_set_password('rk-e2e-subscriber-password', $sub);
+update_option('permalink_structure', '/%postname%/');
+flush_rewrite_rules();
 file_put_contents('/wordpress/rk-out/creds.json', json_encode($creds));
 `;
 
 export async function startPlayground({
+  pluginDir: pluginDirOverride = pluginDir,
   port = 9411,
   allowedOrigins = "https://editor.example.com",
   revalidate = null,
@@ -85,7 +90,7 @@ export async function startPlayground({
       "server",
       `--port=${port}`,
       `--blueprint=${bpPath}`,
-      `--mount=${pluginDir}:/wordpress/wp-content/plugins/rk-builder`,
+      `--mount=${pluginDirOverride}:/wordpress/wp-content/plugins/rk-builder`,
       `--mount=${out}:/wordpress/rk-out`,
       "--wp=latest",
       "--php=8.3",

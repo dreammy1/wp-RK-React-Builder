@@ -51,7 +51,7 @@ export default defineConfig({
     include: [
       "client/src/**/*.test.{ts,tsx}",
       "server/**/*.test.{ts,tsx}",
-      "scripts/**/*.test.ts",
+      "scripts/**/*.test.{ts,tsx}",
     ],
     environment: "node",
   },

@@ -158,7 +158,11 @@ function rk_builder_handle_save_layout( $req ) {
 		return $commit;
 	} );
 	if ( is_wp_error( $commit ) ) { return $commit; }
-	if ( $theme_changed ) { rk_builder_revalidate( 'theme', 0, '' ); }
+	if ( $theme_changed ) {
+		rk_builder_revalidate( 'theme', 0, '' );
+		rk_builder_theme_changed();
+	}
+	// A draft save is NOT a public change: no layout_changed / cache purge here.
 	return rk_builder_save_response( $page_id, $commit );
 }
 
@@ -200,6 +204,7 @@ function rk_builder_handle_restore_revision( $req ) {
 		return rk_builder_commit_revision( $page_id, 'restore', rk_builder_canonicalize_layout( $record['layout'] ) );
 	} );
 	if ( is_wp_error( $commit ) ) { return $commit; }
+	rk_builder_layout_changed( $page_id, 'restore' );
 	return rk_builder_save_response( $page_id, $commit );
 }
 
@@ -235,6 +240,7 @@ function rk_builder_handle_publish( $req ) {
 
 	$page = get_post( $page_id );
 	rk_builder_revalidate( 'publish', $page_id, $page ? (string) $page->post_name : '' );
+	rk_builder_layout_changed( $page_id, 'publish' );
 	return rk_builder_no_store( array(
 		'ok'                => true,
 		'pageId'            => $page_id,
@@ -276,12 +282,19 @@ function rk_builder_handle_unpublish( $req ) {
 	if ( empty( $commit['noop'] ) ) {
 		$page = get_post( $page_id );
 		rk_builder_revalidate( 'unpublish', $page_id, $page ? (string) $page->post_name : '' );
+		rk_builder_layout_changed( $page_id, 'unpublish' );
 	}
 	return rk_builder_save_response( $page_id, $commit );
 }
 
 function rk_builder_handle_preview_token( $req ) {
-	return rk_builder_no_store( rk_builder_create_preview_token( (int) $req['id'] ) );
+	$page_id = (int) $req['id'];
+	$data    = rk_builder_create_preview_token( $page_id );
+	// Headless mode (external frontend) builds its own preview URL from the token; otherwise WordPress serves the preview itself.
+	if ( ! defined( 'RK_BUILDER_FRONTEND_URL' ) ) {
+		$data['url'] = rk_builder_preview_url( $page_id, $data['token'] );
+	}
+	return rk_builder_no_store( $data );
 }
 
 /* ------------------------------------------------------------------ *
@@ -340,5 +353,6 @@ function rk_builder_handle_save_theme( $req ) {
 	$theme = rk_builder_canonicalize_theme( $body );
 	rk_builder_store_theme( $theme );
 	rk_builder_revalidate( 'theme', 0, '' );
+	rk_builder_theme_changed();
 	return rk_builder_no_store( array( 'ok' => true, 'theme' => rk_builder_theme_for_output( $theme ) ) );
 }

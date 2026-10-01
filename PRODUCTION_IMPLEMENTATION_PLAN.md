@@ -3,6 +3,22 @@
 Source brief: `COMPLETE_IMPLEMENTATION_PROMPT.md`. This document records what each phase delivered, the evidence, and
 what remains outside the repository (environment work) or is deliberately deferred.
 
+## Addendum — all-in-one plugin (spec: `RK_Builder_—_Complete_All-in-One_WordPress_Plugin_.md`)
+
+Delivered: single installable ZIP (`pnpm build:plugin`, release workflow), editor bundled in the plugin and opened from wp-admin
+on WordPress cookie + REST nonce, PHP renderers for all 9 blocks with live Services/Portfolio, theme CSS variables, SEO metadata
+with SEO-plugin deference, purpose-bound preview links, cache invalidation hooks, settings screen, setup wizard, prototype-layout
+migration (dry-run first), schema-upgrade mechanism, uninstall that preserves content, diagnostics, "Open in RK Builder" actions.
+Evidence: `php wp-plugin/tests/run.php` (203 cases), `pnpm test` incl. React↔PHP render parity, and `pnpm test:all-in-one`
+(9 browser tests on real WordPress running the packaged plugin with **no Node server**: roles, edit/reorder/save/reload, axe,
+media picker, theme permission, publish → PHP page with SEO/escaping, preview + tampered token, revisions + conflict, unpublish).
+
+**Not verified here (needs your hosting):** a real cPanel/Apache shared host; PHP 7.4 execution outside CI; real cache plugins
+(only fake purge functions are tested); WordPress multisite; static-front-page + `?page=` preview edge case; minimum WordPress 5.5
+(tested against current WordPress in Playground only). Deviations from the brief: admin screen is a standalone document, not an
+enqueue inside wp-admin chrome (ADR-6); hero/CTA with an empty link render `href="#"` to stay byte-identical with the React view;
+previews live at `/?rk_preview=1&page=<id>&token=…`; there is no `languages/rk-builder.pot` yet.
+
 ## Baseline (Phase 0)
 
 Starting point: Vite SPA with a monolithic `App.tsx`, flat blocks, hard-coded page `42`, hard-coded demo content, no

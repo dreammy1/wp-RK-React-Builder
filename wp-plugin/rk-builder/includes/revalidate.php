@@ -10,7 +10,7 @@
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 
 /**
- * @param string $type    'publish' | 'unpublish' | 'theme'
+ * @param string $type    'publish' | 'unpublish' | 'theme' | 'content' (services/portfolio/media changed; empty slug = purge all)
  * @param int    $page_id 0 for theme changes
  * @param string $slug
  * @return bool Whether a request was dispatched.

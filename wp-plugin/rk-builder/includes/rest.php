@@ -182,7 +182,7 @@ function rk_builder_register_routes() {
 	register_rest_route( $ns, '/content/(?P<type>[A-Za-z0-9_-]+)', array(
 		'methods' => $GET, 'callback' => 'rk_builder_handle_content', 'permission_callback' => '__return_true',
 		'args'    => array(
-			'limit'    => array( 'type' => 'integer', 'default' => 6, 'validate_callback' => 'rk_builder_validate_content_limit' ),
+			'limit'    => array( 'type' => 'integer', 'validate_callback' => 'rk_builder_validate_content_limit' ),
 			'category' => array( 'type' => 'string', 'validate_callback' => 'rk_builder_validate_content_category' ),
 			'orderby'  => array( 'type' => 'string', 'default' => 'date', 'validate_callback' => 'rk_builder_validate_content_orderby' ),
 			'order'    => array( 'type' => 'string', 'default' => 'desc', 'validate_callback' => 'rk_builder_validate_content_order' ),

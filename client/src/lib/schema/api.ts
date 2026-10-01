@@ -10,6 +10,7 @@ export const ERROR_CODES = [
   "rk_invalid_layout",
   "rk_invalid_theme",
   "rk_revision_conflict",
+  "rk_preview_invalid",
   "rk_payload_too_large",
   "rk_server_error",
 ] as const;

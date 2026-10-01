@@ -32,6 +32,7 @@ const BY_CODE: Record<string, ApiErrorKind> = {
   rk_invalid_layout: "invalid_layout",
   rk_invalid_theme: "invalid_theme",
   rk_revision_conflict: "conflict",
+  rk_preview_invalid: "not_found",
   rk_payload_too_large: "too_large",
   rk_server_error: "server",
   // WordPress core codes that can surface before the plugin runs

@@ -5,6 +5,14 @@
 
 This file describes what is built. The original planning document is kept as an appendix at the end.
 
+## 0. Deployment shapes
+
+**All-in-one (default, v1.1):** one WordPress plugin. The React editor ships in `assets/` and opens from
+_wp-admin → RK Builder_; WordPress cookie + REST nonce authenticate; published layouts are rendered by **PHP** inside the
+active theme (or a standalone template). No Node process exists at runtime. **Headless (optional):** the Node server in
+`server/` renders the public site and/or proxies the editor, as described in the rest of this document.
+Both share the same schema, REST API and block markup (see ADR-6).
+
 ## 1. System overview
 
 ```text
@@ -52,6 +60,17 @@ _Proxy_ keeps the long-lived WordPress application password on the server; the b
 id (HttpOnly) and an in-memory CSRF token. _Nonce_ is the preferred flow when the builder can be served by WordPress
 itself: core cookie auth + `X-WP-Nonce`, per-user capabilities (`edit_post`, `publish_post`, `manage_options`).
 The plugin never rolls its own auth; it only enforces capabilities and returns stable error codes.
+
+**ADR-6 — All-in-one: PHP renders the public page; React views and PHP renderers are kept in lock-step by a parity test.**
+Hosting for most customers is cPanel/PHP only, so the plugin renders published layouts itself
+(`includes/renderer.php`, `includes/render/*`, `includes/public.php`). To keep one stylesheet (`assets/site.css`) valid for the
+canvas, the Node SSR and PHP, `scripts/render-parity.test.tsx` renders every `contracts/valid/layout-*.json` with React and
+with PHP (`wp-plugin/tests/render-cli.php`) and requires identical HTML apart from the added `rk-block rk-block-<type>` classes
+and `data-rk-block` attributes. Escaping is done by the plugin's own `rk_builder_h()` (React-compatible), `the_content` is
+replaced after shortcodes run so layout text can never execute one, and password-protected pages are skipped. The admin screen
+is a bare full-page document served from `load-<hook>` rather than an enqueue inside wp-admin chrome, because the editor's CSS
+contains global resets (deliberate deviation from the original brief). Previews are served from `template_redirect` without
+`wp_head()` so SEO plugins cannot inject home-page tags; an invalid token is a real 404 and never falls back to published content.
 
 **ADR-3 — One canonical document, validated at every boundary.**
 `{version: 1, blocks: [{id, type, props}]}` plus a versioned theme. Zod schemas (`client/src/lib/schema`,

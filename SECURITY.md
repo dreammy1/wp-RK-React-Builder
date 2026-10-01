@@ -35,6 +35,19 @@ credentials.
 | Browser hardening                       | Strict CSP (nonce'd styles on public pages, `default-src 'none'`), `nosniff`, `frame-ancestors 'none'`, `Referrer-Policy`, `Permissions-Policy`, HSTS on https                                                                | `app.test.tsx`, Playwright                                    |
 | Proxy cannot be used as an open relay   | Fixed allow-list of method+path regexes; only `rk/v1/...`; redirects refused; 15 s timeout                                                                                                                                    | `app.test.tsx`                                                |
 
+### Additional controls in the all-in-one plugin
+
+| Requirement                                     | Enforcement                                                                                                                                                              | Verified by                                                |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------- |
+| Output escaping in PHP                          | Every prop is escaped (React-compatible `rk_builder_h`), hrefs pass the safe-link rule then `esc_url_raw`; text is never HTML; stored data is re-validated before render | PHP `RenderTest` (XSS payloads in every prop), parity test |
+| Layout text cannot run shortcodes               | `the_content` replacement runs after shortcode expansion; password-protected pages skipped                                                                               | PHP tests                                                  |
+| Theme values reach CSS only as validated tokens | Hex colours and the 3 font stacks; malicious stored theme falls back                                                                                                     | PHP tests                                                  |
+| Preview tokens                                  | HMAC (purpose-bound), constant-time compare, 15-min default, `noindex`, `no-store`, `DONOTCACHEPAGE`, invalid ⇒ 404 never published content                              | PHP, real-WP E2E (tampered token)                          |
+| Admin screen                                    | `edit_pages`; nonce only printed to permitted logged-in users; subscribers refused                                                                                       | PHP `AdminTest`, real-WP E2E (subscriber)                  |
+| Settings/migration/purge/diagnostics actions    | `manage_options` + nonce on every admin-post handler; diagnostics export has no secrets                                                                                  | PHP `SettingsTest`/`SetupTest`/`MigrationTest`             |
+| Migration cannot destroy data                   | Dry run default; never deletes `_rk_layout`; never touches published snapshot/status; skips existing drafts unless told                                                  | PHP `MigrationTest`                                        |
+| Uninstall preserves content by default          | Opt-in constant/setting to purge builder data only; pages/CPT/media never deleted                                                                                        | PHP `SetupTest`                                            |
+
 ## Known limits (be aware, not hidden)
 
 - **Proxy mode uses one WordPress identity.** All editors who know the builder password act as the application-password

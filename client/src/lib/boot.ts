@@ -6,6 +6,11 @@ export type BuilderBoot = {
   publicSiteUrl?: string;
   /** wp-admin URL of the builder screen, e.g. https://cms.example/wp-admin/admin.php?page=rk-builder */
   adminUrl?: string;
+  currentUser?: {
+    id: number;
+    name: string;
+    capabilities: { manageTheme: boolean; publish: boolean };
+  };
 };
 
 declare global {

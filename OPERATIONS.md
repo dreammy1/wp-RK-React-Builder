@@ -21,7 +21,21 @@ logged), Prometheus text on `GET /metrics` (Bearer `METRICS_TOKEN`), optional Se
 Suggested alerts: 503 ratio > 1 % for 5 min; `rk_auth_failures_total{reason="bad_password"}` spike; sustained
 `code="unreachable"` on the proxy; `rk_revalidate_total{result="denied"}` > 0 (secret mismatch).
 
-## Caching behaviour
+## All-in-one plugin operations
+
+- **Settings → RK Builder** holds configuration (rendering mode, image hosts, preview lifetime, revisions kept, default grid size,
+  cache purging, uninstall behaviour). Constants in `wp-config.php` and filters keep priority over stored settings.
+- **Diagnostics** shows plugin/PHP/WordPress versions, REST status, permalinks, last migration and the last public render error
+  (time, page id, code — no content). **Export diagnostics** produces JSON with no secrets.
+- **Logs:** `rk_builder_log()` writes safe metadata via `error_log`, gated by the `rk_builder_log_level` filter (default `warning`);
+  nonces, tokens, passwords and layout bodies are never logged.
+- **Cache:** publish/unpublish/restore/theme/Service/Portfolio/media changes purge public caches (WP Super Cache, W3 Total Cache,
+  LiteSpeed, WP Rocket, `clean_post_cache`, and the `rk_builder_public_cache_purge` action for hosts/CDNs). Use _Purge public cache
+  now_ after manual DB edits. Output is correct with no cache plugin; purge failures never block a save.
+- **Backups:** layouts live in post meta, revisions in `_rk_revisions`, theme and settings in options — a standard WordPress
+  database backup covers everything; media are in `uploads`.
+
+## Caching behaviour (headless Node server)
 
 Public page data is cached in-process for `PUBLIC_CACHE_TTL_SECONDS` and may be served **stale for up to 1 h if
 WordPress is failing** (`X-RK-Stale: 1`). It is purged by (a) the proxy after publish/unpublish/restore/theme, (b)

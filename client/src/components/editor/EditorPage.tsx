@@ -19,6 +19,7 @@ import { api } from "@/lib/api/builder";
 import { getApiConfig } from "@/lib/api/http";
 import { describeError } from "@/lib/api/errors";
 import { pageHref } from "@/lib/router";
+import { previewUrl } from "@/lib/previewUrl";
 import { useEditorSession } from "@/lib/editor/useEditorSession";
 import { STATUS_LABEL, STATUS_TONE } from "@/lib/editor/saveStatus";
 import { themeToCssVars } from "@/lib/schema/theme";
@@ -114,12 +115,9 @@ export function EditorPage({
     if (s.dirty && !(await s.save())) return;
     try {
       const t = await api.previewToken(pageId);
-      const base = api.publicSiteUrl().replace(/\/$/, "");
-      window.open(
-        `${base}/preview/${encodeURIComponent(s.page?.slug ?? "")}?token=${encodeURIComponent(t.token)}`,
-        "_blank",
-        "noopener"
-      );
+      const url = previewUrl(t, api.publicSiteUrl(), s.page?.slug ?? "");
+      if (!url) throw new Error("no preview url");
+      window.open(url, "_blank", "noopener");
     } catch (e) {
       setPreviewError(describeError(e));
     }

@@ -1,0 +1,36 @@
+name: Release plugin
+
+# Push a tag like v1.1.0 → builds the installable ZIP and attaches it to a GitHub release.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm verify
+      - run: pnpm build:plugin
+      - name: Tag must match the plugin version
+        run: |
+          v=$(grep -oP "RK_BUILDER_VERSION', '\K[^']+" wp-plugin/rk-builder/rk-builder.php)
+          [ "v$v" = "${GITHUB_REF_NAME}" ] || { echo "::error::tag ${GITHUB_REF_NAME} != plugin version v$v"; exit 1; }
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp dist/rk-builder-all-in-one.zip "rk-builder-all-in-one-${GITHUB_REF_NAME}.zip"
+          gh release create "$GITHUB_REF_NAME" "rk-builder-all-in-one-${GITHUB_REF_NAME}.zip" --generate-notes --title "RK Builder ${GITHUB_REF_NAME}"
