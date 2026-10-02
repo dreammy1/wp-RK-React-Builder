@@ -525,6 +525,9 @@ export const ContentType = z.object({
   hasArchive: z.boolean(),
   rewrite: z.string(),
   builtin: z.boolean(),
+  schema: z.enum(["WebPage", "Article", "Service"]),
+  archiveTitle: z.string(),
+  archiveDescription: z.string(),
   taxonomies: z.array(
     z.object({
       slug: z.string(),
@@ -587,6 +590,12 @@ export const Entry = z.object({
   fields: z.record(z.string(), z.unknown()),
   link: z.string(),
   modified: z.string(),
+  seo: z.object({
+    title: z.string(),
+    description: z.string(),
+    image: z.string(),
+    noindex: z.boolean(),
+  }),
 });
 export type Entry = z.infer<typeof Entry>;
 export const EntryResponse = z.object({ entry: Entry });

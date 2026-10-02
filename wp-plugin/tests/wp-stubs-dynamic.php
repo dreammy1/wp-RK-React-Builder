@@ -91,4 +91,5 @@ if ( ! function_exists( 'post_type_exists' ) ) {
 	function is_category() { return false; }
 	function is_tag() { return false; }
 	function is_home() { return ! empty( $GLOBALS['RK']['q']['home'] ); }
+	function get_post_type_archive_link( $t ) { return home_url( '/' . $t . 's/' ); }
 }

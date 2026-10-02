@@ -389,29 +389,9 @@ function rk_builder_dyn_enqueue() {
 	if ( function_exists( 'rk_builder_viz_enqueue' ) ) { rk_builder_viz_enqueue( $req['tpl']['layout'] ); }
 }
 
-/** Search/social tags for a templated entry (the pages' own SEO output only covers pages). */
-function rk_builder_dyn_print_head() {
-	$req = rk_builder_dyn_request();
-	if ( ! $req || 'single' !== $req['kind'] || ! rk_builder_seo_owns_output() ) { return; }
-	$post  = $req['post'];
-	$image = rk_builder_featured_image( $post->ID );
-	if ( ! $image ) {
-		$org   = rk_builder_seo_organization();
-		$image = isset( $org['defaultImage'] ) ? array( 'url' => $org['defaultImage'] ) : null;
-	}
-	$d = array(
-		'title' => rk_builder_plain( get_the_title( $post ) ), 'description' => trim( preg_replace( '/\s+/u', ' ', rk_builder_excerpt( $post ) ) ),
-		'canonical' => rk_builder_absolute_url( (string) get_permalink( $post->ID ) ), 'image' => $image ? rk_builder_absolute_url( $image['url'] ) : '',
-		'site_name' => (string) get_bloginfo( 'name' ), 'locale' => (string) get_locale(),
-	);
-	remove_action( 'wp_head', 'rel_canonical' );
-	echo rk_builder_seo_head_html( $d ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped per value
-}
-
 function rk_builder_register_template_hooks() {
 	add_action( 'init', 'rk_builder_register_template_type' );
 	add_filter( 'template_include', 'rk_builder_dyn_template_include', 98 );
 	add_action( 'wp_enqueue_scripts', 'rk_builder_dyn_enqueue' );
-	add_action( 'wp_head', 'rk_builder_dyn_print_head', 1 );
 }
 rk_builder_register_template_hooks();

@@ -18,7 +18,9 @@ import type {
   EntryMedia,
   EntryRow,
 } from "@/lib/schema/api";
+import { getBoot } from "@/lib/boot";
 import { MediaPicker } from "../editor/MediaPicker";
+import { ImageField } from "./ImageField";
 import { fmtWhen } from "./Overview";
 import { FieldInput, blankValue, toPayload } from "./EntryFields";
 
@@ -33,6 +35,7 @@ type Draft = {
   terms: Record<string, string[]>;
   fields: Record<string, unknown>;
   link: string;
+  seo: Entry["seo"];
 };
 
 const blankDraft = (t: ContentType): Draft => ({
@@ -46,6 +49,7 @@ const blankDraft = (t: ContentType): Draft => ({
   terms: {},
   fields: Object.fromEntries(t.fields.map(f => [f.key, blankValue(f)])),
   link: "",
+  seo: { title: "", description: "", image: "", noindex: false },
 });
 
 const fromEntry = (t: ContentType, e: Entry): Draft => ({
@@ -62,6 +66,7 @@ const fromEntry = (t: ContentType, e: Entry): Draft => ({
     ...e.fields,
   },
   link: e.link,
+  seo: e.seo,
 });
 
 function TermsInput({
@@ -135,6 +140,95 @@ function TermsInput({
   );
 }
 
+function EntrySeo({
+  d,
+  onChange,
+}: {
+  d: Draft;
+  onChange: (seo: Draft["seo"]) => void;
+}) {
+  const s = d.seo;
+  const set = (p: Partial<Draft["seo"]>) => onChange({ ...s, ...p });
+  const title = s.title.trim() || d.title;
+  const desc = s.description.trim() || d.excerpt.trim();
+  const host = (d.link || getBoot()?.publicSiteUrl || "").replace(
+    /^https?:\/\//,
+    ""
+  );
+  const checks: [boolean, string][] = [
+    [title.length >= 15 && title.length <= 60, "Title is 15–60 characters"],
+    [
+      desc.length >= 70 && desc.length <= 160,
+      "Description is 70–160 characters",
+    ],
+    [Boolean(s.image || d.image), "Has a sharing image"],
+  ];
+  return (
+    <section className="dash-card entry-seo">
+      <h2>Search &amp; sharing</h2>
+      <div className="serp" aria-label="Search result preview">
+        <span className="serp-url">{host}</span>
+        <strong className="serp-title">{title || "Untitled"}</strong>
+        <span className="serp-desc">
+          {desc ||
+            "No description yet. Search engines will pick a snippet from the page."}
+        </span>
+      </div>
+      <div className="field">
+        <label htmlFor="en-seo-title">
+          <span>Search title</span>
+        </label>
+        <input
+          id="en-seo-title"
+          maxLength={200}
+          value={s.title}
+          placeholder={d.title}
+          onChange={e => set({ title: e.target.value })}
+        />
+        <small className="muted">{s.title.length}/60 recommended</small>
+      </div>
+      <div className="field">
+        <label htmlFor="en-seo-desc">
+          <span>Search description</span>
+        </label>
+        <textarea
+          id="en-seo-desc"
+          rows={3}
+          maxLength={400}
+          value={s.description}
+          placeholder={d.excerpt}
+          onChange={e => set({ description: e.target.value })}
+        />
+        <small className="muted">{s.description.length}/160 recommended</small>
+      </div>
+      <ImageField
+        id="en-seo-img"
+        label="Social sharing image"
+        value={s.image}
+        onChange={image => set({ image })}
+        help="Leave empty to use the featured image, then the site default."
+      />
+      <div className="field check">
+        <label>
+          <input
+            type="checkbox"
+            checked={s.noindex}
+            onChange={e => set({ noindex: e.target.checked })}
+          />{" "}
+          <span>Hide from search engines (noindex)</span>
+        </label>
+      </div>
+      <ul className="seo-checks" aria-label="Search checklist">
+        {checks.map(([ok, label]) => (
+          <li key={label} className={ok ? "ok" : ""}>
+            <span aria-hidden="true">{ok ? "✓" : "•"}</span> {label}
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 function EntryEditor({
   type,
   start,
@@ -167,6 +261,7 @@ function EntryEditor({
       content: d.content,
       image: d.image?.id ?? 0,
       terms: d.terms,
+      seo: d.seo,
       fields: Object.fromEntries(
         type.fields.map(f => [f.key, toPayload(f, d.fields[f.key])])
       ),
@@ -365,6 +460,7 @@ function EntryEditor({
               )}
             </section>
           )}
+          <EntrySeo d={d} onChange={seo => set({ seo })} />
           {(type.taxonomyTerms ?? []).map(tax => (
             <section className="dash-card" key={tax.slug}>
               <TermsInput

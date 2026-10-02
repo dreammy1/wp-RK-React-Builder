@@ -583,3 +583,89 @@ rk_test( 'transfer: types and templates come with the pages even without the the
 	t_assert( false !== strpos( $r['templates']['skipped'][0]['issues'][0], 'ghost' ) );
 	t_eq( $r['entries']['included'], 0, 'entries need the content option' );
 } );
+
+/* ---------------- search and schema for entries ---------------- */
+
+rk_test( 'entry SEO: saved with the entry, read back, partial saves keep it, bad values are cleaned', function () {
+	rk_dyn_types();
+	$e = rk_dyn_entry( 'Maple', array(), array( 'seo' => array( 'title' => '  Maple <b>House</b> for sale ', 'description' => 'A lovely house.', 'image' => 'https://cms.example.com/u/a.jpg', 'noindex' => true ) ) );
+	t_deep( $e['seo'], array( 'title' => 'Maple House for sale', 'description' => 'A lovely house.', 'image' => 'https://cms.example.com/u/a.jpg', 'noindex' => true ) );
+	$u = t_ok( rk_post( '/rk/v1/builder/entry/' . $e['id'], array( 'title' => 'Maple 2' ) ) )['entry'];
+	t_eq( $u['seo']['title'], 'Maple House for sale', 'an update without seo keeps it' );
+	$c = t_ok( rk_post( '/rk/v1/builder/entry/' . $e['id'], array( 'seo' => array( 'title' => '', 'description' => 'New', 'image' => 'javascript:alert(1)', 'noindex' => false ) ) ) )['entry'];
+	t_deep( $c['seo'], array( 'title' => '', 'description' => 'New', 'image' => '', 'noindex' => false ) );
+	t_eq( rk_dyn_entry( 'Plain' )['seo']['noindex'], false );
+} );
+
+rk_test( 'entry SEO: tags, title, robots and schema for a templated entry', function () {
+	rk_dyn_types();
+	$def = rk_dyn_def();
+	$def['schema'] = 'Article';
+	t_ok( rk_post( '/rk/v1/builder/types', array( 'types' => array( $def ) ) ) );
+	rk_builder_dyn_register_types();
+	$e = rk_dyn_entry( 'Maple House', array(), array( 'excerpt' => 'Nice place', 'image' => 802, 'seo' => array( 'title' => 'Buy Maple House', 'description' => 'Custom text' ) ) );
+	$post = get_post( $e['id'] );
+	$post->post_status = 'publish';
+	$bare = rk_dyn_entry( 'Bare House', array(), array( 'excerpt' => str_repeat( 'long words here ', 30 ) ) );
+	rk_builder_dyn_request( array( 'kind' => 'single', 'post' => $post, 'type' => 'listing', 'tpl' => array( 'id' => 1, 'layout' => array() ) ) );
+	$d = rk_builder_dyn_seo_data();
+	t_eq( $d['title'], 'Buy Maple House' );
+	t_eq( $d['description'], 'Custom text' );
+	t_eq( $d['image'], 'https://cms.example.com/u/b.jpg', 'falls back to the featured image' );
+	t_assert( false !== strpos( $d['canonical'], '/maple' ) || '' !== $d['canonical'] );
+	$parts = rk_builder_dyn_seo_title_parts( array( 'title' => 'Maple House', 'site' => 'My Site' ) );
+	t_eq( $parts['title'], 'Buy Maple House' );
+	t_eq( rk_builder_dyn_seo_separator( '-' ), '|', 'a custom search title reads "Title | Site" like pages' );
+	$g = rk_builder_dyn_seo_graph( $d );
+	$types = array_map( function ( $n ) { return $n['@type']; }, $g['@graph'] );
+	foreach ( array( 'Organization', 'WebSite', 'WebPage', 'Article', 'BreadcrumbList' ) as $t ) { t_assert( in_array( $t, $types, true ), "graph has $t" ); }
+	$art = array_values( array_filter( $g['@graph'], function ( $n ) { return 'Article' === $n['@type']; } ) )[0];
+	t_eq( $art['headline'], 'Buy Maple House' );
+	t_assert( isset( $art['datePublished'], $art['dateModified'] ) && $art['author']['@id'] === $art['publisher']['@id'] );
+	$bc = array_values( array_filter( $g['@graph'], function ( $n ) { return 'BreadcrumbList' === $n['@type']; } ) )[0];
+	t_eq( array_map( function ( $i ) { return $i['name']; }, $bc['itemListElement'] ), array( 'Home', 'Listings', 'Maple House' ) );
+	// no custom text: the description is clipped from the summary, the title stays the entry's
+	rk_builder_dyn_request( array( 'kind' => 'single', 'post' => get_post( $bare['id'] ), 'type' => 'listing', 'tpl' => array( 'id' => 1, 'layout' => array() ) ) );
+	$b = rk_builder_dyn_seo_data();
+	t_assert( rk_builder_strlen( $b['description'] ) <= 160 && '…' === rk_builder_substr( $b['description'], -1, 1 ), 'clipped with an ellipsis' );
+	t_eq( $b['title'], 'Bare House' );
+	t_eq( rk_builder_dyn_seo_separator( '-' ), '-', 'no custom title: WordPress keeps its separator' );
+	// Service type
+	$def['schema'] = 'Service';
+	t_ok( rk_post( '/rk/v1/builder/types', array( 'types' => array( $def ) ) ) );
+	$g2 = rk_builder_dyn_seo_graph( rk_builder_dyn_seo_data() );
+	t_assert( in_array( 'Service', array_map( function ( $n ) { return $n['@type']; }, $g2['@graph'] ), true ) && ! in_array( 'Article', array_map( function ( $n ) { return $n['@type']; }, $g2['@graph'] ), true ) );
+	// noindex: robots and no schema
+	rk_dyn_entry( 'Hidden', array(), array( 'seo' => array( 'noindex' => true ) ) );
+	$hidden = get_post( array_values( array_filter( array_keys( $GLOBALS['RK']['posts'] ), function ( $id ) { return 'Hidden' === $GLOBALS['RK']['posts'][ $id ]->post_title; } ) )[0] );
+	rk_builder_dyn_request( array( 'kind' => 'single', 'post' => $hidden, 'type' => 'listing', 'tpl' => array( 'id' => 1, 'layout' => array() ) ) );
+	$r = rk_builder_dyn_seo_robots( array( 'max-image-preview' => 'large' ) );
+	t_assert( ! empty( $r['noindex'] ) && ! isset( $r['max-image-preview'] ) );
+	ob_start(); rk_builder_dyn_seo_print_schema(); t_eq( ob_get_clean(), '', 'a noindex entry carries no schema' );
+	rk_builder_dyn_request( 'reset' );
+	t_eq( rk_builder_dyn_seo_data(), null, 'nothing outside a templated request' );
+} );
+
+rk_test( 'listing SEO: the type\'s archive title and description, collection schema; settings validated', function () {
+	rk_dyn_boot();
+	rk_test_login( 'admin' );
+	$def = rk_dyn_def();
+	$def['archiveTitle'] = 'Homes for sale in Peoria';
+	$def['archiveDescription'] = 'Browse our current listings.';
+	$def['schema'] = 'Nope';
+	$saved = t_ok( rk_post( '/rk/v1/builder/types', array( 'types' => array( $def ) ) ) );
+	$t = array_values( array_filter( $saved['types'], function ( $x ) { return 'listing' === $x['slug']; } ) )[0];
+	t_eq( $t['schema'], 'WebPage', 'an unknown schema type falls back' );
+	t_eq( $t['archiveTitle'], 'Homes for sale in Peoria' );
+	rk_builder_dyn_register_types();
+	rk_builder_dyn_request( array( 'kind' => 'archive', 'post' => null, 'type' => 'listing', 'taxonomy' => '', 'term' => null, 'tpl' => array( 'id' => 1, 'layout' => array() ) ) );
+	$d = rk_builder_dyn_seo_data();
+	t_eq( $d['title'], 'Homes for sale in Peoria' );
+	t_eq( $d['description'], 'Browse our current listings.' );
+	$parts = rk_builder_dyn_seo_title_parts( array( 'title' => 'Listings' ) );
+	t_eq( $parts['title'], 'Homes for sale in Peoria' );
+	t_eq( rk_builder_dyn_seo_separator( '-' ), '|' );
+	$g = rk_builder_dyn_seo_graph( $d );
+	t_assert( in_array( 'CollectionPage', array_map( function ( $n ) { return $n['@type']; }, $g['@graph'] ), true ) );
+	rk_builder_dyn_request( 'reset' );
+} );

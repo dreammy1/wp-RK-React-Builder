@@ -741,6 +741,38 @@ test("13 · theme builder: content type with fields, entries, templates; single,
   expect(await page.content()).toContain('property="og:title"');
   expect(await page.title()).toContain("Maple House");
 
+  // 4b · search and schema for the entry and for the listing
+  await page.goto(builderUrl());
+  await j(`builder/entry/${first.id}`, {
+    seo: {
+      title: "Maple House for sale in Peoria",
+      description: "Custom search text for the Maple House.",
+      noindex: false,
+    },
+  });
+  await page.goto(first.link);
+  expect(await page.title()).toContain("Maple House for sale in Peoria");
+  await expect(page.locator('meta[name="description"]')).toHaveAttribute(
+    "content",
+    "Custom search text for the Maple House."
+  );
+  const ld = JSON.parse(
+    (await page
+      .locator('script[type="application/ld+json"]')
+      .first()
+      .textContent()) ?? "{}"
+  );
+  const kinds = (ld["@graph"] as { "@type": string }[]).map(n => n["@type"]);
+  expect(kinds).toEqual(
+    expect.arrayContaining(["Organization", "WebPage", "BreadcrumbList"])
+  );
+  await page.goto(builderUrl());
+  await j(`builder/entry/${first.id}`, { seo: { noindex: true } });
+  const hidden = await (await page.request.get(first.link)).text();
+  expect(hidden).toContain("noindex");
+  expect(hidden).not.toContain("application/ld+json");
+  await j(`builder/entry/${first.id}`, { seo: { noindex: false } });
+
   // 5 · the listing page: filters, search and page numbers
   const origin = new URL(first.link).origin;
   await page.goto(`${origin}/?post_type=listing`);
@@ -809,7 +841,7 @@ test("13 · theme builder: content type with fields, entries, templates; single,
   await page.getByRole("tab", { name: /Listings/ }).click();
   await expect(page.getByText("Maple House").first()).toBeVisible();
   await page.getByRole("button", { name: "Edit" }).first().click();
-  await expect(page.getByLabel("Title")).toBeVisible();
+  await expect(page.getByLabel("Title", { exact: true })).toBeVisible();
   await expect(page.getByText("Photos", { exact: true }).first()).toBeVisible();
   await expect(page.getByRole("button", { name: "Add row" })).toBeVisible();
 

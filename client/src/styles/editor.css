@@ -2925,3 +2925,19 @@ button.stat-card:hover {
     flex-wrap: wrap;
   }
 }
+
+.seo-checks {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+  font-size: 12px;
+  color: #a3aeb4;
+}
+.seo-checks li.ok {
+  color: #c7f36b;
+}
+.entry-seo .image-field {
+  grid-template-columns: 1fr;
+}

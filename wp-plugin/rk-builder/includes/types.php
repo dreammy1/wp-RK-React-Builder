@@ -78,6 +78,7 @@ function rk_builder_dyn_builtin_def( $slug ) {
 	return array(
 		'slug' => $slug, 'singular' => isset( $l['singular_name'] ) ? (string) $l['singular_name'] : ucfirst( $slug ), 'plural' => isset( $l['name'] ) ? (string) $l['name'] : ucfirst( $slug ) . 's',
 		'icon' => '', 'supports' => rk_builder_dyn_supports_all(), 'public' => true, 'hasArchive' => true, 'rewrite' => '', 'taxonomies' => array(), 'fields' => array(), 'builtin' => true,
+		'schema' => 'WebPage', 'archiveTitle' => '', 'archiveDescription' => '',
 	);
 }
 
@@ -206,6 +207,9 @@ function rk_builder_dyn_clean_type( $t, $path, array &$issues ) {
 		'public' => ! array_key_exists( 'public', $t ) || ! empty( $t['public'] ),
 		'hasArchive' => ! array_key_exists( 'hasArchive', $t ) || ! empty( $t['hasArchive'] ),
 		'rewrite' => $rewrite, 'taxonomies' => array(), 'fields' => array(), 'builtin' => $builtin,
+		'schema' => isset( $t['schema'] ) && is_string( $t['schema'] ) && in_array( $t['schema'], array( 'WebPage', 'Article', 'Service' ), true ) ? $t['schema'] : 'WebPage',
+		'archiveTitle' => rk_builder_dyn_clean_str( isset( $t['archiveTitle'] ) ? $t['archiveTitle'] : '', 70 ),
+		'archiveDescription' => rk_builder_dyn_clean_str( isset( $t['archiveDescription'] ) ? $t['archiveDescription'] : '', 300 ),
 	);
 	if ( ! $builtin ) {
 		$taxes = isset( $t['taxonomies'] ) && is_array( $t['taxonomies'] ) ? array_values( $t['taxonomies'] ) : array();
@@ -487,7 +491,14 @@ function rk_builder_dyn_entry( $post ) {
 		'status' => (string) $post->post_status, 'excerpt' => (string) $post->post_excerpt, 'content' => (string) $post->post_content,
 		'image' => rk_builder_dyn_thumb( $post->ID ), 'menuOrder' => (int) $post->menu_order, 'terms' => $terms, 'fields' => $fields,
 		'link' => (string) get_permalink( $post->ID ), 'modified' => rk_builder_mysql_gmt_to_iso( $post->post_modified_gmt ),
+		'seo' => rk_builder_dyn_seo_out( $post->ID ),
 	);
+}
+
+/** The four search / sharing fields of an entry, always all present. */
+function rk_builder_dyn_seo_out( $id ) {
+	$s = rk_builder_seo_read( (int) $id );
+	return array( 'title' => isset( $s['title'] ) ? $s['title'] : '', 'description' => isset( $s['description'] ) ? $s['description'] : '', 'image' => isset( $s['image'] ) ? $s['image'] : '', 'noindex' => ! empty( $s['noindex'] ) );
 }
 
 function rk_builder_dyn_thumb( $post_id ) {
@@ -596,7 +607,7 @@ function rk_builder_dyn_save_entry( $req, $type, $post_id ) {
 	if ( ! $def ) { return rk_builder_not_found( 'Unknown content type.' ); }
 	$issues = array();
 	foreach ( $body as $k => $_ ) {
-		if ( ! in_array( (string) $k, array( 'title', 'slug', 'status', 'excerpt', 'content', 'image', 'menuOrder', 'terms', 'fields' ), true ) ) { rk_builder_add_issue( $issues, (string) $k, 'Unrecognized key "' . $k . '"' ); }
+		if ( ! in_array( (string) $k, array( 'title', 'slug', 'status', 'excerpt', 'content', 'image', 'menuOrder', 'terms', 'fields', 'seo' ), true ) ) { rk_builder_add_issue( $issues, (string) $k, 'Unrecognized key "' . $k . '"' ); }
 	}
 	$create = 0 === $post_id;
 	$title  = isset( $body['title'] ) && is_string( $body['title'] ) ? trim( sanitize_text_field( $body['title'] ) ) : null;
@@ -652,6 +663,12 @@ function rk_builder_dyn_save_entry( $req, $type, $post_id ) {
 	foreach ( $values as $pair ) { rk_builder_dyn_store( $id, $pair[0], $pair[1] ); }
 	if ( null !== $image ) {
 		if ( $image > 0 ) { set_post_thumbnail( $id, $image ); } else { delete_post_thumbnail( $id ); }
+	}
+	if ( isset( $body['seo'] ) && is_array( $body['seo'] ) ) {
+		$seo = rk_builder_seo_clean( array_intersect_key( $body['seo'], array_flip( array( 'title', 'description', 'image', 'noindex' ) ) ) );
+		$keep = rk_builder_seo_read( $id );
+		foreach ( array( 'service', 'parent' ) as $k ) { if ( isset( $keep[ $k ] ) ) { $seo[ $k ] = $keep[ $k ]; } }
+		rk_builder_seo_write( $id, $seo );
 	}
 	if ( isset( $body['terms'] ) && is_array( $body['terms'] ) ) {
 		$allowed = array();

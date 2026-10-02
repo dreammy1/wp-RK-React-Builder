@@ -232,9 +232,13 @@ function rk_builder_seo_setup() {
 }
 
 /** Schema.org graph (Organization, WebSite, WebPage, optional Service, BreadcrumbList), like the source site. */
-function rk_builder_seo_graph( $page, array $d ) {
+/**
+ * Organization, WebSite and (when the business has an address) LocalBusiness nodes.
+ *
+ * @return array{graph:array,ids:array{home:string,org:string,site:string}}
+ */
+function rk_builder_seo_site_nodes( array $d ) {
 	$home = home_url( '/' );
-	$url  = '' !== $d['canonical'] ? $d['canonical'] : (string) get_permalink( $page );
 	$org  = rk_builder_seo_organization();
 	$org_id = $home . '#organization';
 	$site_id = $home . '#website';
@@ -267,6 +271,16 @@ function rk_builder_seo_graph( $page, array $d ) {
 		if ( $same ) { $lb['sameAs'] = $same; }
 		$graph[] = $lb;
 	}
+	return array( 'graph' => $graph, 'ids' => array( 'home' => $home, 'org' => $org_id, 'site' => $site_id ) );
+}
+
+function rk_builder_seo_graph( $page, array $d ) {
+	$url   = '' !== $d['canonical'] ? $d['canonical'] : (string) get_permalink( $page );
+	$nodes = rk_builder_seo_site_nodes( $d );
+	$graph = $nodes['graph'];
+	$home  = $nodes['ids']['home'];
+	$org_id = $nodes['ids']['org'];
+	$site_id = $nodes['ids']['site'];
 	$wp = array( '@type' => 'WebPage', '@id' => $url . '#webpage', 'url' => $url, 'name' => $d['title'] );
 	if ( '' !== $d['description'] ) { $wp['description'] = $d['description']; }
 	$wp['isPartOf'] = array( '@id' => $site_id );

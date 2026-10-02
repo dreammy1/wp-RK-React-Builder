@@ -346,6 +346,9 @@ const newType = (): ContentType => ({
   hasArchive: true,
   rewrite: "",
   builtin: false,
+  schema: "WebPage",
+  archiveTitle: "",
+  archiveDescription: "",
   taxonomies: [],
   fields: [],
 });
@@ -714,6 +717,67 @@ export function TypesSection({
                 </button>
               </section>
             )}
+            <section className="dash-card">
+              <h2>Search &amp; schema</h2>
+              <p className="muted">
+                How these pages appear in Google. Each entry also has its own
+                search title, description and image under Content.
+              </p>
+              <div className="field">
+                <label>
+                  <span>Structured data (schema.org) for each entry</span>
+                  <select
+                    value={t.schema}
+                    onChange={e =>
+                      edit({ schema: e.target.value as ContentType["schema"] })
+                    }
+                  >
+                    <option value="WebPage">Web page (default)</option>
+                    <option value="Article">
+                      Article (news, posts, case studies)
+                    </option>
+                    <option value="Service">Service (things you offer)</option>
+                  </select>
+                </label>
+                <small className="muted">
+                  Breadcrumbs and your business details are always included.
+                </small>
+              </div>
+              {t.public && t.hasArchive && (
+                <>
+                  <div className="field">
+                    <label>
+                      <span>Listing page title</span>
+                      <input
+                        value={t.archiveTitle}
+                        maxLength={70}
+                        placeholder={t.plural}
+                        onChange={e => edit({ archiveTitle: e.target.value })}
+                      />
+                    </label>
+                    <small className="muted">
+                      {t.archiveTitle.length}/60 recommended
+                    </small>
+                  </div>
+                  <div className="field">
+                    <label>
+                      <span>Listing page description</span>
+                      <textarea
+                        rows={3}
+                        maxLength={300}
+                        value={t.archiveDescription}
+                        onChange={e =>
+                          edit({ archiveDescription: e.target.value })
+                        }
+                      />
+                    </label>
+                    <small className="muted">
+                      {t.archiveDescription.length}/160 recommended
+                    </small>
+                  </div>
+                </>
+              )}
+            </section>
             <section className="dash-card">
               <h2>Fields</h2>
               <p className="muted">
