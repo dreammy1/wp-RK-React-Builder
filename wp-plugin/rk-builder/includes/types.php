@@ -78,7 +78,7 @@ function rk_builder_dyn_builtin_def( $slug ) {
 	return array(
 		'slug' => $slug, 'singular' => isset( $l['singular_name'] ) ? (string) $l['singular_name'] : ucfirst( $slug ), 'plural' => isset( $l['name'] ) ? (string) $l['name'] : ucfirst( $slug ) . 's',
 		'icon' => '', 'supports' => rk_builder_dyn_supports_all(), 'public' => true, 'hasArchive' => true, 'rewrite' => '', 'taxonomies' => array(), 'fields' => array(), 'builtin' => true,
-		'schema' => 'WebPage', 'archiveTitle' => '', 'archiveDescription' => '',
+		'schema' => 'post' === $slug ? 'Article' : 'WebPage', 'archiveTitle' => '', 'archiveDescription' => '',
 	);
 }
 

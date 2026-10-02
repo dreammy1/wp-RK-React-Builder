@@ -105,7 +105,7 @@ function rk_builder_seo_organization_save( $in ) {
 		if ( 'country' === $f ) { $v = strtoupper( $v ); if ( '' !== $v && 1 !== preg_match( '/^[A-Z]{2}\z/', $v ) ) { $v = ''; } }
 		if ( '' === $v ) { unset( $out[ $f ] ); } else { $out[ $f ] = rk_builder_substr( $v, 0, $max ); }
 	}
-	foreach ( array( 'logo', 'defaultImage' ) as $f ) {
+	foreach ( array( 'logo', 'defaultImage', 'favicon' ) as $f ) {
 		if ( ! array_key_exists( $f, $in ) ) { continue; }
 		$u = is_string( $in[ $f ] ) ? rk_builder_absolute_url( $in[ $f ] ) : '';
 		if ( '' === $u ) { unset( $out[ $f ] ); } else { $out[ $f ] = $u; }
@@ -345,3 +345,10 @@ function rk_builder_seo_separator( $sep ) {
 }
 
 add_action( 'wp', 'rk_builder_seo_setup' );
+
+/** The favicon chosen in Site & SEO replaces WordPress's site icon (so every page, builder or theme, carries it). */
+function rk_builder_favicon_url( $url ) {
+	$o = rk_builder_seo_organization();
+	return isset( $o['favicon'] ) && '' !== $o['favicon'] ? $o['favicon'] : $url;
+}
+add_filter( 'get_site_icon_url', 'rk_builder_favicon_url', 20 );

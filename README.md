@@ -217,6 +217,8 @@ A site bundle page can carry `seo: { title, description, image, noindex, service
 
 ## Theme engine
 
+New to themes? Read **[docs/CREATE-A-THEME.md](docs/CREATE-A-THEME.md)**: building a theme step by step, the SEO standards, the file format and a launch checklist.
+
 **Pages → Themes** turns the current site into a reusable theme package and keeps a library of them on the site (up to 12).
 
 - **Save this site as a theme**: packages every builder page, reusable block, image reference, the theme settings (colors, fonts, logo, header, footer), services and projects, and the per-page SEO. Saving again with the same name replaces that package.
@@ -267,6 +269,10 @@ Everything is in the dashboard (no wp-admin needed); the pieces are admin-only e
 - **Dynamic blocks** (offered inside templates): _Dynamic text_ (title, summary, description, dates, author, categories or any field, with label, prefix/suffix, link and fallback), _Dynamic image_, _Details list_, _Dynamic gallery_, _Repeater rows_ (list / table / cards) and the **Loop grid** (any type; filters, search, page numbers, related entries, equal-height cards, card design; also usable on ordinary pages).
 - The editor shows these blocks with the **PHP renderer's own markup** (`POST /builder/dyn/render`), so what you edit is what is published. They have no React twin; `contracts/valid/layout-dynamic.json` pins their props for both sides.
 - Visitors' filter / search / paging use `?rk_term=`, `?rk_q=` and `?rk_page=`.
+- **Header** and **Footer** templates (Templates → New template) are site-wide: one live header and one live footer replace the navbar and footer blocks of every page and template.
+- **Favicon**: Site & SEO → Favicon replaces the WordPress site icon on every page.
+- **Blog posts** use the Article schema by default: the article starter (category, H1, byline with reading time, lead image, standfirst, readable text column, related posts), a word counter with formatting buttons, a checklist (30–60 character title, 120–160 character description, 300+ words, an H2, short address) and `wordCount` in the Article structured data. The new `readtime` source ("4 min read") is available to Dynamic text and Details list.
+- In the dashboard, forms (new page, new template, rename, search & sharing, import, theme engine, image details) open as full pages with a Back link instead of pop-ups; every checkbox is a toggle switch; links carry no underline.
 - A **404 page** template (Templates → New template → 404 page) replaces the theme's "page not found" screen site-wide; the response status stays 404.
 - Themes (save / install / export / import) now carry the types, the templates (card template ids are re-linked) and the entries of custom types, with their images.
 - **Search & schema for entries:** each entry has a search title, description, social image and noindex (Content > entry > Search & sharing, with a Google preview and checklist), stored in the same `_rk_seo_*` meta as pages. Without custom text the title is the entry's and the description is clipped from its summary; the image falls back to the featured image, then the site default.

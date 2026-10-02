@@ -200,7 +200,7 @@ function rk_builder_f_slug() { return array( 't' => 'slug' ); }
 function rk_builder_f_pattern( $re, $optional = false ) { return array( 't' => 'pattern', 're' => $re, 'opt' => $optional ); }
 
 /** Data sources the dynamic blocks accept. Mirrors client/src/blocks/dynamic/schema.ts. */
-function rk_builder_dyn_source_re() { return '/^(title|excerpt|content|date|modified|author|terms:[a-z][a-z0-9_-]{0,31}|field:[a-z][a-z0-9_]{0,31})\z/'; }
+function rk_builder_dyn_source_re() { return '/^(title|excerpt|content|date|modified|readtime|author|terms:[a-z][a-z0-9_-]{0,31}|field:[a-z][a-z0-9_]{0,31})\z/'; }
 function rk_builder_dyn_image_source_re() { return '/^(featured|field:[a-z][a-z0-9_]{0,31})\z/'; }
 function rk_builder_dyn_field_source_re() { return '/^(field:[a-z][a-z0-9_]{0,31})?\z/'; }
 function rk_builder_dyn_type_re() { return '/^(current|[a-z][a-z0-9_]{0,19})\z/'; }

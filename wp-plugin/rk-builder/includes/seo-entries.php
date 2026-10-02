@@ -82,6 +82,8 @@ function rk_builder_dyn_seo_graph( array $d ) {
 		$type = $def ? $def['schema'] : 'WebPage';
 		if ( 'Article' === $type ) {
 			$a = array( '@type' => 'Article', '@id' => $url . '#article', 'headline' => rk_builder_dyn_clip( $d['title'], 110 ), 'url' => $url, 'datePublished' => get_the_date( 'c', $post ), 'dateModified' => get_the_modified_date( 'c', $post ), 'author' => array( '@id' => $org ), 'publisher' => array( '@id' => $org ), 'mainEntityOfPage' => array( '@id' => $url . '#webpage' ) );
+			$wc = function_exists( 'rk_builder_dyn_word_count' ) ? rk_builder_dyn_word_count( $post ) : 0;
+			if ( $wc > 0 ) { $a['wordCount'] = $wc; }
 			if ( '' !== $d['description'] ) { $a['description'] = $d['description']; }
 			if ( '' !== $d['image'] ) { $a['image'] = array( $d['image'] ); }
 			$graph[] = $a;

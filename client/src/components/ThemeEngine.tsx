@@ -7,7 +7,7 @@ import type {
   ThemeInstallReport,
   ThemeSummary,
 } from "@/lib/schema/api";
-import { Modal } from "./Modal";
+import { SubPage } from "./SubPage";
 import { Summary } from "./SiteTransfer";
 import { downloadJson } from "./editor/Dialogs";
 
@@ -171,9 +171,9 @@ export function ThemeEngineDialog({
   onInstalled: () => void;
 }) {
   return (
-    <Modal title="Theme engine" onClose={onClose} wide>
+    <SubPage title="Theme engine" onClose={onClose} wide>
       <ThemeEngine onInstalled={onInstalled} onClose={onClose} />
-    </Modal>
+    </SubPage>
   );
 }
 

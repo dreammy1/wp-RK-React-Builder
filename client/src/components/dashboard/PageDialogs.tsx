@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { api } from "@/lib/api/builder";
 import { describeError } from "@/lib/api/errors";
 import type { PageRow } from "@/lib/schema/api";
-import { Modal } from "../Modal";
+import { SubPage } from "../SubPage";
 import { ImageField } from "./ImageField";
 
 const slugify = (s: string) =>
@@ -61,7 +61,7 @@ export function NewPageDialog({
       });
   };
   return (
-    <Modal title="New page" onClose={onClose} dismissable={!busy}>
+    <SubPage title="New page" onClose={onClose} dismissable={!busy}>
       <div className="field">
         <label htmlFor="np-title">
           <span>Page title</span>
@@ -116,7 +116,7 @@ export function NewPageDialog({
           {busy ? "Creating…" : "Create and edit"}
         </button>
       </div>
-    </Modal>
+    </SubPage>
   );
 }
 
@@ -151,7 +151,7 @@ export function RenameDialog({
       });
   };
   return (
-    <Modal title="Rename page" onClose={onClose} dismissable={!busy}>
+    <SubPage title="Rename page" onClose={onClose} dismissable={!busy}>
       <div className="field">
         <label htmlFor="rn-title">
           <span>Page title</span>
@@ -203,7 +203,7 @@ export function RenameDialog({
           Save
         </button>
       </div>
-    </Modal>
+    </SubPage>
   );
 }
 
@@ -255,7 +255,7 @@ export function SeoDialog({
   };
   const shownTitle = f?.title.trim() || page.title;
   return (
-    <Modal
+    <SubPage
       title={`Search & sharing: ${page.title}`}
       onClose={onClose}
       wide
@@ -345,6 +345,6 @@ export function SeoDialog({
           Save
         </button>
       </div>
-    </Modal>
+    </SubPage>
   );
 }

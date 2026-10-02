@@ -174,6 +174,16 @@ rk_test( 'redirects: validated, normalized, de-duplicated, and applied', functio
 	t_eq( rk_builder_redirect_match( '/nothing' ), null );
 } );
 
+rk_test( 'favicon: saved with the site settings, replaces the WordPress site icon, unsafe addresses are dropped', function () {
+	rk_test_login( 'admin' );
+	t_eq( rk_builder_favicon_url( 'https://wp/icon.png' ), 'https://wp/icon.png', 'no favicon: WordPress decides' );
+	$r = t_ok( rk_post( '/rk/v1/builder/site', array( 'organization' => array( 'favicon' => 'https://cdn.example/fav.png' ) ) ) );
+	t_eq( $r['site']['organization']['favicon'], 'https://cdn.example/fav.png' );
+	t_eq( rk_builder_favicon_url( 'https://wp/icon.png' ), 'https://cdn.example/fav.png' );
+	t_ok( rk_post( '/rk/v1/builder/site', array( 'organization' => array( 'favicon' => 'javascript:alert(1)' ) ) ) );
+	t_eq( rk_builder_favicon_url( 'x' ), 'x', 'an unsafe address is not kept' );
+} );
+
 rk_test( 'business profile: sameAs, LocalBusiness with address, hours and areas; default social image', function () {
 	rk_test_login( 'admin' );
 	t_ok( rk_post( '/rk/v1/builder/site', array( 'organization' => array(

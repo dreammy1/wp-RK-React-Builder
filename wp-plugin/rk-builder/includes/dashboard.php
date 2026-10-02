@@ -281,7 +281,7 @@ function rk_builder_handle_set_page_seo( $req ) {
 /** Business details with every field present (strings; profiles as an object). */
 function rk_builder_org_payload( array $org ) {
 	$out = array();
-	foreach ( array( 'name', 'telephone', 'email', 'description', 'logo', 'defaultImage', 'businessType', 'street', 'city', 'region', 'postal', 'country', 'hours', 'areaServed', 'priceRange' ) as $f ) { $out[ $f ] = isset( $org[ $f ] ) ? (string) $org[ $f ] : ''; }
+	foreach ( array( 'name', 'telephone', 'email', 'description', 'logo', 'defaultImage', 'favicon', 'businessType', 'street', 'city', 'region', 'postal', 'country', 'hours', 'areaServed', 'priceRange' ) as $f ) { $out[ $f ] = isset( $org[ $f ] ) ? (string) $org[ $f ] : ''; }
 	$out['profiles'] = array();
 	foreach ( rk_builder_profile_keys() as $k ) { $out['profiles'][ $k ] = isset( $org['profiles'][ $k ] ) ? (string) $org['profiles'][ $k ] : ''; }
 	return $out;

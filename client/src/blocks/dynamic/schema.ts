@@ -3,7 +3,7 @@ import { text } from "@/lib/schema/primitives";
 
 /** Mirrors rk_builder_dyn_*_re() in includes/validation.php. */
 export const SOURCE_RE =
-  /^(title|excerpt|content|date|modified|author|terms:[a-z][a-z0-9_-]{0,31}|field:[a-z][a-z0-9_]{0,31})$/;
+  /^(title|excerpt|content|date|modified|readtime|author|terms:[a-z][a-z0-9_-]{0,31}|field:[a-z][a-z0-9_]{0,31})$/;
 export const IMAGE_SOURCE_RE = /^(featured|field:[a-z][a-z0-9_]{0,31})$/;
 export const FIELD_SOURCE_RE = /^(field:[a-z][a-z0-9_]{0,31})?$/;
 export const POST_TYPE_RE = /^(current|[a-z][a-z0-9_]{0,19})$/;

@@ -3,7 +3,7 @@ import { Copy, Upload } from "lucide-react";
 import { api } from "@/lib/api/builder";
 import { describeError } from "@/lib/api/errors";
 import type { MediaItem } from "@/lib/schema/api";
-import { Modal } from "../Modal";
+import { SubPage } from "../SubPage";
 
 export function MediaSection() {
   const [search, setSearch] = useState("");
@@ -148,7 +148,11 @@ export function MediaSection() {
       )}
 
       {open && (
-        <Modal title={open.title || "Image"} onClose={() => setOpen(null)} wide>
+        <SubPage
+          title={open.title || "Image"}
+          onClose={() => setOpen(null)}
+          wide
+        >
           <img className="media-preview" src={open.url} alt={open.alt} />
           <p className="muted">
             {open.width && open.height
@@ -187,7 +191,7 @@ export function MediaSection() {
               Open full size
             </a>
           </div>
-        </Modal>
+        </SubPage>
       )}
     </>
   );

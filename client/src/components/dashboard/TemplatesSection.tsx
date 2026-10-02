@@ -4,10 +4,20 @@ import { api } from "@/lib/api/builder";
 import { describeIssues } from "@/lib/api/errors";
 import { pageHref } from "@/lib/router";
 import type { ContentType, TemplateItem } from "@/lib/schema/api";
-import { Modal } from "../Modal";
+import { SubPage } from "../SubPage";
 import { fmtWhen } from "./Overview";
 
 const KINDS = [
+  {
+    id: "header",
+    name: "Header",
+    help: "The site's top bar (logo, menu, phone button). One live header replaces the navbar on every page and template.",
+  },
+  {
+    id: "footer",
+    name: "Footer",
+    help: "The site's footer (links, contact details, copyright). One live footer replaces the footer on every page and template.",
+  },
   {
     id: "single",
     name: "Single page",
@@ -30,6 +40,7 @@ const KINDS = [
   },
 ] as const;
 type Kind = (typeof KINDS)[number]["id"];
+const SITEWIDE: string[] = ["notfound", "header", "footer"];
 
 function NewTemplate({
   types,
@@ -55,12 +66,11 @@ function NewTemplate({
   const type = types.find(t => t.slug === postType);
   const [title, setTitle] = useState("");
   const [touched, setTouched] = useState(false);
-  const auto =
-    kind === "notfound"
-      ? "404 page"
-      : `${type?.singular ?? ""} ${KINDS.find(k => k.id === kind)!.name.toLowerCase()}`.trim();
+  const auto = SITEWIDE.includes(kind)
+    ? KINDS.find(k => k.id === kind)!.name
+    : `${type?.singular ?? ""} ${KINDS.find(k => k.id === kind)!.name.toLowerCase()}`.trim();
   return (
-    <Modal title="New template" onClose={onClose}>
+    <SubPage title="New template" onClose={onClose}>
       <fieldset className="field kind-pick">
         <legend>What are you designing?</legend>
         {KINDS.map(k => (
@@ -82,7 +92,7 @@ function NewTemplate({
           </label>
         ))}
       </fieldset>
-      {kind !== "notfound" && (
+      {!SITEWIDE.includes(kind) && (
         <div className="field">
           <label htmlFor="tpl-type">
             <span>For which content type?</span>
@@ -150,12 +160,12 @@ function NewTemplate({
         </button>
         <button
           className="save-btn"
-          disabled={busy || (kind !== "notfound" && !postType)}
+          disabled={busy || (!SITEWIDE.includes(kind) && !postType)}
           onClick={() =>
             onCreate({
               title: touched ? title : auto,
               kind,
-              postType: kind === "notfound" ? "" : postType,
+              postType: SITEWIDE.includes(kind) ? "" : postType,
               taxonomy,
             })
           }
@@ -163,7 +173,7 @@ function NewTemplate({
           Create and design
         </button>
       </div>
-    </Modal>
+    </SubPage>
   );
 }
 
@@ -269,7 +279,7 @@ export function TemplatesSection({
                       </button>
                       <div className="dash-page-meta">
                         <span>
-                          {k.id === "notfound"
+                          {SITEWIDE.includes(k.id)
                             ? "Whole site"
                             : typeName(t.postType)}
                           {t.taxonomy ? ` · by ${t.taxonomy}` : ""}

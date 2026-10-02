@@ -507,7 +507,7 @@ test("11 · site export, then import: drafts only, media re-used, stale attachme
   await page.getByRole("button", { name: "Import site" }).click();
   await page.getByLabel("Export file (.json)").setInputFiles(file);
   await page.getByRole("button", { name: "Check file" }).click();
-  const dialog = page.getByRole("dialog");
+  const dialog = page.getByRole("region", { name: "Import site" });
   await expect(dialog.getByText("This is what will happen")).toBeVisible({
     timeout: 20_000,
   });

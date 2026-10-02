@@ -30,6 +30,7 @@ const BASE_SCALARS = [
   { value: "content", label: "Description" },
   { value: "date", label: "Published date" },
   { value: "modified", label: "Updated date" },
+  { value: "readtime", label: "Reading time" },
   { value: "author", label: "Author" },
 ];
 

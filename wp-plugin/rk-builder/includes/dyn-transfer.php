@@ -204,7 +204,7 @@ function rk_builder_dyn_import_templates_apply( array $list, array $maps, array 
 	$ids     = array();
 	// Pass 1: make sure every template exists, so card templates have ids before layouts refer to them.
 	foreach ( $list as $t ) {
-		if ( 'notfound' !== $t['kind'] && null === rk_builder_dyn_type( $t['postType'] ) ) {
+		if ( ! rk_builder_tpl_sitewide( $t['kind'] ) && null === rk_builder_dyn_type( $t['postType'] ) ) {
 			$report['templates']['skipped'][] = array( 'slug' => $t['slug'], 'issues' => array( 'Its content type "' . $t['postType'] . '" is not on this site.' ) );
 			continue;
 		}

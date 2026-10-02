@@ -3,7 +3,7 @@ import { Download, Upload } from "lucide-react";
 import { api } from "@/lib/api/builder";
 import { describeError } from "@/lib/api/errors";
 import type { SiteImportOptions, SiteImportReport } from "@/lib/schema/api";
-import { Modal } from "./Modal";
+import { SubPage } from "./SubPage";
 import { downloadJson } from "./editor/Dialogs";
 
 const MAX_FILE = 8 * 1024 * 1024;
@@ -186,7 +186,7 @@ export function ImportSiteDialog({
 
   const busy = phase.kind === "checking" || phase.kind === "importing";
   return (
-    <Modal title="Import site" onClose={onClose} wide dismissable={!busy}>
+    <SubPage title="Import site" onClose={onClose} wide dismissable={!busy}>
       <p className="muted">
         Import an export from RK Builder. Pages arrive as{" "}
         <strong>drafts</strong> (matching slugs are updated; live pages stay
@@ -276,6 +276,6 @@ export function ImportSiteDialog({
         </button>
       </div>
       <span hidden>{fileName}</span>
-    </Modal>
+    </SubPage>
   );
 }

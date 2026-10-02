@@ -1666,7 +1666,7 @@ select {
   }
 }
 
-/* ---- Checkboxes as toggle switches ---- */
+/* ---- Every checkbox is a toggle switch ---- */
 .field.check label {
   display: flex;
   align-items: center;
@@ -1681,11 +1681,10 @@ select {
   margin: 0;
   text-align: left;
 }
-.field.check input[type="checkbox"] {
+input[type="checkbox"] {
   appearance: none;
   -webkit-appearance: none;
   flex: none;
-  order: 2;
   position: relative;
   width: 42px;
   height: 24px;
@@ -1698,7 +1697,7 @@ select {
     background 0.18s ease-out,
     border-color 0.18s ease-out;
 }
-.field.check input[type="checkbox"]::after {
+input[type="checkbox"]::after {
   content: "";
   position: absolute;
   top: 2px;
@@ -1711,29 +1710,32 @@ select {
     transform 0.18s ease-out,
     background 0.18s ease-out;
 }
-.field.check input[type="checkbox"]:checked {
+input[type="checkbox"]:checked {
   background: #c7f36b;
   border-color: #c7f36b;
 }
-.field.check input[type="checkbox"]:checked::after {
+input[type="checkbox"]:checked::after {
   transform: translateX(18px);
   background: #15200f;
 }
-.field.check input[type="checkbox"]:focus-visible {
+input[type="checkbox"]:focus-visible {
   outline: 2px solid #c7f36b;
   outline-offset: 2px;
 }
-.field.check input[type="checkbox"]:disabled {
+input[type="checkbox"]:disabled {
   opacity: 0.45;
   cursor: not-allowed;
 }
 @media (prefers-reduced-motion: reduce) {
-  .field.check input[type="checkbox"],
-  .field.check input[type="checkbox"]::after {
+  input[type="checkbox"],
+  input[type="checkbox"]::after {
     transition: none;
   }
 }
 
+.field.check input[type="checkbox"] {
+  order: 2;
+}
 /* Side panel scrolls without a visible scrollbar */
 .side-body {
   scrollbar-width: none;
@@ -2378,11 +2380,6 @@ button.stat-card:hover {
     grid-template-columns: 1fr;
   }
 }
-.dash .inline-check input[type="checkbox"] {
-  width: auto;
-  flex: none;
-  margin: 0;
-}
 .dash .inline-check {
   width: auto;
 }
@@ -2940,4 +2937,134 @@ button.stat-card:hover {
 }
 .entry-seo .image-field {
   grid-template-columns: 1fr;
+}
+
+input[type="checkbox"] {
+  min-width: 42px;
+}
+.check-row,
+.inline-check,
+.switch-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* ---- Links in the admin UI carry no underline ---- */
+.dash a,
+.dash-main a,
+.editor-shell a,
+.modal a,
+.subpage a,
+#root a {
+  text-decoration: none;
+}
+.dash a:hover,
+.dash-main a:hover,
+.editor-shell a:hover,
+.modal a:hover,
+.subpage a:hover,
+#root a:hover {
+  text-decoration: none;
+}
+.toast button {
+  text-decoration: none;
+}
+.linklike {
+  text-decoration: none;
+}
+
+/* ---- Full-page forms (replace the old pop-up dialogs in the dashboard) ---- */
+.dash-main.has-subpage > :not(.subpage) {
+  display: none;
+}
+.subpage {
+  display: grid;
+  gap: 18px;
+  max-width: 860px;
+}
+.subpage.wide {
+  max-width: 1040px;
+}
+.subpage-head {
+  display: grid;
+  gap: 10px;
+}
+.subpage-head h1 {
+  margin: 0;
+  font-size: clamp(24px, 4vw, 34px);
+  letter-spacing: -0.04em;
+}
+.subpage-back {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #aeb8be;
+  background: transparent;
+  border: 0;
+  padding: 4px 0;
+  font-weight: 600;
+  cursor: pointer;
+}
+.subpage-back:hover {
+  color: #c7f36b;
+}
+.subpage-body {
+  display: grid;
+  gap: 16px;
+  padding: 22px;
+  background: #171c23;
+  border: 1px solid #2c333c;
+  border-radius: 8px;
+}
+.subpage-body .dialog-actions {
+  position: sticky;
+  bottom: 0;
+  padding-top: 12px;
+  background: linear-gradient(#171c2300, #171c23 40%);
+  justify-content: flex-start;
+}
+@media (max-width: 720px) {
+  .subpage-body {
+    padding: 16px;
+    border-radius: 6px;
+  }
+  .subpage-body .dialog-actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+    bottom: 64px;
+  }
+}
+
+/* Pop-ups that remain (editor: publish, history, export) fit a phone screen */
+@media (max-width: 720px) {
+  .modal-backdrop {
+    padding: 0;
+    place-items: end stretch;
+  }
+  .modal,
+  .modal.wide {
+    width: 100%;
+    max-height: 92vh;
+    border-radius: 12px 12px 0 0;
+  }
+}
+
+.editor-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.editor-tools .top-btn {
+  padding: 4px 10px;
+  min-height: 30px;
+  font-weight: 700;
+}
+.wordcount.ok {
+  color: #c7f36b;
+}
+.wordcount.low {
+  color: #ffcf6b;
 }

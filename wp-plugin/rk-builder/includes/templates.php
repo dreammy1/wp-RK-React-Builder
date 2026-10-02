@@ -3,7 +3,7 @@
  * Theme builder: templates built in the normal block editor that decide how content types look on the public site.
  *
  *   - A template is a private post of type `rk_template` carrying a layout (draft and published, same storage and
- *     publish flow as a page) plus meta: `_rk_tpl_kind` (single | archive | loop | notfound), `_rk_tpl_type` (the post type it is
+ *     publish flow as a page) plus meta: `_rk_tpl_kind` (single | archive | loop | notfound | header | footer), `_rk_tpl_type` (the post type it is
  *     for), `_rk_tpl_tax` (an archive for one taxonomy only), `_rk_tpl_per_page`, `_rk_tpl_active`.
  *   - single   : replaces the page of one entry (a service, a listing, ...).
  *   - archive  : replaces the list page of a type or of one of its taxonomies (the "listing" template).
@@ -35,7 +35,10 @@ function rk_builder_register_template_type() {
 	) );
 }
 
-function rk_builder_tpl_kinds() { return array( 'single', 'archive', 'loop', 'notfound' ); }
+function rk_builder_tpl_kinds() { return array( 'single', 'archive', 'loop', 'notfound', 'header', 'footer' ); }
+
+/** Templates that belong to the whole site rather than to a content type. */
+function rk_builder_tpl_sitewide( $kind ) { return in_array( $kind, array( 'notfound', 'header', 'footer' ), true ); }
 
 /* ------------------------------------------------------------------ *
  * Read
@@ -132,10 +135,26 @@ function rk_builder_tpl_chrome( $kind, &$n ) {
 	return null;
 }
 
+/** The header (navbar) or footer (sitefooter) block a global part starts from: a copy of the site's own, else sensible defaults. */
+function rk_builder_tpl_part_starter( $type ) {
+	foreach ( rk_builder_reusable_list() as $r ) {
+		if ( $type === $r['block']['type'] ) { return array( 'id' => $type . '-1', 'type' => $type, 'props' => $r['block']['props'] ); }
+	}
+	$name = rk_builder_substr( rk_builder_plain( (string) get_bloginfo( 'name' ) ), 0, 80 );
+	$name = '' !== $name ? $name : 'Your brand';
+	$props = 'navbar' === $type
+		? array( 'brand' => $name, 'links' => "Home|/\nAbout|/about\nContact|/contact", 'phone' => '', 'phoneHref' => '', 'overlay' => false )
+		: array( 'brand' => $name, 'tagline' => '', 'colATitle' => 'Explore', 'colALinks' => "Home|/\nAbout|/about", 'colBTitle' => '', 'colBLinks' => '', 'contactTitle' => 'Get in touch', 'phone' => '', 'email' => '', 'address' => '', 'copyright' => '', 'note' => '' );
+	return array( 'id' => $type . '-1', 'type' => $type, 'props' => $props );
+}
+
 /** A layout to start from, built from the type's own fields. */
 function rk_builder_tpl_starter( $kind, array $def, $taxonomy = '' ) {
 	$n      = 0;
 	$blocks = array();
+	if ( 'header' === $kind || 'footer' === $kind ) {
+		return array( 'version' => RK_BUILDER_SCHEMA_VERSION, 'blocks' => array( rk_builder_tpl_part_starter( 'header' === $kind ? 'navbar' : 'sitefooter' ) ) );
+	}
 	$fields = isset( $def['fields'] ) ? $def['fields'] : array();
 	if ( 'loop' === $kind ) {
 		$blocks[] = rk_builder_tpl_block( 'dynimage', array( 'source' => 'featured', 'ratio' => 'landscape', 'link' => true, 'fallback' => 'placeholder' ), $n );
@@ -156,6 +175,16 @@ function rk_builder_tpl_starter( $kind, array $def, $taxonomy = '' ) {
 		$title = '' !== $taxonomy ? $def['plural'] . ' by category' : $def['plural'];
 		$blocks[] = array( 'id' => 'heading-' . ( ++$n ), 'type' => 'heading', 'props' => array( 'text' => $title, 'level' => 2 ) );
 		$blocks[] = rk_builder_tpl_block( 'loopgrid', array( 'postType' => 'current', 'filters' => (bool) rk_builder_dyn_taxonomies( $def['slug'] ), 'search' => true, 'pagination' => true, 'limit' => 12 ), $n );
+	} elseif ( isset( $def['schema'] ) && 'Article' === $def['schema'] ) {
+		// An article: category, one H1, byline with reading time, lead image, the summary as a standfirst, the text in a readable column, more to read.
+		$tax = rk_builder_dyn_taxonomies( $def['slug'] );
+		if ( $tax ) { $blocks[] = rk_builder_tpl_block( 'dynfield', array( 'source' => 'terms:' . $tax[0]['slug'], 'style' => 'eyebrow' ), $n ); }
+		$blocks[] = rk_builder_tpl_block( 'dynfield', array( 'source' => 'title', 'tag' => 'h1' ), $n );
+		$blocks[] = rk_builder_tpl_block( 'dyninfo', array( 'sources' => 'author,date,readtime', 'layout' => 'grid' ), $n );
+		$blocks[] = rk_builder_tpl_block( 'dynimage', array( 'source' => 'featured', 'ratio' => 'wide' ), $n );
+		$blocks[] = rk_builder_tpl_block( 'dynfield', array( 'source' => 'excerpt', 'tag' => 'p', 'style' => 'lead' ), $n );
+		$blocks[] = rk_builder_tpl_block( 'dynfield', array( 'source' => 'content', 'tag' => 'div' ), $n );
+		$blocks[] = rk_builder_tpl_block( 'loopgrid', array( 'heading' => 'Keep reading', 'limit' => 3, 'related' => true, 'pagination' => false ), $n );
 	} else {
 		$blocks[] = rk_builder_tpl_block( 'dynimage', array( 'source' => 'featured', 'ratio' => 'wide' ), $n );
 		$blocks[] = rk_builder_tpl_block( 'dynfield', array( 'source' => 'title', 'tag' => 'h1' ), $n );
@@ -195,8 +224,8 @@ function rk_builder_tpl_target( array $body, array $current = array() ) {
 	$kind   = array_key_exists( 'kind', $body ) ? $body['kind'] : ( isset( $current['kind'] ) ? $current['kind'] : null );
 	$type   = array_key_exists( 'postType', $body ) ? $body['postType'] : ( isset( $current['postType'] ) ? $current['postType'] : null );
 	$tax    = array_key_exists( 'taxonomy', $body ) ? $body['taxonomy'] : ( isset( $current['taxonomy'] ) ? $current['taxonomy'] : '' );
-	if ( ! is_string( $kind ) || ! in_array( $kind, rk_builder_tpl_kinds(), true ) ) { rk_builder_add_issue( $issues, 'kind', 'Choose single, archive, card or 404 page' ); }
-	if ( 'notfound' === $kind ) {
+	if ( ! is_string( $kind ) || ! in_array( $kind, rk_builder_tpl_kinds(), true ) ) { rk_builder_add_issue( $issues, 'kind', 'Choose single, archive, card, 404 page, header or footer' ); }
+	if ( rk_builder_tpl_sitewide( $kind ) ) {
 		return array( array( 'kind' => $kind, 'postType' => '', 'taxonomy' => '', 'def' => array( 'slug' => '', 'singular' => '', 'plural' => '', 'fields' => array() ) ), $issues );
 	}
 	$def = is_string( $type ) ? rk_builder_dyn_type( $type ) : null;
@@ -322,7 +351,7 @@ function rk_builder_handle_template_starter( $req ) {
 	$post = rk_builder_tpl_post( $req['id'] );
 	if ( ! $post ) { return rk_builder_not_found( 'Template not found.' ); }
 	$m   = rk_builder_tpl_meta( $post->ID );
-	$def = 'notfound' === $m['kind'] ? array( 'slug' => '', 'singular' => '', 'plural' => '', 'fields' => array() ) : rk_builder_dyn_type( $m['postType'] );
+	$def = rk_builder_tpl_sitewide( $m['kind'] ) ? array( 'slug' => '', 'singular' => '', 'plural' => '', 'fields' => array() ) : rk_builder_dyn_type( $m['postType'] );
 	if ( ! $def ) { return rk_builder_not_found( 'The content type of this template no longer exists.' ); }
 	return rk_builder_no_store( array( 'layout' => rk_builder_tpl_starter( $m['kind'], $def, $m['taxonomy'] ) ) );
 }
@@ -343,6 +372,47 @@ function rk_builder_register_template_routes( $ns ) {
 /* ------------------------------------------------------------------ *
  * Front end
  * ------------------------------------------------------------------ */
+
+/** Is this top-level block a header / footer of the given block type (directly, or through a reusable)? */
+function rk_builder_tpl_block_is( $b, $type ) {
+	if ( ! is_array( $b ) || ! isset( $b['type'] ) ) { return false; }
+	if ( $type === $b['type'] ) { return true; }
+	return 'reusable' === $b['type'] && isset( $b['props']['refId'] ) && rk_builder_reusable_type( (int) $b['props']['refId'] ) === $type;
+}
+
+/**
+ * Site-wide header and footer templates. When one is live it replaces the page's own navbar / footer blocks and the
+ * default chrome. Returns the layout without those blocks, the context (a header only floats over a hero when the
+ * page opens with one) and the header / footer HTML ('' when no template is live for it).
+ */
+function rk_builder_tpl_apply_parts( array $layout, array $ctx ) {
+	$out = array( 'layout' => $layout, 'ctx' => $ctx, 'header' => '', 'footer' => '', 'has_header' => false, 'has_footer' => false );
+	$hdr = rk_builder_tpl_find( 'header', '' );
+	$ftr = rk_builder_tpl_find( 'footer', '' );
+	if ( ! $hdr && ! $ftr ) { return $out; }
+	$blocks = isset( $layout['blocks'] ) && is_array( $layout['blocks'] ) ? $layout['blocks'] : array();
+	$keep   = array();
+	foreach ( $blocks as $b ) {
+		if ( $hdr && rk_builder_tpl_block_is( $b, 'navbar' ) ) { continue; }
+		if ( $ftr && rk_builder_tpl_block_is( $b, 'sitefooter' ) ) { continue; }
+		$keep[] = $b;
+	}
+	$out['layout'] = array_merge( $layout, array( 'blocks' => $keep ) );
+	if ( $hdr && ! isset( $ctx['solid_nav'] ) ) {
+		$ctx['solid_nav'] = true;
+		foreach ( $keep as $b ) {
+			$t = is_array( $b ) && isset( $b['type'] ) ? $b['type'] : '';
+			if ( 'reusable' === $t && isset( $b['props']['refId'] ) ) { $t = rk_builder_reusable_type( (int) $b['props']['refId'] ); }
+			if ( in_array( $t, array( 'sitefooter', 'spacer' ), true ) ) { continue; }
+			$ctx['solid_nav'] = ! in_array( $t, array( 'coverhero', 'hero' ), true );
+			break;
+		}
+	}
+	$out['ctx'] = $ctx;
+	if ( $hdr ) { $out['has_header'] = true; $out['header'] = rk_builder_render_layout( $hdr['layout'], $ctx ); }
+	if ( $ftr ) { $out['has_footer'] = true; $out['footer'] = rk_builder_render_layout( $ftr['layout'], $ctx ); }
+	return $out;
+}
 
 /** The dynamic request (template + queried object) once template_include decided it, else null. */
 function rk_builder_dyn_request( $set = null ) {

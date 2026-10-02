@@ -212,6 +212,25 @@ rk_test( 'dynamic blocks: the source pattern and every option are validated like
 	t_assert( count( rk_builder_validate_layout( $loop, null ) ) > 0 );
 } );
 
+rk_test( 'articles: reading time source, and the article starter for a type with the Article schema', function () {
+	rk_dyn_types();
+	$e = rk_dyn_entry( 'Long read', array(), array( 'content' => str_repeat( 'word ', 450 ) ) );
+	$ctx = array( 'post' => get_post( $e['id'] ), 'type' => 'listing' );
+	t_assert( false !== strpos( rk_dyn_block( 'dynfield', array( 'source' => 'readtime' ), $ctx ), '3 min read' ), '450 words are 3 minutes' );
+	$short = rk_dyn_entry( 'Short', array(), array( 'content' => 'Just a few words.' ) );
+	t_assert( false !== strpos( rk_dyn_block( 'dynfield', array( 'source' => 'readtime' ), array( 'post' => get_post( $short['id'] ), 'type' => 'listing' ) ), '1 min read' ), 'never below a minute' );
+	$def = rk_builder_dyn_type( 'listing' );
+	$def['schema'] = 'Article';
+	$layout = rk_builder_tpl_starter( 'single', $def );
+	$srcs = array();
+	foreach ( $layout['blocks'] as $b ) { if ( isset( $b['props']['source'] ) ) { $srcs[] = $b['type'] . ':' . $b['props']['source']; } }
+	t_assert( in_array( 'dynfield:title', $srcs, true ) && in_array( 'dynfield:excerpt', $srcs, true ) && in_array( 'dynfield:content', $srcs, true ), 'headline, standfirst and text' );
+	$info = array_values( array_filter( $layout['blocks'], function ( $b ) { return 'dyninfo' === $b['type']; } ) );
+	t_eq( $info[0]['props']['sources'], 'author,date,readtime', 'byline' );
+	t_deep( rk_builder_validate_layout( $layout, null ), array(), 'the article starter is a valid layout' );
+	t_eq( rk_builder_dyn_builtin_def( 'post' )['schema'], 'Article', 'blog posts are articles by default' );
+} );
+
 rk_test( 'dynamic blocks: fields render typed and escaped, empty ones fall back or vanish', function () {
 	rk_dyn_types();
 	$e = rk_dyn_entry( 'A <i>house</i>', array( 'price' => 1234.5, 'status' => 'sold', 'featured' => true, 'agent_email' => 'ann@example.com', 'notes' => "One\n\nTwo & three", 'hero' => 801 ), array( 'excerpt' => 'Nice place' ) );
@@ -278,7 +297,7 @@ rk_test( 'templates: only administrators manage them; creation validates the tar
 	t_err( rk_post( '/rk/v1/builder/templates', array( 'title' => 'x', 'kind' => 'single', 'postType' => 'listing' ) ), 'rk_forbidden', 403 );
 	rk_test_login( 'admin' );
 	t_err( rk_post( '/rk/v1/builder/templates', array( 'title' => '', 'kind' => 'single', 'postType' => 'listing' ) ), 'rk_invalid_template', 400 );
-	t_err( rk_post( '/rk/v1/builder/templates', array( 'title' => 'x', 'kind' => 'footer', 'postType' => 'listing' ) ), 'rk_invalid_template', 400 );
+	t_err( rk_post( '/rk/v1/builder/templates', array( 'title' => 'x', 'kind' => 'sidebar', 'postType' => 'listing' ) ), 'rk_invalid_template', 400 );
 	t_err( rk_post( '/rk/v1/builder/templates', array( 'title' => 'x', 'kind' => 'single', 'postType' => 'ghost' ) ), 'rk_invalid_template', 400 );
 	t_err( rk_post( '/rk/v1/builder/templates', array( 'title' => 'x', 'kind' => 'single', 'postType' => 'listing', 'taxonomy' => 'listing_cat' ) ), 'rk_invalid_template', 400, 'taxonomy only for archives' );
 	t_ok( rk_post( '/rk/v1/builder/templates', array( 'title' => 'x', 'kind' => 'archive', 'postType' => 'listing', 'taxonomy' => 'listing_cat' ) ) );
@@ -406,6 +425,38 @@ rk_test( 'templates: a 404 page template is site-wide and replaces the missing-p
 	t_eq( rk_builder_dyn_resolve_request()['tpl']['id'], $t2['id'], 'one 404 template at a time' );
 	rk_test_set_query( array( 'singular' => false, 'main' => true ) );
 	t_eq( rk_builder_dyn_resolve_request(), null, 'other requests are unaffected' );
+} );
+
+rk_test( 'templates: a live header and footer replace the navbar and footer blocks of every page', function () {
+	rk_test_login( 'admin' );
+	$page = array( 'version' => 1, 'blocks' => array(
+		array( 'id' => 'n1', 'type' => 'navbar', 'props' => array( 'brand' => 'Old nav', 'links' => '', 'phone' => '', 'phoneHref' => '', 'overlay' => true ) ),
+		array( 'id' => 'h1', 'type' => 'heading', 'props' => array( 'text' => 'Body text', 'level' => 2 ) ),
+		array( 'id' => 'f1', 'type' => 'sitefooter', 'props' => array( 'brand' => 'Old foot', 'tagline' => '', 'colATitle' => '', 'colALinks' => '', 'colBTitle' => '', 'colBLinks' => '', 'contactTitle' => '', 'phone' => '', 'email' => '', 'address' => '', 'copyright' => '', 'note' => '' ) ),
+	) );
+	$none = rk_builder_tpl_apply_parts( $page, array() );
+	t_eq( $none['has_header'], false );
+	t_eq( count( $none['layout']['blocks'] ), 3, 'without templates the page is untouched' );
+	$h = t_ok( rk_post( '/rk/v1/builder/templates', array( 'title' => 'Top', 'kind' => 'header' ) ) )['item'];
+	$f = t_ok( rk_post( '/rk/v1/builder/templates', array( 'title' => 'Bottom', 'kind' => 'footer' ) ) )['item'];
+	t_eq( $h['postType'], '' );
+	$hl = t_ok( rk_get( '/rk/v1/builder/layout/' . $h['id'] ) )['layout'];
+	t_eq( $hl['blocks'][0]['type'], 'navbar', 'the header starts with a navbar' );
+	t_eq( t_ok( rk_get( '/rk/v1/builder/layout/' . $f['id'] ) )['layout']['blocks'][0]['type'], 'sitefooter' );
+	t_eq( rk_builder_tpl_apply_parts( $page, array() )['has_header'], false, 'a draft is not live' );
+	foreach ( array( $h, $f ) as $t ) { rk_dyn_publish_template( $t['id'] ); t_ok( rk_post( '/rk/v1/builder/templates/' . $t['id'] . '/update', array( 'active' => true ) ) ); }
+	$p = rk_builder_tpl_apply_parts( $page, array() );
+	t_eq( array_map( function ( $b ) { return $b['type']; }, $p['layout']['blocks'] ), array( 'heading' ), 'the page keeps only its own content' );
+	t_assert( '' !== $p['header'] && '' !== $p['footer'], 'both parts are rendered' );
+	t_eq( $p['ctx']['solid_nav'], true, 'a page without a hero gets a solid bar' );
+	$hero = array( 'version' => 1, 'blocks' => array( array( 'id' => 'c', 'type' => 'coverhero', 'props' => array() ), array( 'id' => 'h', 'type' => 'heading', 'props' => array( 'text' => 'x', 'level' => 2 ) ) ) );
+	t_eq( rk_builder_tpl_apply_parts( $hero, array() )['ctx']['solid_nav'], false, 'a page that opens with a hero lets the bar float over it' );
+	$h2 = t_ok( rk_post( '/rk/v1/builder/templates', array( 'title' => 'Top 2', 'kind' => 'header' ) ) )['item'];
+	rk_dyn_publish_template( $h2['id'] );
+	t_ok( rk_post( '/rk/v1/builder/templates/' . $h2['id'] . '/update', array( 'active' => true ) ) );
+	$items = t_ok( rk_get( '/rk/v1/builder/templates' ) )['items'];
+	$live = array_filter( $items, function ( $i ) { return 'header' === $i['kind'] && $i['active']; } );
+	t_eq( count( $live ), 1, 'one live header at a time' );
 } );
 
 /* ---------------- loop grid ---------------- */

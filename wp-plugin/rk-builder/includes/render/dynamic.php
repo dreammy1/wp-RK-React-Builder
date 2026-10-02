@@ -116,6 +116,17 @@ function rk_builder_dyn_terms_html( $post, $tax, $link = true ) {
 	return implode( ' ', $out );
 }
 
+/** Words in an entry's text (tags and shortcodes ignored). */
+function rk_builder_dyn_word_count( $post ) {
+	$text = trim( preg_replace( '/\s+/u', ' ', wp_strip_all_tags( (string) $post->post_content ) ) );
+	return '' === $text ? 0 : count( explode( ' ', $text ) );
+}
+
+/** "4 min read": about 200 words a minute, never below one minute. */
+function rk_builder_dyn_readtime( $post ) {
+	return max( 1, (int) ceil( rk_builder_dyn_word_count( $post ) / 200 ) ) . ' min read';
+}
+
 /** A source (`title`, `field:price`, ...) resolved for the context: array( html, isBlock ). */
 function rk_builder_dyn_source_html( $source, array $c, $link = false, array $opts = array() ) {
 	$post = rk_builder_dyn_ctx_post( $c );
@@ -134,7 +145,7 @@ function rk_builder_dyn_source_html( $source, array $c, $link = false, array $op
 	}
 	if ( ! $post ) {
 		if ( ! rk_builder_dyn_sample( $c ) ) { return array( '', false ); }
-		$demo = array( 'title' => 'Entry title', 'excerpt' => 'A short summary of the entry appears here.', 'content' => 'The full text of the entry appears here.', 'date' => 'Published date', 'modified' => 'Updated date', 'author' => 'Author name' );
+		$demo = array( 'title' => 'Entry title', 'excerpt' => 'A short summary of the entry appears here.', 'content' => 'The full text of the entry appears here.', 'date' => 'Published date', 'modified' => 'Updated date', 'readtime' => '5 min read', 'author' => 'Author name' );
 		if ( 0 === strpos( $kind, 'terms:' ) ) { return array( '<span class="dyn-term dyn-sample">Category</span>', false ); }
 		return isset( $demo[ $kind ] ) ? array( '<span class="dyn-sample">' . $demo[ $kind ] . '</span>', 'content' === $kind ) : array( '', false );
 	}
@@ -152,6 +163,8 @@ function rk_builder_dyn_source_html( $source, array $c, $link = false, array $op
 			return array( $wrap( rk_builder_h( get_the_date( '', $post ) ) ), false );
 		case 'modified' === $kind:
 			return array( $wrap( rk_builder_h( get_the_modified_date( '', $post ) ) ), false );
+		case 'readtime' === $kind:
+			return array( rk_builder_h( rk_builder_dyn_readtime( $post ) ), false );
 		case 'author' === $kind:
 			return array( rk_builder_h( get_the_author_meta( 'display_name', (int) $post->post_author ) ), false );
 		case 0 === strpos( $kind, 'terms:' ):
@@ -162,7 +175,7 @@ function rk_builder_dyn_source_html( $source, array $c, $link = false, array $op
 
 /** The label a source has in the dashboard ("Price", "Title", ...). */
 function rk_builder_dyn_source_label( $source, array $c ) {
-	$names = array( 'title' => 'Title', 'excerpt' => 'Summary', 'content' => 'Description', 'date' => 'Published', 'modified' => 'Updated', 'author' => 'Author' );
+	$names = array( 'title' => 'Title', 'excerpt' => 'Summary', 'content' => 'Description', 'date' => 'Published', 'modified' => 'Updated', 'readtime' => 'Reading time', 'author' => 'Author' );
 	if ( isset( $names[ $source ] ) ) { return $names[ $source ]; }
 	if ( 0 === strpos( $source, 'terms:' ) ) {
 		$tx = get_taxonomy( substr( $source, 6 ) );

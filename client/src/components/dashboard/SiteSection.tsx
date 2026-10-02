@@ -183,6 +183,13 @@ export function SiteSection() {
             <small className="muted">Only published pages are listed.</small>
           </div>
         </div>
+        <ImageField
+          id="st-favicon"
+          label="Favicon"
+          value={org.favicon}
+          onChange={favicon => setOrg({ favicon })}
+          help="The small icon in browser tabs and bookmarks. Use a square PNG, at least 512 × 512 px."
+        />
         <div className="field check">
           <label>
             <input

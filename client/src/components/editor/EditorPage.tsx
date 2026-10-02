@@ -54,7 +54,11 @@ const TEMPLATE_KIND = {
   archive: "Archive / listing template",
   loop: "Card template",
   notfound: "404 page template",
+  header: "Header template",
+  footer: "Footer template",
 } as const;
+
+const SITEWIDE = ["notfound", "header", "footer"];
 
 type Dialog = null | "export" | "revisions" | "publish";
 type Tab = "insert" | "block" | "theme" | "more";
@@ -439,7 +443,8 @@ export function EditorPage({
                     {tab === "insert" && (
                       <BlockPalette
                         templateMode={
-                          Boolean(template) && template?.kind !== "notfound"
+                          Boolean(template) &&
+                          !SITEWIDE.includes(template?.kind ?? "")
                         }
                         reusables={library.items}
                         onAddReusable={id => {

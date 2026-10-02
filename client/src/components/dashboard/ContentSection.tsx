@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ArrowLeft,
   Copy,
@@ -23,6 +23,30 @@ import { MediaPicker } from "../editor/MediaPicker";
 import { ImageField } from "./ImageField";
 import { fmtWhen } from "./Overview";
 import { FieldInput, blankValue, toPayload } from "./EntryFields";
+
+/** Words in simple HTML or plain text. */
+export function wordCount(html: string): number {
+  const t = html
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .trim();
+  return t ? t.split(/\s+/).length : 0;
+}
+const readMinutes = (words: number) => Math.max(1, Math.ceil(words / 200));
+
+const TOOLS: { label: string; open: string; close: string; hint: string }[] = [
+  { label: "H2", open: "<h2>", close: "</h2>", hint: "Section heading" },
+  { label: "H3", open: "<h3>", close: "</h3>", hint: "Sub-heading" },
+  { label: "B", open: "<strong>", close: "</strong>", hint: "Bold" },
+  { label: "I", open: "<em>", close: "</em>", hint: "Italic" },
+  { label: "List", open: "<ul>\n<li>", close: "</li>\n</ul>", hint: "Bullets" },
+  {
+    label: "Quote",
+    open: "<blockquote>",
+    close: "</blockquote>",
+    hint: "Quote",
+  },
+];
 
 type Draft = {
   id: number;
@@ -142,9 +166,11 @@ function TermsInput({
 
 function EntrySeo({
   d,
+  article,
   onChange,
 }: {
   d: Draft;
+  article: boolean;
   onChange: (seo: Draft["seo"]) => void;
 }) {
   const s = d.seo;
@@ -155,13 +181,36 @@ function EntrySeo({
     /^https?:\/\//,
     ""
   );
+  const words = wordCount(d.content);
+  const minTitle = article ? 30 : 15;
+  const minDesc = article ? 120 : 70;
   const checks: [boolean, string][] = [
-    [title.length >= 15 && title.length <= 60, "Title is 15–60 characters"],
     [
-      desc.length >= 70 && desc.length <= 160,
-      "Description is 70–160 characters",
+      title.length >= minTitle && title.length <= 60,
+      `Title is ${minTitle}–60 characters (${title.length} now)`,
+    ],
+    [
+      desc.length >= minDesc && desc.length <= 160,
+      `Description is ${minDesc}–160 characters (${desc.length} now)`,
     ],
     [Boolean(s.image || d.image), "Has a sharing image"],
+    ...(article
+      ? ([
+          [
+            words >= 300,
+            `Text has at least 300 words (${words} now; 800–2,000 ranks best)`,
+          ],
+          [/<h2[\s>]/i.test(d.content), "Text has at least one H2 sub-heading"],
+          [
+            !/<h1[\s>]/i.test(d.content),
+            "Text has no second H1 (the title is the H1)",
+          ],
+          [
+            d.slug.length > 0 && d.slug.length <= 60,
+            "Address is set and 60 characters or fewer",
+          ],
+        ] as [boolean, string][])
+      : []),
   ];
   return (
     <section className="dash-card entry-seo">
@@ -185,7 +234,9 @@ function EntrySeo({
           placeholder={d.title}
           onChange={e => set({ title: e.target.value })}
         />
-        <small className="muted">{s.title.length}/60 recommended</small>
+        <small className="muted">
+          {s.title.length}/60 · {minTitle}–60 recommended
+        </small>
       </div>
       <div className="field">
         <label htmlFor="en-seo-desc">
@@ -199,7 +250,9 @@ function EntrySeo({
           placeholder={d.excerpt}
           onChange={e => set({ description: e.target.value })}
         />
-        <small className="muted">{s.description.length}/160 recommended</small>
+        <small className="muted">
+          {s.description.length}/160 · {minDesc}–160 recommended
+        </small>
       </div>
       <ImageField
         id="en-seo-img"
@@ -247,7 +300,27 @@ function EntryEditor({
   const [note, setNote] = useState("");
   const [picking, setPicking] = useState(false);
   const supports = new Set(type.supports);
+  const article = type.schema === "Article";
+  const textRef = useRef<HTMLTextAreaElement>(null);
+  const words = wordCount(d.content);
   const set = (patch: Partial<Draft>) => setD(prev => ({ ...prev, ...patch }));
+  /** Wrap the selected text (or insert at the cursor) with a tag pair. */
+  const wrap = (open: string, close: string) => {
+    const el = textRef.current;
+    const a = el?.selectionStart ?? d.content.length;
+    const b = el?.selectionEnd ?? d.content.length;
+    const next =
+      d.content.slice(0, a) +
+      open +
+      d.content.slice(a, b) +
+      close +
+      d.content.slice(b);
+    set({ content: next });
+    requestAnimationFrame(() => {
+      el?.focus();
+      el?.setSelectionRange(a + open.length, b + open.length);
+    });
+  };
 
   const save = (status?: string) => {
     setBusy(true);
@@ -369,14 +442,37 @@ function EntryEditor({
                 <label htmlFor="en-content">
                   <span>Description</span>
                 </label>
+                <div
+                  className="editor-tools"
+                  role="toolbar"
+                  aria-label="Formatting"
+                >
+                  {TOOLS.map(t => (
+                    <button
+                      key={t.label}
+                      type="button"
+                      className="top-btn"
+                      title={t.hint}
+                      onClick={() => wrap(t.open, t.close)}
+                    >
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
                 <textarea
                   id="en-content"
-                  rows={8}
+                  ref={textRef}
+                  rows={article ? 20 : 8}
                   value={d.content}
                   onChange={e => set({ content: e.target.value })}
                 />
-                <small className="muted">
-                  Plain text or simple HTML (paragraphs, links, lists).
+                <small
+                  className={`muted wordcount ${article ? (words >= 300 ? "ok" : "low") : ""}`}
+                >
+                  {words.toLocaleString()} words · {readMinutes(words)} min read
+                  {article
+                    ? " · aim for 800–2,000 words, with H2 sub-headings every few paragraphs"
+                    : ""}
                 </small>
               </div>
             )}
@@ -460,7 +556,7 @@ function EntryEditor({
               )}
             </section>
           )}
-          <EntrySeo d={d} onChange={seo => set({ seo })} />
+          <EntrySeo d={d} article={article} onChange={seo => set({ seo })} />
           {(type.taxonomyTerms ?? []).map(tax => (
             <section className="dash-card" key={tax.slug}>
               <TermsInput
