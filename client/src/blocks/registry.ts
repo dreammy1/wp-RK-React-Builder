@@ -7,6 +7,7 @@ import {
   LayoutGrid,
   Minus,
   MoveVertical,
+  Library,
   MapPin,
   MessageSquareQuote,
   Pilcrow,
@@ -51,6 +52,9 @@ import { testimonialFields } from "./testimonial/Editor";
 import { contactDefaults, contactProps } from "./contact/schema";
 import { ContactView } from "./contact/View";
 import { contactFields } from "./contact/Editor";
+import { reusableDefaults, reusableProps } from "./reusable/schema";
+import { ReusableView } from "./reusable/View";
+import { reusableFields } from "./reusable/Editor";
 
 export type PropsOf<T extends BlockType> = Extract<Block, { type: T }>["props"];
 
@@ -182,6 +186,16 @@ export const registry: Registry = {
     schema: contactProps,
     View: ContactView,
     fields: contactFields,
+  },
+  reusable: {
+    type: "reusable",
+    label: "Reusable block",
+    icon: Library,
+    description: "Shared content kept in the library",
+    defaults: reusableDefaults,
+    schema: reusableProps,
+    View: ReusableView,
+    fields: reusableFields,
   },
 };
 

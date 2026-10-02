@@ -348,8 +348,23 @@ export function useEditorSession(pageId: number, demo: boolean) {
 
   const actions = useMemo(
     () => ({
-      add: (blockType: BlockType, index?: number) =>
-        dispatch({ type: "add", blockType, index, id: makeBlockId(blockType) }),
+      add: (
+        blockType: BlockType,
+        index?: number,
+        props?: Record<string, unknown>
+      ) =>
+        dispatch({
+          type: "add",
+          blockType,
+          index,
+          props,
+          id: makeBlockId(blockType),
+        }),
+      convert: (
+        id: string,
+        blockType: BlockType,
+        props: Record<string, unknown>
+      ) => dispatch({ type: "convert", id, blockType, props }),
       remove: (id: string) => dispatch({ type: "remove", id }),
       duplicate: (id: string) => {
         const b = stateRef.current.layout.blocks.find(x => x.id === id);

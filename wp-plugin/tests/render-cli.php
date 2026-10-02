@@ -53,6 +53,16 @@ function rk_cli_seed_attachments( array $layout ) {
 	}
 }
 
+/** Fixtures may carry a library: "reusables": [{ id, name, block }] (ids are used as post IDs). */
+function rk_cli_seed_reusables( array $fixture ) {
+	foreach ( isset( $fixture['reusables'] ) && is_array( $fixture['reusables'] ) ? $fixture['reusables'] : array() as $r ) {
+		$id = (int) $r['id'];
+		$GLOBALS['RK']['posts'][ $id ] = (object) array( 'ID' => $id, 'post_type' => RK_BUILDER_REUSABLE_TYPE, 'post_status' => 'publish', 'post_title' => $r['name'], 'post_name' => 'r' . $id, 'post_author' => 1, 'post_password' => '', 'post_excerpt' => '', 'post_content' => '', 'menu_order' => 0, 'post_date' => '2026-01-01 00:00:00', 'post_modified_gmt' => '2026-01-01 00:00:00' );
+		$GLOBALS['RK']['meta'][ $id ]['_rk_reusable_block'] = json_encode( $r['block'] );
+	}
+}
+
 rk_cli_seed_content();
+rk_cli_seed_reusables( $fixture );
 rk_cli_seed_attachments( $layout );
 echo rk_builder_render_layout( $layout, array( 'page_id' => 0, 'preview' => false ) );

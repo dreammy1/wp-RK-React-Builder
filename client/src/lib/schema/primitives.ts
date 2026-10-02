@@ -21,6 +21,7 @@ export const BLOCK_TYPES = [
   "divider",
   "testimonial",
   "contact",
+  "reusable",
 ] as const;
 export type BlockType = (typeof BLOCK_TYPES)[number];
 

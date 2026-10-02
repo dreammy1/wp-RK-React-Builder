@@ -4,6 +4,7 @@ import { registry } from "@/blocks/registry";
 import { BLOCK_TYPES } from "@/lib/schema/primitives";
 import type { Block } from "@/lib/schema/layout";
 import { BlockRenderer } from "./BlockRenderer";
+import { ReusableContext, staticReusableSource } from "./reusable";
 import {
   ContentContext,
   contentKey,
@@ -33,10 +34,47 @@ const html = (
 };
 
 describe("block views (shared by canvas and public site)", () => {
-  it.each(BLOCK_TYPES)("%s renders without editor chrome", type => {
-    const out = html(mk(type));
-    expect(out.length).toBeGreaterThan(0);
-    expect(out).not.toMatch(/contenteditable|draggable|data-testid/);
+  it.each(BLOCK_TYPES.filter(t => t !== "reusable"))(
+    "%s renders without editor chrome",
+    type => {
+      const out = html(mk(type));
+      expect(out.length).toBeGreaterThan(0);
+      expect(out).not.toMatch(/contenteditable|draggable|data-testid/);
+    }
+  );
+  describe("reusable references", () => {
+    const record = {
+      id: 7,
+      name: "Footer CTA",
+      block: {
+        type: "cta" as const,
+        props: { heading: "Call us", cta: "Go", ctaHref: "/contact" },
+      },
+    };
+    const render = (mode: "editor" | "public", refId = 7) =>
+      renderToStaticMarkup(
+        <ReusableContext.Provider value={staticReusableSource([record])}>
+          <BlockRenderer block={mk("reusable", { refId })} mode={mode} />
+        </ReusableContext.Provider>
+      );
+    it("public output is exactly the referenced block's markup (no wrapper)", () => {
+      expect(render("public")).toBe(
+        html(
+          {
+            id: "x",
+            type: "cta",
+            props: record.block.props,
+          } as Block,
+          [],
+          "public"
+        )
+      );
+    });
+    it("the editor marks it as shared; a missing reference is a visible note in the editor and empty publicly", () => {
+      expect(render("editor")).toContain("Reusable · Footer CTA");
+      expect(render("editor", 99)).toContain("reusable-missing");
+      expect(render("public", 99)).toBe("");
+    });
   });
   it("escapes text and keeps plain-text paragraphs", () => {
     const out = html(mk("text", { text: "One <b>x</b>\n\nTwo & three" }));

@@ -74,6 +74,16 @@ function Summary({ r }: { r: SiteImportReport }) {
             </>
           )}
         </li>
+        {r.reusables &&
+          r.reusables.create + r.reusables.update + r.reusables.skipped.length >
+            0 && (
+            <li>
+              Reusable blocks: <strong>{r.reusables.create}</strong> new,{" "}
+              <strong>{r.reusables.update}</strong> updated
+              {r.reusables.skipped.length > 0 &&
+                `, ${r.reusables.skipped.length} skipped`}
+            </li>
+          )}
         {r.theme.included && (
           <li>
             Theme:{" "}

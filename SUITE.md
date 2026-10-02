@@ -28,17 +28,18 @@ Page data lives in post meta, so moving between the standalone plugin and the mo
 
 POST JSON-RPC to `/wp-json/rk/v1/mcp` with an Application Password or the RK API key (RK → RK API).
 
-| Tool                                              | What it does                                                                                         |
-| ------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| `wp_builder_block_types`                          | The strict document format: block types and every prop's limits                                      |
-| `wp_builder_list_pages` · `wp_builder_get_layout` | Pages with draft / published revision; a page's draft layout + theme                                 |
-| `wp_builder_save_layout`                          | Validate and save a **draft** (never publishes)                                                      |
-| `wp_builder_preview_link`                         | 15-minute link that shows the draft on the real site                                                 |
-| `wp_builder_publish` · `wp_builder_unpublish`     | Go live / go offline. **Require `confirm: true`**                                                    |
-| `wp_builder_get_theme` · `wp_builder_save_theme`  | Site theme (header, footer, colors). Save needs admin + `confirm`                                    |
-| `wp_builder_export_site`                          | Whole-site export bundle (draft layouts, theme, media, content)                                      |
-| `wp_builder_import_site`                          | Import a bundle. **Dry run by default**; a real import needs `confirm: true`; pages arrive as drafts |
-| `wp_builder_list_media`                           | Media-library images for image blocks and hero backgrounds                                           |
+| Tool                                                     | What it does                                                                                         |
+| -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `wp_builder_block_types`                                 | The strict document format: block types and every prop's limits                                      |
+| `wp_builder_list_pages` · `wp_builder_get_layout`        | Pages with draft / published revision; a page's draft layout + theme                                 |
+| `wp_builder_save_layout`                                 | Validate and save a **draft** (never publishes)                                                      |
+| `wp_builder_preview_link`                                | 15-minute link that shows the draft on the real site                                                 |
+| `wp_builder_publish` · `wp_builder_unpublish`            | Go live / go offline. **Require `confirm: true`**                                                    |
+| `wp_builder_get_theme` · `wp_builder_save_theme`         | Site theme (header, footer, colors). Save needs admin + `confirm`                                    |
+| `wp_builder_export_site`                                 | Whole-site export bundle (draft layouts, theme, media, content)                                      |
+| `wp_builder_import_site`                                 | Import a bundle. **Dry run by default**; a real import needs `confirm: true`; pages arrive as drafts |
+| `wp_builder_list_reusables` · `wp_builder_save_reusable` | Reusable-block library; updating one needs `confirm: true` (it changes every page that uses it)      |
+| `wp_builder_list_media`                                  | Media-library images for image blocks and hero backgrounds                                           |
 
 Every tool uses the editor's own permission checks, strict validation, revisions and locking. With the RK API
 key (no user) tools run as the first administrator — the same reach the key already has over pages.

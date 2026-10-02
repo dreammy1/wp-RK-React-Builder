@@ -1,7 +1,10 @@
 import { ContentListResponse, PublicPageResponse } from "@/lib/schema/api";
 import { parseLayout, parseTheme } from "@/lib/schema/migrate";
+import { registry } from "@/blocks/registry";
+import type { ServicesProps } from "@/blocks/services/schema";
 import type { LayoutDocument } from "@/lib/schema/layout";
 import type { ThemeConfig } from "@/lib/schema/theme";
+import { staticReusableSource, type ReusableRecord } from "@/render/reusable";
 import {
   contentKey,
   type ContentQuery,
@@ -22,6 +25,7 @@ export type PublicPage = {
   layout: LayoutDocument;
   theme: ThemeConfig;
   content: Map<string, ContentResult>;
+  reusables: ReusableRecord[];
   preview: boolean;
 };
 
@@ -33,17 +37,23 @@ export type Fetched =
 const TIMEOUT = 8000;
 
 export function collectQueries(
-  layout: LayoutDocument
+  layout: LayoutDocument,
+  reusables: ReusableRecord[] = []
 ): Map<string, ContentQuery> {
   const out = new Map<string, ContentQuery>();
-  for (const b of layout.blocks) {
-    if (b.type === "services" || b.type === "portfolio") {
+  const lookup = staticReusableSource(reusables);
+  // A reusable can hold a services/portfolio grid, so look at what each reference resolves to.
+  for (const top of layout.blocks) {
+    const b =
+      top.type === "reusable" ? lookup.get(top.props.refId)?.block : top;
+    if (b?.type === "services" || b?.type === "portfolio") {
+      const p = b.props as ServicesProps;
       const q: ContentQuery = {
-        source: b.props.source,
-        limit: b.props.limit,
-        category: b.props.category,
-        orderBy: b.props.orderBy,
-        order: b.props.order,
+        source: p.source,
+        limit: p.limit,
+        category: p.category,
+        orderBy: p.orderBy,
+        order: p.order,
       };
       out.set(contentKey(q), q);
     }
@@ -112,7 +122,18 @@ export async function fetchPublicPage(
       reason: "Stored layout or theme failed validation",
     };
 
-  const queries = collectQueries(layout.value);
+  // Resolved library entries that came with the page; anything that no longer matches its block schema is ignored.
+  const reusables: ReusableRecord[] = [];
+  for (const r of Object.values(body.data.reusables ?? {})) {
+    const parsedBlock = registry[r.block.type].schema.safeParse(r.block.props);
+    if (parsedBlock.success)
+      reusables.push({
+        id: r.id,
+        name: r.name,
+        block: { type: r.block.type, props: parsedBlock.data },
+      });
+  }
+  const queries = collectQueries(layout.value, reusables);
   const content = new Map<string, ContentResult>();
   await Promise.all(
     [...queries].map(async ([key, q]) => {
@@ -156,6 +177,7 @@ export async function fetchPublicPage(
       layout: layout.value,
       theme: theme.value,
       content,
+      reusables,
       preview: body.data.preview === true,
     },
   };

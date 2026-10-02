@@ -21,11 +21,16 @@ const ALLOWED: { method: "GET" | "POST"; re: RegExp }[] = [
   { method: "POST", re: /^builder\/unpublish\/\d+$/ },
   { method: "POST", re: /^builder\/preview-token\/\d+$/ },
   { method: "GET", re: /^builder\/media$/ },
+  { method: "GET", re: /^builder\/reusables$/ },
+  { method: "POST", re: /^builder\/reusables$/ },
+  { method: "POST", re: /^builder\/reusables\/\d+$/ },
+  { method: "POST", re: /^builder\/reusables\/\d+\/delete$/ },
   { method: "GET", re: /^theme-config$/ },
   { method: "POST", re: /^theme-config$/ },
   { method: "GET", re: /^content\/(service|portfolio)$/ },
 ];
 const INVALIDATING = [
+  /^builder\/reusables\/\d+$/, // a shared block changed: every cached page may differ
   /^builder\/publish\/\d+$/,
   /^builder\/unpublish\/\d+$/,
   /^theme-config$/,

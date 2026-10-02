@@ -97,6 +97,27 @@ function rk_builder_bundle_remap_layout( array $layout, array $maps ) {
 	return $layout;
 }
 
+/**
+ * Point reusable-block references at this site's library. $id_map: old id => new id. A reference that has no mapping
+ * (the bundle did not carry that reusable) is removed, because the old id means something else on this site.
+ */
+function rk_builder_bundle_remap_reusables( array $layout, array $id_map, &$dropped ) {
+	$dropped = 0;
+	if ( ! isset( $layout['blocks'] ) || ! is_array( $layout['blocks'] ) ) { return $layout; }
+	$blocks = array();
+	foreach ( $layout['blocks'] as $b ) {
+		if ( is_array( $b ) && isset( $b['type'] ) && 'reusable' === $b['type'] ) {
+			$old = isset( $b['props']['refId'] ) && is_numeric( $b['props']['refId'] ) ? (int) $b['props']['refId'] : 0;
+			if ( $old > 0 && isset( $id_map[ $old ] ) ) { $b['props']['refId'] = (int) $id_map[ $old ]; $blocks[] = $b; }
+			else { $dropped++; }
+			continue;
+		}
+		$blocks[] = $b;
+	}
+	$layout['blocks'] = $blocks;
+	return $layout;
+}
+
 /** Same for the theme logo. */
 function rk_builder_bundle_remap_theme( array $theme, array $maps ) {
 	$rec = rk_builder_bundle_lookup( $maps, isset( $theme['logoMediaId'] ) && is_numeric( $theme['logoMediaId'] ) ? (int) $theme['logoMediaId'] : null, isset( $theme['logoUrl'] ) ? $theme['logoUrl'] : null );
@@ -144,7 +165,7 @@ function rk_builder_bundle_check_shape( $bundle ) {
 	if ( ! isset( $bundle['version'] ) || 1 !== $bundle['version'] ) {
 		rk_builder_add_issue( $issues, 'version', 'Unsupported bundle version (this site reads version 1)' );
 	}
-	$limits = array( 'pages' => RK_BUILDER_MAX_TRANSFER_PAGES, 'media' => RK_BUILDER_MAX_TRANSFER_MEDIA, 'content' => RK_BUILDER_MAX_TRANSFER_CONTENT );
+	$limits = array( 'pages' => RK_BUILDER_MAX_TRANSFER_PAGES, 'media' => RK_BUILDER_MAX_TRANSFER_MEDIA, 'content' => RK_BUILDER_MAX_TRANSFER_CONTENT, 'reusables' => RK_BUILDER_MAX_REUSABLES );
 	foreach ( $limits as $key => $max ) {
 		if ( ! isset( $bundle[ $key ] ) ) { continue; }
 		if ( ! is_array( $bundle[ $key ] ) || ( array() !== $bundle[ $key ] && rk_builder_is_object( $bundle[ $key ] ) ) ) {
@@ -217,6 +238,12 @@ function rk_builder_handle_site_export( $req ) {
 		$refs = array_merge( $refs, rk_builder_bundle_media_refs( $layout ) );
 	}
 
+	$reusables = array();
+	foreach ( rk_builder_reusable_list() as $r ) {
+		$reusables[] = array( 'id' => $r['id'], 'slug' => $r['slug'], 'name' => $r['name'], 'block' => $r['block'] );
+		$refs = array_merge( $refs, rk_builder_bundle_media_refs( array( 'blocks' => array( array( 'type' => $r['block']['type'], 'props' => $r['block']['props'] ) ) ) ) );
+	}
+
 	$content   = array();
 	$media_ids = array();
 	foreach ( array( 'service', 'portfolio' ) as $type ) {
@@ -255,6 +282,7 @@ function rk_builder_handle_site_export( $req ) {
 		'source'     => array( 'url' => home_url( '/' ), 'plugin' => RK_BUILDER_VERSION ),
 		'theme'      => rk_builder_theme_for_output( $theme ),
 		'media'      => $media,
+		'reusables'  => $reusables,
 		'pages'      => $pages,
 		'content'    => $content,
 	) );
@@ -263,6 +291,12 @@ function rk_builder_handle_site_export( $req ) {
 /* ------------------------------------------------------------------ *
  * Import
  * ------------------------------------------------------------------ */
+
+/** Find one reusable block by slug, or 0. */
+function rk_builder_find_reusable_by_slug( $slug ) {
+	$ids = get_posts( array( 'post_type' => RK_BUILDER_REUSABLE_TYPE, 'name' => $slug, 'post_status' => 'publish', 'posts_per_page' => 1, 'fields' => 'ids' ) );
+	return $ids ? (int) $ids[0] : 0;
+}
 
 /** Find one page by slug (any status), or 0. */
 function rk_builder_find_page_by_slug( $slug ) {
@@ -379,6 +413,31 @@ function rk_builder_handle_site_import( $req ) {
 		$ok_pages[] = array( 'slug' => $slug, 'title' => sanitize_text_field( $title ), 'layout' => rk_builder_canonicalize_layout( $pg['layout'] ), 'wasPublished' => ! empty( $pg['wasPublished'] ) );
 	}
 
+	/* 1b · reusable blocks (a page that uses one needs it imported first) */
+	$ok_reusables = array();
+	$re_skipped   = array();
+	$re_slugs     = array();
+	$re_in        = isset( $bundle['reusables'] ) && is_array( $bundle['reusables'] ) ? $bundle['reusables'] : array();
+	foreach ( $re_in as $i => $re ) {
+		$slug = is_array( $re ) && isset( $re['slug'] ) ? $re['slug'] : null;
+		$label = is_string( $slug ) ? $slug : '#' . $i;
+		$name  = is_array( $re ) && isset( $re['name'] ) && is_string( $re['name'] ) ? trim( $re['name'] ) : '';
+		$old   = is_array( $re ) && isset( $re['id'] ) && rk_builder_is_intlike( $re['id'] ) && $re['id'] > 0 ? (int) $re['id'] : 0;
+		if ( ! rk_builder_bundle_slug_ok( $slug ) || isset( $re_slugs[ $slug ] ) || '' === $name || rk_builder_strlen( $name ) > 80 || $old < 1 ) {
+			$re_skipped[] = array( 'slug' => $label, 'issues' => array( 'Invalid or duplicate reusable block entry' ) );
+			continue;
+		}
+		$problems = isset( $re['block'] ) ? rk_builder_reusable_block_issues( $re['block'], $pre_hosts ) : array( array( 'path' => 'block', 'message' => 'Required' ) );
+		if ( $problems ) {
+			$re_skipped[] = array( 'slug' => $slug, 'issues' => array_map( function ( $p ) { return $p['path'] . ': ' . $p['message']; }, array_slice( $problems, 0, 5 ) ) );
+			continue;
+		}
+		$re_slugs[ $slug ] = true;
+		$ok_reusables[]    = array( 'oldId' => $old, 'slug' => $slug, 'name' => sanitize_text_field( $name ), 'block' => rk_builder_reusable_canonical_block( $re['block'] ) );
+	}
+	$re_existing = 0;
+	foreach ( $ok_reusables as $re ) { if ( rk_builder_find_reusable_by_slug( $re['slug'] ) > 0 ) { $re_existing++; } }
+
 	/* 2 · theme */
 	$theme_in = null;
 	if ( $opts['theme'] && isset( $bundle['theme'] ) ) {
@@ -409,6 +468,7 @@ function rk_builder_handle_site_import( $req ) {
 		'dryRun'   => (bool) $opts['dryRun'],
 		'pages'    => array( 'create' => count( $ok_pages ) - $existing_pages, 'update' => $existing_pages, 'skipped' => $skipped, 'done' => array() ),
 		'media'    => array( 'total' => count( $entries ), 'imported' => 0, 'reused' => 0, 'failed' => $bad_media ),
+		'reusables' => array( 'create' => count( $ok_reusables ) - $re_existing, 'update' => $re_existing, 'skipped' => $re_skipped ),
 		'theme'    => array( 'included' => null !== $theme_in, 'applied' => false ),
 		'content'  => array( 'included' => count( $content_in ), 'created' => 0, 'updated' => 0 ),
 		'warnings' => $warnings,
@@ -438,9 +498,38 @@ function rk_builder_handle_site_import( $req ) {
 	}
 	if ( $report['media']['failed'] ) { $report['warnings'][] = 'Some images could not be copied; those blocks keep their original image address.'; }
 
+	/* reusable blocks: update by slug or create; old id => new id */
+	$re_map = array();
+	$report['reusables']['create'] = 0;
+	$report['reusables']['update'] = 0;
+	foreach ( $ok_reusables as $re ) {
+		$wrapped = rk_builder_bundle_remap_layout( array( 'blocks' => array( array( 'type' => $re['block']['type'], 'props' => $re['block']['props'] ) ) ), $maps );
+		$block   = array( 'type' => $re['block']['type'], 'props' => $wrapped['blocks'][0]['props'] );
+		$problems = rk_builder_reusable_block_issues( $block, $real_hosts );
+		if ( $problems ) {
+			$report['reusables']['skipped'][] = array( 'slug' => $re['slug'], 'issues' => array_map( function ( $p ) { return $p['path'] . ': ' . $p['message']; }, array_slice( $problems, 0, 5 ) ) );
+			continue;
+		}
+		$block = rk_builder_reusable_canonical_block( $block );
+		$rid   = rk_builder_find_reusable_by_slug( $re['slug'] );
+		if ( $rid > 0 ) {
+			wp_update_post( array( 'ID' => $rid, 'post_title' => $re['name'] ) );
+			$report['reusables']['update']++;
+		} else {
+			$rid = wp_insert_post( array( 'post_type' => RK_BUILDER_REUSABLE_TYPE, 'post_status' => 'publish', 'post_title' => $re['name'], 'post_name' => $re['slug'] ), true );
+			if ( is_wp_error( $rid ) || ! $rid ) { $report['reusables']['skipped'][] = array( 'slug' => $re['slug'], 'issues' => array( 'Could not create it' ) ); continue; }
+			$report['reusables']['create']++;
+		}
+		rk_builder_write_json_meta( (int) $rid, '_rk_reusable_block', $block );
+		$re_map[ $re['oldId'] ] = (int) $rid;
+	}
+
 	/* pages (drafts only) */
 	foreach ( $ok_pages as $pg ) {
 		$layout = rk_builder_bundle_remap_layout( $pg['layout'], $maps );
+		$dropped = 0;
+		$layout  = rk_builder_bundle_remap_reusables( $layout, $re_map, $dropped );
+		if ( $dropped > 0 ) { $report['warnings'][] = '"' . $pg['slug'] . '": ' . $dropped . ' reusable block reference(s) were removed because the file does not include that block.'; }
 		$final  = rk_builder_validate_layout( $layout, $real_hosts );
 		if ( $final ) {
 			$why = array_map( function ( $p ) { return $p['path'] . ': ' . $p['message']; }, array_slice( $final, 0, 5 ) );

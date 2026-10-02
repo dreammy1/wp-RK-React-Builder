@@ -26,6 +26,8 @@ import { themeToCssVars } from "@/lib/schema/theme";
 import { LIMITS, type BlockType } from "@/lib/schema/primitives";
 import { LayoutRenderer } from "@/render/BlockRenderer";
 import { ContentProvider } from "../ContentProvider";
+import { useReusables } from "@/lib/editor/useReusables";
+import { ReusableContext } from "@/render/reusable";
 import { LoginForm } from "../Login";
 import { Modal } from "../Modal";
 import { Canvas } from "./Canvas";
@@ -53,6 +55,7 @@ export function EditorPage({
   navigate: (to: string) => void;
 }) {
   const s = useEditorSession(pageId, demo);
+  const library = useReusables();
   const [mode, setMode] = useState<"edit" | "preview">("edit");
   const [tab, setTab] = useState<"block" | "theme">("block");
   const [dialog, setDialog] = useState<Dialog>(null);
@@ -318,119 +321,160 @@ export function EditorPage({
         </div>
       )}
 
-      <ContentProvider store={s.store}>
-        {mode === "preview" ? (
-          <main className="preview-stage">
-            <div className="preview-toolbar">
-              <span>
-                <Eye size={14} aria-hidden="true" /> Preview (unsaved edits
-                included)
-              </span>
-              <button onClick={() => setMode("edit")}>
-                Return to editor <RotateCcw size={14} aria-hidden="true" />
-              </button>
-            </div>
-            <div className="site-root preview-canvas" style={themeVars}>
-              <LayoutRenderer layout={state.layout} mode="public" />
-              <footer className="site-footer">
-                <span>{s.page?.title}</span>
-                <span>Layout v{state.layout.version}</span>
-              </footer>
-            </div>
-          </main>
-        ) : (
-          <div className="workspace">
-            <BlockPalette
-              full={full}
-              onDragStart={setDragType}
-              onAdd={t => {
-                const i = state.layout.blocks.findIndex(
-                  b => b.id === state.selectedId
-                );
-                actions.add(t, i >= 0 ? i + 1 : undefined);
-              }}
-            />
-            <main
-              className="canvas-area"
-              aria-label="Page canvas"
-              style={themeVars}
-            >
-              <div className="canvas-topline">
-                <div>
-                  <span className="eyebrow">
-                    canvas / {s.page?.slug || "page"}
-                  </span>
-                  <h1>{s.page?.title}</h1>
-                </div>
-                <div className="canvas-stats">
-                  <span>
-                    <b>{state.layout.blocks.length}</b> blocks
-                  </span>
-                  <span>
-                    <b>{s.serverRev}</b> revision
-                  </span>
-                </div>
+      <ReusableContext.Provider value={library.source}>
+        <ContentProvider store={s.store}>
+          {mode === "preview" ? (
+            <main className="preview-stage">
+              <div className="preview-toolbar">
+                <span>
+                  <Eye size={14} aria-hidden="true" /> Preview (unsaved edits
+                  included)
+                </span>
+                <button onClick={() => setMode("edit")}>
+                  Return to editor <RotateCcw size={14} aria-hidden="true" />
+                </button>
               </div>
-              <div className="canvas-frame">
-                <Canvas
-                  layout={state.layout}
-                  selectedId={state.selectedId}
-                  errors={s.blockErrors}
-                  dragType={dragType}
-                  onDragEnd={() => setDragType(null)}
-                  onSelect={id => {
-                    actions.select(id);
-                    setTab("block");
-                  }}
-                  onAdd={(t, i) => actions.add(t, i)}
-                  onMove={actions.move}
-                  onMoveBy={actions.moveBy}
-                  onDuplicate={actions.duplicate}
-                  onRemove={remove}
-                />
-              </div>
-              <div className="canvas-caption">
-                <span>Live canvas</span>
-                <span>Drag blocks, or use the arrow buttons to reorder</span>
+              <div className="site-root preview-canvas" style={themeVars}>
+                <LayoutRenderer layout={state.layout} mode="public" />
+                <footer className="site-footer">
+                  <span>{s.page?.title}</span>
+                  <span>Layout v{state.layout.version}</span>
+                </footer>
               </div>
             </main>
-            <aside className="inspector" aria-label="Inspector">
-              <div className="inspector-tabs" role="tablist">
-                <button
-                  role="tab"
-                  aria-selected={tab === "block"}
-                  className={tab === "block" ? "active" : ""}
-                  onClick={() => setTab("block")}
-                >
-                  Inspector
-                </button>
-                <button
-                  role="tab"
-                  aria-selected={tab === "theme"}
-                  className={tab === "theme" ? "active" : ""}
-                  onClick={() => setTab("theme")}
-                >
-                  <Palette size={14} aria-hidden="true" /> Theme
-                </button>
-              </div>
-              {tab === "block" ? (
-                <Inspector
-                  block={selected}
-                  errors={(selected && s.blockErrors.get(selected.id)) || {}}
-                  onPatch={p => selected && actions.patchProps(selected.id, p)}
-                  onDelete={() => selected && remove(selected.id)}
-                />
-              ) : (
-                <ThemePanel
-                  theme={state.theme}
-                  canEdit={s.caps.manageTheme}
-                  onPatch={actions.patchTheme}
-                />
-              )}
-            </aside>
-          </div>
-        )}
-      </ContentProvider>
+          ) : (
+            <div className="workspace">
+              <BlockPalette
+                reusables={library.items}
+                onAddReusable={id => {
+                  const i = state.layout.blocks.findIndex(
+                    b => b.id === state.selectedId
+                  );
+                  actions.add("reusable", i >= 0 ? i + 1 : undefined, {
+                    refId: id,
+                  });
+                }}
+                full={full}
+                onDragStart={setDragType}
+                onAdd={t => {
+                  const i = state.layout.blocks.findIndex(
+                    b => b.id === state.selectedId
+                  );
+                  actions.add(t, i >= 0 ? i + 1 : undefined);
+                }}
+              />
+              <main
+                className="canvas-area"
+                aria-label="Page canvas"
+                style={themeVars}
+              >
+                <div className="canvas-topline">
+                  <div>
+                    <span className="eyebrow">
+                      canvas / {s.page?.slug || "page"}
+                    </span>
+                    <h1>{s.page?.title}</h1>
+                  </div>
+                  <div className="canvas-stats">
+                    <span>
+                      <b>{state.layout.blocks.length}</b> blocks
+                    </span>
+                    <span>
+                      <b>{s.serverRev}</b> revision
+                    </span>
+                  </div>
+                </div>
+                <div className="canvas-frame">
+                  <Canvas
+                    layout={state.layout}
+                    selectedId={state.selectedId}
+                    errors={s.blockErrors}
+                    dragType={dragType}
+                    onDragEnd={() => setDragType(null)}
+                    onSelect={id => {
+                      actions.select(id);
+                      setTab("block");
+                    }}
+                    onAdd={(t, i) => actions.add(t, i)}
+                    onMove={actions.move}
+                    onMoveBy={actions.moveBy}
+                    onDuplicate={actions.duplicate}
+                    onRemove={remove}
+                  />
+                </div>
+                <div className="canvas-caption">
+                  <span>Live canvas</span>
+                  <span>Drag blocks, or use the arrow buttons to reorder</span>
+                </div>
+              </main>
+              <aside className="inspector" aria-label="Inspector">
+                <div className="inspector-tabs" role="tablist">
+                  <button
+                    role="tab"
+                    aria-selected={tab === "block"}
+                    className={tab === "block" ? "active" : ""}
+                    onClick={() => setTab("block")}
+                  >
+                    Inspector
+                  </button>
+                  <button
+                    role="tab"
+                    aria-selected={tab === "theme"}
+                    className={tab === "theme" ? "active" : ""}
+                    onClick={() => setTab("theme")}
+                  >
+                    <Palette size={14} aria-hidden="true" /> Theme
+                  </button>
+                </div>
+                {tab === "block" ? (
+                  <Inspector
+                    block={selected}
+                    errors={(selected && s.blockErrors.get(selected.id)) || {}}
+                    onPatch={p =>
+                      selected && actions.patchProps(selected.id, p)
+                    }
+                    onDelete={() => selected && remove(selected.id)}
+                    library={library}
+                    onSaveAsReusable={async (block, name) => {
+                      if (block.type === "reusable") return;
+                      const item = await library.create(name, {
+                        type: block.type,
+                        props: block.props,
+                      });
+                      actions.convert(block.id, "reusable", { refId: item.id });
+                      setToast({
+                        text: `Saved "${item.name}" to the library.`,
+                      });
+                    }}
+                    onDetach={block => {
+                      if (block.type !== "reusable") return;
+                      const record = library.source.get(block.props.refId);
+                      if (!record) return;
+                      actions.convert(
+                        block.id,
+                        record.block.type,
+                        structuredClone(record.block.props) as Record<
+                          string,
+                          unknown
+                        >
+                      );
+                      setToast({
+                        text: "Detached: this page now has its own copy.",
+                      });
+                    }}
+                  />
+                ) : (
+                  <ThemePanel
+                    theme={state.theme}
+                    canEdit={s.caps.manageTheme}
+                    onPatch={actions.patchTheme}
+                  />
+                )}
+              </aside>
+            </div>
+          )}
+        </ContentProvider>
+      </ReusableContext.Provider>
 
       {toast && (
         <div className="toast" role="status">

@@ -1310,3 +1310,45 @@ select {
 .import-report details {
   margin: 8px 0;
 }
+
+/* Reusable blocks */
+.reusable-frame {
+  position: relative;
+  outline: 2px dashed
+    color-mix(in srgb, var(--accent, #c7f36b) 70%, transparent);
+  outline-offset: -2px;
+}
+.reusable-tag {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 2;
+  padding: 2px 8px;
+  font:
+    10px "IBM Plex Mono",
+    ui-monospace,
+    monospace;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: #111;
+  color: #fff;
+}
+.reusable-missing {
+  margin: 12px 42px;
+  padding: 14px 16px;
+  border: 2px dashed #b3261e;
+  color: #7a1712;
+  background: #fdf0ef;
+  font-size: 14px;
+}
+.save-reusable-btn {
+  margin-top: 16px;
+}
+.save-reusable {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid rgb(255 255 255 / 12%);
+}
+.reusable-panel .dialog-actions {
+  margin-top: 14px;
+}

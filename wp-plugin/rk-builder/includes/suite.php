@@ -44,6 +44,8 @@ function rk_builder_mcp_catalog( $catalog ) {
 		'wp_builder_save_theme'   => array( 'Replace the site-wide theme. Administrators only. Affects every page, including live ones.', rk_builder_mcp_schema( array( 'theme' => array( 'type' => 'object' ), 'confirm' => $confirm ), array( 'theme', 'confirm' ) ) ),
 		'wp_builder_export_site'  => array( 'Export every builder page (the working DRAFT), the theme, the media they use and Services / Portfolio posts as one JSON bundle. Administrators only.', rk_builder_mcp_schema( array() ) ),
 		'wp_builder_import_site'  => array( 'Import a bundle made by wp_builder_export_site (or the editor\'s Export site). Defaults to a DRY RUN that only reports. A real import (dryRun=false) needs confirm=true; pages arrive as drafts, images are copied into the media library, nothing is published. Administrators only.', rk_builder_mcp_schema( array( 'bundle' => array( 'type' => 'object', 'description' => 'The export bundle.' ), 'dryRun' => array( 'type' => 'boolean', 'description' => 'Default true.' ), 'theme' => array( 'type' => 'boolean', 'description' => 'Also replace the site theme.' ), 'content' => array( 'type' => 'boolean', 'description' => 'Also import Services and Portfolio posts.' ), 'contentStatus' => array( 'type' => 'string', 'description' => 'draft (default) or publish, for NEW content posts.' ), 'confirm' => $confirm ), array( 'bundle' ) ) ),
+		'wp_builder_list_reusables' => array( 'List the reusable-block library: shared blocks that pages place by reference ({type:"reusable", props:{refId}}). Editing one changes every page that uses it.', rk_builder_mcp_schema( array() ) ),
+		'wp_builder_save_reusable'  => array( 'Create (omit id) or update (id) a reusable block: {name, block:{type, props}}. The block is any content type except "reusable". Updating changes every page that uses it, so confirm=true is required to update.', rk_builder_mcp_schema( array( 'id' => array( 'type' => 'integer', 'description' => 'Omit to create.' ), 'name' => array( 'type' => 'string' ), 'block' => array( 'type' => 'object', 'description' => '{type, props}' ), 'confirm' => $confirm ), array() ) ),
 		'wp_builder_list_media'   => array( 'List media-library images (id, url, alt) for image blocks and hero backgrounds (bgMediaId + bgUrl).', rk_builder_mcp_schema( array( 'search' => array( 'type' => 'string' ), 'per_page' => array( 'type' => 'integer' ) ) ) ),
 	);
 	foreach ( $tools as $name => $def ) {
@@ -54,7 +56,7 @@ function rk_builder_mcp_catalog( $catalog ) {
 
 function rk_builder_mcp_handlers( $handlers ) {
 	$handlers = is_array( $handlers ) ? $handlers : array();
-	foreach ( array( 'block_types', 'list_pages', 'get_layout', 'save_layout', 'preview_link', 'publish', 'unpublish', 'get_theme', 'save_theme', 'export_site', 'import_site', 'list_media' ) as $tool ) {
+	foreach ( array( 'block_types', 'list_pages', 'get_layout', 'save_layout', 'preview_link', 'publish', 'unpublish', 'get_theme', 'save_theme', 'export_site', 'import_site', 'list_reusables', 'save_reusable', 'list_media' ) as $tool ) {
 		$handlers[ 'wp_builder_' . $tool ] = 'rk_builder_mcp_tool_' . $tool;
 	}
 	return $handlers;
@@ -132,6 +134,7 @@ function rk_builder_mcp_tool_block_types( array $a ) {
 			'Image block: url + alt (or decorative=true). Hero background is decorative: bgUrl and optional bgMediaId.',
 			'The contact block renders id="contact", so a button linking to "#contact" scrolls to it.',
 			'Saving writes a draft only. Publishing is a separate, confirmed step.',
+			'reusable: { refId } points at a library entry (wp_builder_list_reusables). Use it for shared sections such as a footer call-to-action; the content lives in the library, not on the page.',
 		),
 	);
 }
@@ -216,4 +219,19 @@ function rk_builder_mcp_tool_import_site( array $a ) {
 		if ( true !== $ok ) { return $ok; }
 	}
 	return rk_builder_mcp_run( 'rk_builder_handle_site_import', 'rk_builder_perm_site_transfer', 'POST', array(), array( 'bundle' => $a['bundle'], 'options' => $options ) );
+}
+
+function rk_builder_mcp_tool_list_reusables( array $a ) {
+	return rk_builder_mcp_run( 'rk_builder_handle_list_reusables', 'rk_builder_perm_list_pages', 'GET' );
+}
+
+function rk_builder_mcp_tool_save_reusable( array $a ) {
+	$body = array();
+	foreach ( array( 'name', 'block' ) as $k ) { if ( isset( $a[ $k ] ) ) { $body[ $k ] = $a[ $k ]; } }
+	if ( isset( $a['id'] ) && is_numeric( $a['id'] ) ) {
+		$ok = rk_builder_mcp_need_confirm( $a ); // changes every page that uses it
+		if ( true !== $ok ) { return $ok; }
+		return rk_builder_mcp_run( 'rk_builder_handle_update_reusable', 'rk_builder_perm_reusable_write', 'POST', array( 'id' => (int) $a['id'] ), $body );
+	}
+	return rk_builder_mcp_run( 'rk_builder_handle_create_reusable', 'rk_builder_perm_reusable_write', 'POST', array(), $body );
 }

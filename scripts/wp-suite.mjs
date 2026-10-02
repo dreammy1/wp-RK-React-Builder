@@ -104,6 +104,8 @@ try {
         "wp_builder_save_theme",
         "wp_builder_export_site",
         "wp_builder_import_site",
+        "wp_builder_list_reusables",
+        "wp_builder_save_reusable",
         "wp_builder_list_media",
         "wp_list_pages",
       ])
@@ -305,6 +307,61 @@ try {
       const denied = await tool("wp_builder_export_site", {}, asEditor);
       assert.equal(denied.isError, true);
       assert.equal(denied.data.code, "rk_forbidden");
+    }
+  );
+  await check(
+    "reusable blocks via MCP: create, reference from a page, update needs confirm, public page follows the library",
+    async () => {
+      const made = await tool("wp_builder_save_reusable", {
+        name: "Estimate CTA",
+        block: {
+          type: "cta",
+          props: { heading: "Free estimate", cta: "Call", ctaHref: "#contact" },
+        },
+      });
+      assert.equal(made.isError, false, JSON.stringify(made.data));
+      const rid = made.data.item.id;
+      const list = await tool("wp_builder_list_reusables", {});
+      assert.ok(list.data.items.some(i => i.id === rid));
+      const nested = await tool("wp_builder_save_reusable", {
+        name: "Nope",
+        block: { type: "reusable", props: { refId: rid } },
+      });
+      assert.equal(nested.isError, true);
+      assert.equal(nested.data.code, "rk_invalid_reusable");
+      const pg = await tool("wp_builder_save_layout", {
+        id,
+        layout: {
+          version: 1,
+          blocks: [{ id: "shared", type: "reusable", props: { refId: rid } }],
+        },
+      });
+      assert.equal(pg.isError, false, JSON.stringify(pg.data));
+      const noConfirm = await tool("wp_builder_save_reusable", {
+        id: rid,
+        block: {
+          type: "cta",
+          props: { heading: "Changed", cta: "Call", ctaHref: "#contact" },
+        },
+      });
+      assert.equal(noConfirm.data.code, "rk_confirmation_required");
+      const upd = await tool("wp_builder_save_reusable", {
+        id: rid,
+        confirm: true,
+        block: {
+          type: "cta",
+          props: { heading: "Changed", cta: "Call", ctaHref: "#contact" },
+        },
+      });
+      assert.equal(upd.isError, false, JSON.stringify(upd.data));
+      const link = await tool("wp_builder_preview_link", { id });
+      const html = await (await fetch(link.data.url)).text();
+      assert.match(html, /Changed/);
+      const del = await tool("wp_builder_save_layout", {
+        id,
+        layout: { version: 1, blocks: [] },
+      });
+      assert.equal(del.isError, false);
     }
   );
   await check(

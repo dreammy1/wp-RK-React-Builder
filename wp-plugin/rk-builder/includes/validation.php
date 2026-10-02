@@ -248,6 +248,7 @@ function rk_builder_block_specs() {
 		'portfolio' => $collection( 'portfolio' ),
 		'spacer'    => array( 'h' => rk_builder_f_int( 8, 240 ) ),
 		'divider'   => array( 'style' => rk_builder_f_enum( array( 'solid', 'dashed' ) ) ),
+		'reusable'  => array( 'refId' => rk_builder_f_int( 1, 2147483647 ) ),
 		'testimonial' => array(
 			'quote'  => rk_builder_f_text( 1, 600 ),
 			'author' => rk_builder_f_text( 1, 80 ),

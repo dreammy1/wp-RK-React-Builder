@@ -1,6 +1,7 @@
 import { renderToString } from "react-dom/server";
 import { LayoutRenderer } from "@/render/BlockRenderer";
 import { ContentContext, staticContentSource } from "@/render/content";
+import { ReusableContext, staticReusableSource } from "@/render/reusable";
 import { themeToCssText } from "@/lib/schema/theme";
 import type { Env } from "../env";
 import type { PublicPage } from "./data";
@@ -68,9 +69,11 @@ export function renderPageHtml(p: PublicPage, o: DocOptions): string {
   ].join("");
 
   const main = renderToString(
-    <ContentContext.Provider value={staticContentSource(p.content)}>
-      <LayoutRenderer layout={p.layout} mode="public" />
-    </ContentContext.Provider>
+    <ReusableContext.Provider value={staticReusableSource(p.reusables)}>
+      <ContentContext.Provider value={staticContentSource(p.content)}>
+        <LayoutRenderer layout={p.layout} mode="public" />
+      </ContentContext.Provider>
+    </ReusableContext.Provider>
   );
   const logo = theme.logoUrl
     ? `<img class="site-logo" src="${escapeHtml(theme.logoUrl)}" alt="${escapeHtml(env.SITE_NAME)}" height="32">`

@@ -108,3 +108,37 @@ rk_test( 'import defaults to a dry run: nothing is written, bad pages are report
 	t_eq( $r['media']['total'], 1 );
 	t_eq( count( get_posts( array( 'post_type' => 'page', 'post_status' => 'any', 'posts_per_page' => 50 ) ) ), $before, 'a dry run must not create pages' );
 } );
+
+rk_test( 'remap reusables: known ids are re-pointed, unknown ones are removed and counted', function () {
+	$layout = array( 'version' => 1, 'blocks' => array(
+		array( 'id' => 'a', 'type' => 'reusable', 'props' => array( 'refId' => 7 ) ),
+		array( 'id' => 'b', 'type' => 'spacer', 'props' => array( 'h' => 20 ) ),
+		array( 'id' => 'c', 'type' => 'reusable', 'props' => array( 'refId' => 8 ) ),
+	) );
+	$dropped = 0;
+	$out = rk_builder_bundle_remap_reusables( $layout, array( 7 => 301 ), $dropped );
+	t_eq( $dropped, 1 );
+	t_eq( count( $out['blocks'] ), 2 );
+	t_eq( $out['blocks'][0]['props']['refId'], 301 );
+} );
+
+rk_test( 'import: reusables are created, pages are re-pointed, a second import updates by slug', function () {
+	rk_test_login( 'admin' );
+	$b = rk_bundle( array(
+		'media'     => array(),
+		'reusables' => array( array( 'id' => 50, 'slug' => 'site-cta', 'name' => 'Site CTA', 'block' => array( 'type' => 'cta', 'props' => array( 'heading' => 'Call', 'cta' => 'Go', 'ctaHref' => '/contact' ) ) ) ),
+		'pages'     => array( array( 'slug' => 'home', 'title' => 'Home', 'layout' => array( 'version' => 1, 'blocks' => array( array( 'id' => 'r', 'type' => 'reusable', 'props' => array( 'refId' => 50 ) ) ) ) ) ),
+	) );
+	$run = array( 'bundle' => $b, 'options' => array( 'dryRun' => false ) );
+	$r = t_ok( rk_post( '/rk/v1/builder/site-import', $run ) );
+	t_eq( $r['reusables']['create'], 1 );
+	$lib = rk_builder_reusable_list();
+	t_eq( count( $lib ), 1 );
+	$page = rk_builder_find_page_by_slug( 'home' );
+	$layout = rk_builder_get_draft_layout( $page );
+	t_eq( $layout['blocks'][0]['props']['refId'], $lib[0]['id'] );
+	$again = t_ok( rk_post( '/rk/v1/builder/site-import', $run ) );
+	t_eq( $again['reusables']['create'], 0 );
+	t_eq( $again['reusables']['update'], 1 );
+	t_eq( count( rk_builder_reusable_list() ), 1, 'no duplicates' );
+} );

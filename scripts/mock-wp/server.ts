@@ -78,11 +78,29 @@ const hero = (heading: string): LayoutDocument => ({
 });
 
 const pages = new Map<number, Page>();
+type MockReusable = {
+  id: number;
+  name: string;
+  block: { type: string; props: unknown };
+};
+const reusables = new Map<number, MockReusable>();
+let nextReusableId = 700;
+const reusablesFor = (l: LayoutDocument) => {
+  const out: Record<string, MockReusable> = {};
+  for (const b of l.blocks) {
+    if (b.type !== "reusable") continue;
+    const r = reusables.get(b.props.refId);
+    if (r) out[String(r.id)] = r;
+  }
+  return out;
+};
 let theme: ThemeConfig = { ...DEFAULT_THEME };
 const previewTokens = new Map<string, { pageId: number; expires: number }>();
 
 export function reset() {
   pages.clear();
+  reusables.clear();
+  nextReusableId = 700;
   previewTokens.clear();
   theme = { ...DEFAULT_THEME };
   const seed = (
@@ -304,6 +322,7 @@ async function handle(req: IncomingMessage, res: ServerResponse) {
           theme,
           revision: p.revision,
           preview: true,
+          reusables: reusablesFor(p.draft),
         },
         { "Cache-Control": "no-store" }
       );
@@ -322,6 +341,7 @@ async function handle(req: IncomingMessage, res: ServerResponse) {
       layout: p.published,
       theme,
       revision: p.publishedRevision,
+      reusables: reusablesFor(p.published),
     });
   }
   if ((x = m(/^content\/(service|portfolio)$/)) && method === "GET") {
@@ -382,6 +402,30 @@ async function handle(req: IncomingMessage, res: ServerResponse) {
       )
       .map(summary);
     return send(res, 200, { pages: list, total: list.length });
+  }
+  if (path === "builder/reusables" && method === "GET")
+    return send(res, 200, {
+      items: [...reusables.values()].sort((a, b) =>
+        a.name.localeCompare(b.name)
+      ),
+    });
+  if (path === "builder/reusables" && method === "POST") {
+    const { json } = await body(req);
+    const j = json as Partial<MockReusable> | null;
+    if (!j?.name || !j.block)
+      return err(res, 400, "rk_invalid_reusable", "name and block required");
+    const r = { id: nextReusableId++, name: j.name, block: j.block };
+    reusables.set(r.id, r);
+    return send(res, 201, { item: r });
+  }
+  if ((x = m(/^builder\/reusables\/(\d+)$/)) && method === "POST") {
+    const r = reusables.get(Number(x[1]));
+    if (!r) return err(res, 404, "rk_not_found", "Reusable block not found.");
+    const { json } = await body(req);
+    const j = json as Partial<MockReusable> | null;
+    if (j?.name) r.name = j.name;
+    if (j?.block) r.block = j.block;
+    return send(res, 200, { item: r });
   }
   if (path === "builder/media" && method === "GET") {
     const q = (url.searchParams.get("search") ?? "").toLowerCase();

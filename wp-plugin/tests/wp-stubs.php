@@ -46,6 +46,7 @@ class WP_REST_Response {
 	public function __construct( $data = null, $status = 200 ) { $this->data = $data; $this->status = $status; }
 	public function get_data() { return $this->data; }
 	public function get_status() { return $this->status; }
+	public function set_status( $s ) { $this->status = $s; }
 	public function header( $k, $v ) { $this->headers[ $k ] = $v; }
 	public function get_headers() { return $this->headers; }
 }
@@ -258,6 +259,16 @@ function rk_test_query( $args ) {
 			$mv = isset( $GLOBALS['RK']['meta'][ $p->ID ][ $args['meta_key'] ] ) ? $GLOBALS['RK']['meta'][ $p->ID ][ $args['meta_key'] ] : null;
 			if ( null === $mv || ( isset( $args['meta_value'] ) && (string) $mv !== (string) $args['meta_value'] ) ) { continue; }
 		}
+		if ( ! empty( $args['meta_query'] ) ) {
+			$mq = $args['meta_query']; $rel = isset( $mq['relation'] ) ? $mq['relation'] : 'AND'; $hit = 'OR' !== $rel;
+			foreach ( $mq as $k => $q ) {
+				if ( 'relation' === $k ) { continue; }
+				$mv = isset( $GLOBALS['RK']['meta'][ $p->ID ][ $q['key'] ] ) ? (string) $GLOBALS['RK']['meta'][ $p->ID ][ $q['key'] ] : '';
+				$m  = ( 'LIKE' === $q['compare'] ) ? ( false !== strpos( $mv, (string) $q['value'] ) ) : ( $mv === (string) $q['value'] );
+				$hit = 'OR' === $rel ? ( $hit || $m ) : ( $hit && $m );
+			}
+			if ( ! $hit ) { continue; }
+		}
 		if ( isset( $args['author'] ) && (int) $p->post_author !== (int) $args['author'] ) { continue; }
 		if ( isset( $args['s'] ) && false === stripos( $p->post_title, $args['s'] ) ) { continue; }
 		if ( array_key_exists( 'has_password', $args ) && false === $args['has_password'] && '' !== (string) $p->post_password ) { continue; }
@@ -376,4 +387,8 @@ if ( ! function_exists( 'wp_is_post_revision' ) ) { function wp_is_post_revision
 
 if ( ! function_exists( 'sanitize_text_field' ) ) {
 	function sanitize_text_field( $s ) { return trim( preg_replace( '/\s+/', ' ', strip_tags( (string) $s ) ) ); }
+}
+
+if ( ! function_exists( 'wp_delete_post' ) ) {
+	function wp_delete_post( $id, $force = false ) { unset( $GLOBALS['RK']['posts'][ $id ], $GLOBALS['RK']['meta'][ $id ] ); return true; }
 }

@@ -4,6 +4,9 @@ import {
   LoadResponse,
   MediaListResponse,
   MediaUploadResponse,
+  ReusableListResponse,
+  ReusableResponse,
+  type ReusableItem,
   SiteBundle,
   SiteImportReport,
   type SiteImportOptions,
@@ -183,6 +186,26 @@ export const api = {
       { signal }
     ),
 
+  listReusables: () =>
+    request("builder/reusables", ReusableListResponse).then(r => r.items),
+  createReusable: (name: string, block: ReusableItem["block"]) =>
+    request("builder/reusables", ReusableResponse, {
+      method: "POST",
+      body: { name, block },
+    }).then(r => r.item),
+  updateReusable: (
+    id: number,
+    patch: { name?: string; block?: ReusableItem["block"] }
+  ) =>
+    request(`builder/reusables/${id}`, ReusableResponse, {
+      method: "POST",
+      body: patch,
+    }).then(r => r.item),
+  deleteReusable: (id: number) =>
+    request(`builder/reusables/${id}/delete`, Empty, {
+      method: "POST",
+      body: {},
+    }),
   /** Upload an image into the WordPress media library. WordPress-hosted editor only. */
   uploadMedia(file: File, alt: string) {
     const form = new FormData();

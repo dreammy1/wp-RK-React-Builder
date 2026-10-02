@@ -16,6 +16,11 @@ import {
 } from "../client/src/render/content";
 import type { ContentItem } from "../client/src/lib/schema/api";
 import { parseLayout } from "../client/src/lib/schema/migrate";
+import {
+  ReusableContext,
+  staticReusableSource,
+  type ReusableRecord,
+} from "../client/src/render/reusable";
 
 const root = path.resolve(import.meta.dirname, "..");
 const cli = path.join(root, "wp-plugin/tests/render-cli.php");
@@ -62,9 +67,11 @@ const fixtures = readdirSync(path.join(root, "contracts/valid")).filter(f =>
 describe("PHP renderer ↔ React views parity", () => {
   for (const file of fixtures) {
     it(`renders ${file} identically (modulo rk- hooks)`, () => {
-      const doc = JSON.parse(
+      const fixture = JSON.parse(
         readFileSync(path.join(root, "contracts/valid", file), "utf8")
-      ).document;
+      );
+      const doc = fixture.document;
+      const library: ReusableRecord[] = fixture.reusables ?? [];
       const parsed = parseLayout(doc);
       if (!parsed.ok) throw new Error("fixture invalid");
       const results = new Map<string, ContentResult>();
@@ -81,18 +88,20 @@ describe("PHP renderer ↔ React views parity", () => {
         }
       }
       const react = renderToStaticMarkup(
-        <ContentContext.Provider
-          value={{
-            get: q =>
-              results.get(contentKey(q)) ?? {
-                status: "ready",
-                items: [],
-                total: 0,
-              },
-          }}
-        >
-          <LayoutRenderer layout={parsed.value} mode="public" />
-        </ContentContext.Provider>
+        <ReusableContext.Provider value={staticReusableSource(library)}>
+          <ContentContext.Provider
+            value={{
+              get: q =>
+                results.get(contentKey(q)) ?? {
+                  status: "ready",
+                  items: [],
+                  total: 0,
+                },
+            }}
+          >
+            <LayoutRenderer layout={parsed.value} mode="public" />
+          </ContentContext.Provider>
+        </ReusableContext.Provider>
       );
       const php = execFileSync(
         "php",

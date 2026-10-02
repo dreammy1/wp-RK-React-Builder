@@ -13,6 +13,10 @@ export const ERROR_CODES = [
   "rk_preview_invalid",
   "rk_payload_too_large",
   "rk_server_error",
+  "rk_invalid_media",
+  "rk_invalid_bundle",
+  "rk_invalid_reusable",
+  "rk_reusable_in_use",
 ] as const;
 export type RkErrorCode = (typeof ERROR_CODES)[number];
 
@@ -130,6 +134,29 @@ export const MediaItem = z.object({
 });
 export type MediaItem = z.infer<typeof MediaItem>;
 export const MediaListResponse = z.object({ items: z.array(MediaItem) });
+export const ReusableItem = z.object({
+  id: z.number().int(),
+  name: z.string(),
+  block: z.object({
+    type: z.enum([
+      "hero",
+      "heading",
+      "text",
+      "image",
+      "cta",
+      "services",
+      "portfolio",
+      "spacer",
+      "divider",
+      "testimonial",
+      "contact",
+    ]),
+    props: z.unknown(),
+  }),
+});
+export type ReusableItem = z.infer<typeof ReusableItem>;
+export const ReusableListResponse = z.object({ items: z.array(ReusableItem) });
+export const ReusableResponse = z.object({ item: ReusableItem });
 export const MediaUploadResponse = z.object({ item: MediaItem });
 
 /** Whole-site export file. Contents are validated by the server on import; the client only checks the envelope. */
@@ -167,6 +194,13 @@ export const SiteImportReport = z.object({
     reused: z.number(),
     failed: z.array(z.object({ url: z.string(), reason: z.string() })),
   }),
+  reusables: z
+    .object({
+      create: z.number(),
+      update: z.number(),
+      skipped: z.array(Skipped),
+    })
+    .optional(),
   theme: z.object({ included: z.boolean(), applied: z.boolean() }),
   content: z.object({
     included: z.number(),
@@ -212,4 +246,6 @@ export const PublicPageResponse = z.object({
   theme: z.unknown(),
   revision: z.number().int(),
   preview: z.boolean().optional(),
+  /** Library entries referenced by the layout, keyed by id (stringified). */
+  reusables: z.record(z.string(), ReusableItem).optional(),
 });

@@ -68,6 +68,30 @@ pnpm dev           # terminal 2 — Node server :3001 (public site, API) + Vite 
 
 See [DEPLOYMENT.md](DEPLOYMENT.md) for the embedded wp-admin ("nonce") mode and production hardening.
 
+## Reusable blocks
+
+Any content block can be saved once and used on many pages, **linked**: edit it in one place and every page changes.
+
+- **Save:** select a block → Inspector → **Save as reusable block**, name it. The block moves to the library and the page now
+  holds a reference. The library appears under the block palette ("reusable / library"); click an entry to add it to a page.
+- **Edit everywhere:** select a reusable on any page → change the fields → **Update everywhere**. Published pages that use it
+  are purged from caches immediately.
+- **Detach:** **Detach** copies the content back into the page as an ordinary block that no longer follows the library.
+- Rules: a reusable holds one content block (hero, heading, text, image, CTA, services/portfolio grid, spacer, divider,
+  testimonial, contact) and cannot contain another reusable. A library entry can only be deleted once no page uses it.
+  Creating or changing library entries needs `edit_others_pages` (editors and administrators).
+- Public output is exactly the referenced block's own markup (no wrapper); the PHP renderer, the React views and the Node SSR agree
+  (covered by the parity test). Site export/import carries the library: reusables are matched by slug, page references are re-pointed.
+- REST: `GET /builder/reusables`, `POST /builder/reusables`, `POST /builder/reusables/{id}`, `POST /builder/reusables/{id}/delete`.
+
+## Converting an existing site
+
+[`scripts/convert-peoria.mjs`](scripts/convert-peoria.mjs) is a worked example: it turns the _Peoria Hardwood Floors_ Next.js
+site into four RK Builder site-export bundles (pages, linked reusable blocks, theme, services) plus a report of what could not be
+converted. It reads the repo's data files **without running any of its code**, keeps images at their source URLs and lets
+**Import site** copy them into the media library. Rehearse an import on a throwaway WordPress with
+`node scripts/wp-import-bundle.mjs dist/peoria/1-core.json … --theme --content`.
+
 ## Site export / import
 
 Administrators get **Export site** and **Import site** on the page list (WordPress-hosted editor: all-in-one plugin or RK Suite).

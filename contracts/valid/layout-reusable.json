@@ -1,0 +1,67 @@
+{
+  "kind": "layout",
+  "description": "Linked reusable blocks: a CTA and a contact block referenced from the page, one reference to a missing block",
+  "reusables": [
+    {
+      "id": 5,
+      "name": "Footer CTA",
+      "block": {
+        "type": "cta",
+        "props": {
+          "heading": "Ready for floors you'll love?",
+          "cta": "Request an estimate",
+          "ctaHref": "#contact"
+        }
+      }
+    },
+    {
+      "id": 6,
+      "name": "Contact",
+      "block": {
+        "type": "contact",
+        "props": {
+          "heading": "Get in touch",
+          "intro": "Free estimates.",
+          "phone": "(309) 555-0142",
+          "email": "info@example.com",
+          "address": "",
+          "hours": ""
+        }
+      }
+    }
+  ],
+  "document": {
+    "version": 1,
+    "blocks": [
+      {
+        "id": "h",
+        "type": "heading",
+        "props": {
+          "text": "Hello",
+          "level": 2
+        }
+      },
+      {
+        "id": "c",
+        "type": "reusable",
+        "props": {
+          "refId": 6
+        }
+      },
+      {
+        "id": "gone",
+        "type": "reusable",
+        "props": {
+          "refId": 999
+        }
+      },
+      {
+        "id": "f",
+        "type": "reusable",
+        "props": {
+          "refId": 5
+        }
+      }
+    ]
+  }
+}

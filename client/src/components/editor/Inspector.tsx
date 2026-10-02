@@ -1,18 +1,26 @@
 import { Settings2, Trash2 } from "lucide-react";
 import { registry } from "@/blocks/registry";
 import type { Block } from "@/lib/schema/layout";
+import type { ReusableLibrary } from "@/lib/editor/useReusables";
 import { FieldsForm } from "./FieldsForm";
+import { ReusablePanel, SaveAsReusable } from "./ReusablePanel";
 
 export function Inspector({
   block,
   errors,
   onPatch,
   onDelete,
+  library,
+  onSaveAsReusable,
+  onDetach,
 }: {
   block?: Block;
   errors: Record<string, string>;
   onPatch: (patch: Record<string, unknown>) => void;
   onDelete: () => void;
+  library: ReusableLibrary;
+  onSaveAsReusable: (block: Block, name: string) => Promise<void>;
+  onDetach: (block: Block) => void;
 }) {
   if (!block) {
     return (
@@ -47,13 +55,39 @@ export function Inspector({
           display rules.
         </p>
       )}
-      <FieldsForm
-        key={block.id}
-        fields={def.fields}
-        values={block.props as Record<string, unknown>}
-        errors={errors}
-        onChange={onPatch}
-      />
+      {block.type === "reusable" ? (
+        (() => {
+          const record = library.source.get(block.props.refId);
+          return record ? (
+            <ReusablePanel
+              key={`${block.id}:${record.id}`}
+              record={record}
+              library={library}
+              onDetach={() => onDetach(block)}
+            />
+          ) : (
+            <p className="readonly-note" role="note">
+              {library.status === "loading"
+                ? "Loading the library…"
+                : "This reusable block was deleted or could not be loaded. Remove it from the page."}
+            </p>
+          );
+        })()
+      ) : (
+        <>
+          <FieldsForm
+            key={block.id}
+            fields={def.fields}
+            values={block.props as Record<string, unknown>}
+            errors={errors}
+            onChange={onPatch}
+          />
+          <SaveAsReusable
+            key={`save:${block.id}`}
+            onSave={name => onSaveAsReusable(block, name)}
+          />
+        </>
+      )}
       <div className="inspector-foot">
         <span className="eyebrow">block id</span>
         <code>{block.id}</code>

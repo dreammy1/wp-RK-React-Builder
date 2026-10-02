@@ -17,7 +17,20 @@ export type EditorState = {
 };
 
 export type EditorAction =
-  | { type: "add"; blockType: BlockType; index?: number; id: string }
+  | {
+      type: "add";
+      blockType: BlockType;
+      index?: number;
+      id: string;
+      /** Initial props instead of the type defaults (e.g. a reusable reference). */
+      props?: Record<string, unknown>;
+    }
+  | {
+      type: "convert";
+      id: string;
+      blockType: BlockType;
+      props: Record<string, unknown>;
+    }
   | { type: "remove"; id: string }
   | { type: "duplicate"; id: string; newId: string }
   | { type: "move"; id: string; toIndex: number }
@@ -109,7 +122,9 @@ export function reducer(state: EditorState, action: EditorAction): EditorState {
         blocks.length
       );
       const next = [...blocks];
-      next.splice(index, 0, makeBlock(action.blockType, action.id));
+      const block = makeBlock(action.blockType, action.id);
+      if (action.props) block.props = action.props as never;
+      next.splice(index, 0, block);
       return commit(state, {
         layout: withBlocks(state, next),
         selectedId: action.id,
@@ -174,6 +189,18 @@ export function reducer(state: EditorState, action: EditorAction): EditorState {
         key,
         action.now
       );
+    }
+    case "convert": {
+      // Same position and id, different block: used to link a block to the library and to detach it again.
+      const index = blocks.findIndex(b => b.id === action.id);
+      if (index < 0) return state;
+      const next = [...blocks];
+      next[index] = {
+        id: action.id,
+        type: action.blockType,
+        props: action.props,
+      } as Block;
+      return commit(state, { layout: withBlocks(state, next) });
     }
     case "patchTheme":
       return commit(

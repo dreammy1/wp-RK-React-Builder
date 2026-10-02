@@ -13,6 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
  * ------------------------------------------------------------------ */
 
 function rk_builder_register_content_types() {
+	rk_builder_register_reusable_type();
 	if ( rk_builder_setting( 'enable_service_cpt', true ) ) {
 		register_post_type( 'service', array(
 			'labels'       => array( 'name' => 'Services', 'singular_name' => 'Service' ),
@@ -256,6 +257,8 @@ function rk_builder_handle_public_page( $req ) {
 		'theme'    => rk_builder_theme_for_output( rk_builder_get_theme() ),
 		'revision' => $revision,
 	);
+	$reusables = rk_builder_reusables_for_layout( $layout );
+	if ( $reusables ) { $data['reusables'] = $reusables; }
 	if ( $preview ) { $data['preview'] = true; }
 	$response = rest_ensure_response( $data );
 	$response->header( 'Cache-Control', $preview ? 'no-store' : 'public, max-age=0, s-maxage=60' );

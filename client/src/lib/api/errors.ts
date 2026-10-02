@@ -35,11 +35,23 @@ const BY_CODE: Record<string, ApiErrorKind> = {
   rk_preview_invalid: "not_found",
   rk_payload_too_large: "too_large",
   rk_server_error: "server",
+  rk_invalid_media: "invalid_layout",
+  rk_invalid_bundle: "invalid_layout",
+  rk_invalid_reusable: "invalid_layout",
+  rk_reusable_in_use: "conflict",
   // WordPress core codes that can surface before the plugin runs
   rest_cookie_invalid_nonce: "unauthorized",
   rest_not_logged_in: "unauthorized",
   incorrect_password: "unauthorized",
 };
+
+const PLAIN_MESSAGE_CODES = new Set([
+  "rk_invalid_media",
+  "rk_invalid_bundle",
+  "rk_invalid_reusable",
+  "rk_reusable_in_use",
+  "rk_payload_too_large",
+]);
 
 export function kindFromResponse(status: number, code?: string): ApiErrorKind {
   if (code && BY_CODE[code]) return BY_CODE[code]!;
@@ -56,6 +68,8 @@ export const isApiError = (e: unknown): e is ApiError => e instanceof ApiError;
 /** Human text for banners. Never includes request bodies, tokens or headers. */
 export function describeError(e: unknown): string {
   if (!isApiError(e)) return "Something unexpected went wrong.";
+  // These codes carry a plain-language, server-authored explanation (limits, file types, what is still in use).
+  if (PLAIN_MESSAGE_CODES.has(e.code) && e.message) return e.message;
   switch (e.kind) {
     case "unauthorized":
       return "You need to sign in to WordPress to continue.";

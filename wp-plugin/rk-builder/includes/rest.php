@@ -182,6 +182,16 @@ function rk_builder_register_routes() {
 			),
 		),
 	) );
+	register_rest_route( $ns, '/builder/reusables', array(
+		array( 'methods' => $GET, 'callback' => 'rk_builder_handle_list_reusables', 'permission_callback' => 'rk_builder_perm_list_pages' ),
+		array( 'methods' => $POST, 'callback' => 'rk_builder_handle_create_reusable', 'permission_callback' => 'rk_builder_perm_reusable_write' ),
+	) );
+	register_rest_route( $ns, '/builder/reusables/(?P<id>\d+)', array(
+		'methods' => $POST, 'callback' => 'rk_builder_handle_update_reusable', 'permission_callback' => 'rk_builder_perm_reusable_write', 'args' => $id,
+	) );
+	register_rest_route( $ns, '/builder/reusables/(?P<id>\d+)/delete', array(
+		'methods' => $POST, 'callback' => 'rk_builder_handle_delete_reusable', 'permission_callback' => 'rk_builder_perm_reusable_write', 'args' => $id,
+	) );
 	register_rest_route( $ns, '/builder/site-export', array(
 		'methods' => $GET, 'callback' => 'rk_builder_handle_site_export', 'permission_callback' => 'rk_builder_perm_site_transfer',
 	) );

@@ -10,6 +10,7 @@ import { spacerProps } from "@/blocks/spacer/schema";
 import { dividerProps } from "@/blocks/divider/schema";
 import { testimonialProps } from "@/blocks/testimonial/schema";
 import { contactProps } from "@/blocks/contact/schema";
+import { reusableProps } from "@/blocks/reusable/schema";
 import { blockId, LIMITS } from "./primitives";
 
 const b = <T extends string, P extends z.ZodType>(type: T, props: P) =>
@@ -27,6 +28,7 @@ export const BlockSchema = z.discriminatedUnion("type", [
   b("divider", dividerProps),
   b("testimonial", testimonialProps),
   b("contact", contactProps),
+  b("reusable", reusableProps),
 ]);
 export type Block = z.infer<typeof BlockSchema>;
 

@@ -30,6 +30,7 @@ require_once __DIR__ . '/render/spacer.php';
 require_once __DIR__ . '/render/divider.php';
 require_once __DIR__ . '/render/testimonial.php';
 require_once __DIR__ . '/render/contact.php';
+require_once __DIR__ . '/reusable.php';
 
 /* ------------------------------------------------------------------ *
  * Logging (error_log only; never secrets, tokens or layout bodies)
@@ -147,6 +148,7 @@ function rk_builder_block_renderers() {
 		'divider'   => 'rk_builder_render_divider',
 		'testimonial' => 'rk_builder_render_testimonial',
 		'contact'   => 'rk_builder_render_contact',
+		'reusable'  => 'rk_builder_render_reusable',
 	);
 }
 
