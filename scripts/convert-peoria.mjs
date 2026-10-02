@@ -141,8 +141,14 @@ const useImage = (p, alt, title = "") => {
 };
 
 /* ---------- block builders ---------- */
-const clean = v => String(v).replace(/[|\n;]/g, v2 => (v2 === ";" ? "," : " ")).trim();
-const rows = list => list.map(r => r.map(x => String(x).replace(/[|\n]/g, " ").trim()).join("|")).join("\n");
+const clean = v =>
+  String(v)
+    .replace(/[|\n;]/g, v2 => (v2 === ";" ? "," : " "))
+    .trim();
+const rows = list =>
+  list
+    .map(r => r.map(x => String(x).replace(/[|\n]/g, " ").trim()).join("|"))
+    .join("\n");
 const clip = (s, n) => (s.length <= n ? s : s.slice(0, n - 1).trimEnd() + "…");
 const EYEBROWS = {
   about: "Our story",
@@ -174,9 +180,7 @@ class Page {
     // Mirrors the source: the home hero fills the screen with two buttons; every other page has a shorter header with no buttons.
     const home = this.slug === "home";
     const props = {
-      crumb: home
-        ? ""
-        : (this.crumb ?? this.title),
+      crumb: home ? "" : (this.crumb ?? this.title),
       eyebrow: home
         ? "Family owned · Central Illinois"
         : (EYEBROWS[this.slug] ?? "Service"),
@@ -192,45 +196,126 @@ class Page {
     if (bgImage) props.bgUrl = bgImage.url;
     return this.add("coverhero", props);
   }
-  split({ eyebrow = "", heading, body = "", facts = "", cta = "", ctaHref = "", img, alt = "", side = "left", tone = "light" }) {
+  split({
+    eyebrow = "",
+    heading,
+    body = "",
+    facts = "",
+    cta = "",
+    ctaHref = "",
+    img,
+    alt = "",
+    side = "left",
+    tone = "light",
+  }) {
     const props = {
-      eyebrow, heading: clip(heading, 200), body: clip(body, 3000), facts, cta, ctaHref,
-      imageAlt: clip(alt, 300), side, tone,
+      eyebrow,
+      heading: clip(heading, 200),
+      body: clip(body, 3000),
+      facts,
+      cta,
+      ctaHref,
+      imageAlt: clip(alt, 300),
+      side,
+      tone,
     };
     const image = img ? useImage(img, alt) : null;
     if (image) props.imageUrl = image.url;
     return this.add("split", props);
   }
-  section({ eyebrow = "", heading, body = "", linkLabel = "", linkHref = "", tone = "light" }) {
-    return this.add("section", { eyebrow, heading: clip(heading, 200), body: clip(body, 3000), linkLabel, linkHref, tone });
+  section({
+    eyebrow = "",
+    heading,
+    body = "",
+    linkLabel = "",
+    linkHref = "",
+    tone = "light",
+  }) {
+    return this.add("section", {
+      eyebrow,
+      heading: clip(heading, 200),
+      body: clip(body, 3000),
+      linkLabel,
+      linkHref,
+      tone,
+    });
   }
   panel(o) {
     return this.add("panel", {
-      mode: "rows", eyebrow: "", heading: "", body: "", checks: "", actions: "", items: "",
-      itemStyle: "feature", flip: false, kicker: "", box: false, tone: "light", ...o,
+      mode: "rows",
+      eyebrow: "",
+      heading: "",
+      body: "",
+      checks: "",
+      actions: "",
+      items: "",
+      itemStyle: "feature",
+      flip: false,
+      kicker: "",
+      box: false,
+      tone: "light",
+      ...o,
     });
   }
   values({ eyebrow = "", heading, items, cols = 4, tone = "muted" }) {
-    return this.add("values", { eyebrow, heading, items: rows(items.map(i => [i[0], i[1]])), cols, tone });
+    return this.add("values", {
+      eyebrow,
+      heading,
+      items: rows(items.map(i => [i[0], i[1]])),
+      cols,
+      tone,
+    });
   }
   // cards: [{ image, eyebrow, title, blurb, specs: [[k,v]], bullets: [..], href }]
-  cards({ eyebrow = "", heading = "", intro = "", cols = 3, tone = "light", numbered = false, items, filters = false, modals = null }) {
+  cards({
+    eyebrow = "",
+    heading = "",
+    intro = "",
+    cols = 3,
+    tone = "light",
+    numbered = false,
+    items,
+    filters = false,
+    modals = null,
+  }) {
     const line = c => {
-      const img = c.image && !c.image.startsWith("#") ? useImage(c.image, c.title)?.url ?? "" : (c.image ?? "");
+      const img =
+        c.image && !c.image.startsWith("#")
+          ? (useImage(c.image, c.title)?.url ?? "")
+          : (c.image ?? "");
       return [
-        img, c.eyebrow ?? "", c.title, c.blurb ?? "",
+        img,
+        c.eyebrow ?? "",
+        c.title,
+        c.blurb ?? "",
         (c.specs ?? []).map(([k, v]) => clean(`${k}: ${v}`)).join("; "),
-        (c.bullets ?? []).map(clean).join("; "), c.href ?? "",
-      ].map((v, i) => (i === 4 || i === 5 ? v : clean(v))).join("|");
+        (c.bullets ?? []).map(clean).join("; "),
+        c.href ?? "",
+      ]
+        .map((v, i) => (i === 4 || i === 5 ? v : clean(v)))
+        .join("|");
     };
     const props = {
-      eyebrow, heading, intro, items: items.map(line).join("\n"), cols, tone, numbered,
+      eyebrow,
+      heading,
+      intro,
+      items: items.map(line).join("\n"),
+      cols,
+      tone,
+      numbered,
     };
     if (filters) props.filters = true;
     if (modals) {
       // One pop-up per card, matched in order: image|Title|Intro|item; item
       props.modals = modals.items
-        .map(m => [useImage(m.image, m.title)?.url ?? "", clean(m.title), clean(m.source), m.items.map(clean).join("; ")].join("|"))
+        .map(m =>
+          [
+            useImage(m.image, m.title)?.url ?? "",
+            clean(m.title),
+            clean(m.source),
+            m.items.map(clean).join("; "),
+          ].join("|")
+        )
         .join("\n");
       props.modalLabel = modals.label;
       props.modalCta = modals.cta;
@@ -242,7 +327,10 @@ class Page {
       const image = useImage(g.src, g.alt);
       return image ? [image.url, g.service, g.alt].map(clean).join("|") : null;
     };
-    return this.add("gallery", { items: items.map(line).filter(Boolean).join("\n"), filters: true });
+    return this.add("gallery", {
+      items: items.map(line).filter(Boolean).join("\n"),
+      filters: true,
+    });
   }
   detail(o) {
     return this.add("detail", o);
@@ -300,9 +388,17 @@ class Page {
       layout: {
         version: 1,
         blocks: [
-          { id: "site-header", type: "reusable", props: { refId: REUSABLE_IDS.header } },
+          {
+            id: "site-header",
+            type: "reusable",
+            props: { refId: REUSABLE_IDS.header },
+          },
           ...this.blocks,
-          { id: "site-footer", type: "reusable", props: { refId: REUSABLE_IDS.footer } },
+          {
+            id: "site-footer",
+            type: "reusable",
+            props: { refId: REUSABLE_IDS.footer },
+          },
         ],
       },
       ...extra,
@@ -317,12 +413,24 @@ const callLabel = `Call ${site.phone}`;
 // The source's primary nav, on the flat URLs used here. "Visualizer" is left out until that tool exists as a block.
 function primaryNavLinks() {
   return [
-    "About|/about", "Services|/services", "Finishes|/finishes", "Stains|/stains",
-    "Products|/products", "Gallery|/gallery", "Pricing|/pricing",
+    "About|/about",
+    "Services|/services",
+    "Finishes|/finishes",
+    "Stains|/stains",
+    "Products|/products",
+    "Gallery|/gallery",
+    "Pricing|/pricing",
   ].join("\n");
 }
 
-const REUSABLE_IDS = { contact: 11, cta: 12, area: 13, products: 14, header: 15, footer: 16 };
+const REUSABLE_IDS = {
+  contact: 11,
+  cta: 12,
+  area: 13,
+  products: 14,
+  header: 15,
+  footer: 16,
+};
 const reusables = [
   {
     id: REUSABLE_IDS.header,
@@ -353,13 +461,21 @@ const reusables = [
         colALinks: services.map(s => `${s.title}|/${s.slug}`).join("\n"),
         colBTitle: "Explore",
         colBLinks: [
-          "About|/about", "Finishes|/finishes", "Stains|/stains", "Products|/products", "Gallery|/gallery",
-          "Estimate Calculator|/estimate-calculator", "Contact|/contact",
+          "About|/about",
+          "Finishes|/finishes",
+          "Stains|/stains",
+          "Products|/products",
+          "Gallery|/gallery",
+          "Estimate Calculator|/estimate-calculator",
+          "Contact|/contact",
         ].join("\n"),
         contactTitle: "Get in touch",
         phone: site.phone,
         email: site.email,
-        address: clip(`Serving Peoria & surrounding Central Illinois communities, ${site.serviceRadius}.`, 300),
+        address: clip(
+          `Serving Peoria & surrounding Central Illinois communities, ${site.serviceRadius}.`,
+          300
+        ),
         copyright: `© ${new Date().getFullYear()} ${site.name}. Family owned & operated.`,
         note: "Estimates are rough guides — final pricing depends on site conditions and project scope.",
       },
@@ -455,7 +571,8 @@ const add = p => (pages[p.slug] = p);
     eyebrow: "Who we are",
     heading: "A trusted, family-owned hardwood specialist",
     body: "We treat every floor like it's in our own home — careful prep, honest recommendations, and a finish that holds up to real life. From a single room refresh to a full commercial install, we bring the same attention to detail.\n\nNo pushy sales, no fine-print surprises. Just clear guidance and quality workmanship you can stand on for years.",
-    facts: "Wood|Focused specialty\n75 mi|Service radius from Peoria\nFamily|Owned & operated",
+    facts:
+      "Wood|Focused specialty\n75 mi|Service radius from Peoria\nFamily|Owned & operated",
     img: "/images/about-craft.png",
     alt: "Craftsman hand-finishing a hardwood floor",
   });
@@ -498,10 +615,22 @@ const add = p => (pages[p.slug] = p);
     eyebrow: "What we stand for",
     heading: "Values you can stand on",
     items: [
-      ["Family owned", "You work directly with the people doing the work — not a call center. We stand behind every floor we touch."],
-      ["Craftsmanship first", "Careful prep, precise sanding, and clean detail work around cabinets, stairs, and transitions."],
-      ["Honest guidance", "We recommend what your floor actually needs — including sandless when a full refinish isn't necessary."],
-      ["Quality materials", "Trusted finishes and stains from Bona, Rubio Monocoat, and DuraSeal for lasting results."],
+      [
+        "Family owned",
+        "You work directly with the people doing the work — not a call center. We stand behind every floor we touch.",
+      ],
+      [
+        "Craftsmanship first",
+        "Careful prep, precise sanding, and clean detail work around cabinets, stairs, and transitions.",
+      ],
+      [
+        "Honest guidance",
+        "We recommend what your floor actually needs — including sandless when a full refinish isn't necessary.",
+      ],
+      [
+        "Quality materials",
+        "Trusted finishes and stains from Bona, Rubio Monocoat, and DuraSeal for lasting results.",
+      ],
     ],
   });
   p.ref("area");
@@ -544,7 +673,8 @@ const add = p => (pages[p.slug] = p);
   });
   p.section({
     eyebrow: "Choose the right starting point",
-    heading: "Start with the condition of the wood and the way you use the space.",
+    heading:
+      "Start with the condition of the wood and the way you use the space.",
     body: "New floors call for material and subfloor planning. Existing floors may need a full refinish, a lower-disruption sandless refresh, or a focused repair. Commercial, deck, and cabinet work each has its own preparation and scheduling considerations.",
     linkLabel: "Talk through your project",
     linkHref: "/contact",
@@ -578,12 +708,25 @@ const add = p => (pages[p.slug] = p);
     eyebrow: "What affects cost",
     heading: "Good pricing starts with the right questions.",
     body: "Square footage is only part of the story. We account for preparation, materials, access, details, and the finish you want so the recommendation fits the project—not just a calculator. The calculator is planning guidance; final scope and pricing are assessed for the specific space.",
-    actions: "Try the estimate calculator|/estimate-calculator\nReview services|/services\nTalk through your project|/contact",
+    actions:
+      "Try the estimate calculator|/estimate-calculator\nReview services|/services\nTalk through your project|/contact",
     items: rows([
-      ["Installation", "Material, layout, subfloor preparation, trim, and installation method all shape the final range."],
-      ["Sanding & refinishing", "Room count, repairs, stain selection, finish system, and the existing floor's condition matter most."],
-      ["Sandless refinishing", "A lower-disruption refresh for floors with a sound existing finish and surface-level wear."],
-      ["Deck & cabinet refinishing", "Exterior prep, board condition, cabinet count, color changes, and finish choice affect the scope."],
+      [
+        "Installation",
+        "Material, layout, subfloor preparation, trim, and installation method all shape the final range.",
+      ],
+      [
+        "Sanding & refinishing",
+        "Room count, repairs, stain selection, finish system, and the existing floor's condition matter most.",
+      ],
+      [
+        "Sandless refinishing",
+        "A lower-disruption refresh for floors with a sound existing finish and surface-level wear.",
+      ],
+      [
+        "Deck & cabinet refinishing",
+        "Exterior prep, board condition, cabinet count, color changes, and finish choice affect the scope.",
+      ],
     ]),
   });
   p.panel({
@@ -591,7 +734,8 @@ const add = p => (pages[p.slug] = p);
     tone: "muted",
     eyebrow: "Our promise",
     heading: "No surprises. No pressure.",
-    checks: "A clear scope before scheduling\nMaterial and finish options explained in plain language\nRecommendations based on your home, business, and budget\nA local team serving Peoria and Central Illinois",
+    checks:
+      "A clear scope before scheduling\nMaterial and finish options explained in plain language\nRecommendations based on your home, business, and budget\nA local team serving Peoria and Central Illinois",
   });
   p.ref("cta");
   add(p);
@@ -625,10 +769,19 @@ const add = p => (pages[p.slug] = p);
 }
 // Service detail pages
 const SERVICE_LINKS = {
-  "hardwood-floor-installation-peoria-il": ["Compare flooring products|/products"],
-  "hardwood-floor-refinishing-peoria-il": ["Compare finishes|/finishes", "Explore stain directions|/stains"],
-  "sandless-floor-refinishing-peoria-il": ["Compare full refinishing|/hardwood-floor-refinishing-peoria-il"],
-  "commercial-sports-flooring-central-illinois": ["View selected work|/gallery"],
+  "hardwood-floor-installation-peoria-il": [
+    "Compare flooring products|/products",
+  ],
+  "hardwood-floor-refinishing-peoria-il": [
+    "Compare finishes|/finishes",
+    "Explore stain directions|/stains",
+  ],
+  "sandless-floor-refinishing-peoria-il": [
+    "Compare full refinishing|/hardwood-floor-refinishing-peoria-il",
+  ],
+  "commercial-sports-flooring-central-illinois": [
+    "View selected work|/gallery",
+  ],
   "deck-refinishing-peoria-il": ["View selected work|/gallery"],
   "cabinet-refinishing-peoria-il": ["Review finish directions|/finishes"],
 };
@@ -647,13 +800,18 @@ for (const s of services) {
     stepsTitle: "How the process works",
     steps: s.process.join("\n"),
     factorsTitle: "What affects your price",
-    factorsIntro: "Every project is unique — these are the main factors we weigh when quoting.",
+    factorsIntro:
+      "Every project is unique — these are the main factors we weigh when quoting.",
     factors: s.factors.join("\n"),
-    links: [...(SERVICE_LINKS[s.slug] ?? []), "Talk through your project|/contact"].join("\n"),
+    links: [
+      ...(SERVICE_LINKS[s.slug] ?? []),
+      "Talk through your project|/contact",
+    ].join("\n"),
     faqTitle: "Frequently asked",
     faq: rows(s.faqs.map(f => [f.q, f.a])),
     asideTitle: "Discuss your project",
-    asideText: "Tell us about your space and we'll give honest guidance and a realistic estimate — no pressure.",
+    asideText:
+      "Tell us about your space and we'll give honest guidance and a realistic estimate — no pressure.",
     phone: site.phone,
     ctaLabel: "Try the estimate calculator",
     ctaHref: "/estimate-calculator",
@@ -664,7 +822,12 @@ for (const s of services) {
     items: services
       .filter(o => o.slug !== s.slug)
       .slice(0, 3)
-      .map(o => ({ image: o.image, title: o.title, blurb: o.short, href: `/${o.slug}` })),
+      .map(o => ({
+        image: o.image,
+        title: o.title,
+        blurb: o.short,
+        href: `/${o.slug}`,
+      })),
   });
   p.ref("cta");
   add(p);
@@ -683,7 +846,10 @@ for (const s of services) {
       eyebrow: f.family,
       title: f.name,
       blurb: f.notes,
-      specs: [["Sheen", f.sheen], ["Best for", f.bestFor]],
+      specs: [
+        ["Sheen", f.sheen],
+        ["Best for", f.bestFor],
+      ],
     })),
   });
   p.panel({
@@ -692,8 +858,10 @@ for (const s of services) {
     eyebrow: "A better decision",
     heading: "See samples in your own light.",
     body: "Screen colors and online photos are useful for direction, but they cannot show exactly how a finish will look in your home. We bring the conversation back to real samples, your wood species, and your lighting.",
-    checks: "Compare sheen without guesswork\nUnderstand cure and maintenance needs\nChoose a finish that fits your everyday life",
-    actions: "Explore refinishing|/hardwood-floor-refinishing-peoria-il\nTalk through your finish|/contact",
+    checks:
+      "Compare sheen without guesswork\nUnderstand cure and maintenance needs\nChoose a finish that fits your everyday life",
+    actions:
+      "Explore refinishing|/hardwood-floor-refinishing-peoria-il\nTalk through your finish|/contact",
   });
   p.ref("cta");
   add(p);
@@ -738,8 +906,17 @@ for (const s of services) {
   });
   p.cards({
     numbered: true,
-    items: products.map(pr => ({ image: pr.image, title: pr.title, blurb: pr.body, bullets: pr.details })),
-    modals: { items: catalog, label: "View all products", cta: "Ask about this category|/contact" },
+    items: products.map(pr => ({
+      image: pr.image,
+      title: pr.title,
+      blurb: pr.body,
+      bullets: pr.details,
+    })),
+    modals: {
+      items: catalog,
+      label: "View all products",
+      cta: "Ask about this category|/contact",
+    },
   });
   p.panel({
     mode: "rows",

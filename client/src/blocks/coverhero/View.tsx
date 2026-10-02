@@ -43,7 +43,9 @@ export function CoverheroView({ props }: ViewProps<CoverheroProps>) {
           <div className="pf-actions">
             {props.cta && (
               <a className="pf-btn solid" href={props.ctaHref || "#"}>
-                {props.ctaHref.startsWith("tel:") && <Phone size={16} aria-hidden="true" />}
+                {props.ctaHref.startsWith("tel:") && (
+                  <Phone size={16} aria-hidden="true" />
+                )}
                 {props.cta}
               </a>
             )}

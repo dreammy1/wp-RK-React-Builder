@@ -5,12 +5,18 @@ import { paragraphs, parseRows, safeHref } from "../links";
 import type { DetailProps } from "./schema";
 
 const lines = (s: string, max: number) =>
-  s.split("\n").map(x => x.trim()).filter(Boolean).slice(0, max);
+  s
+    .split("\n")
+    .map(x => x.trim())
+    .filter(Boolean)
+    .slice(0, max);
 
 export function DetailView({ props }: ViewProps<DetailProps>) {
   const steps = lines(props.steps, 10);
   const factors = lines(props.factors, 10);
-  const links = parseRows(props.links, 2, 6).filter(([l, h]) => l !== "" && safeHref(h) !== "");
+  const links = parseRows(props.links, 2, 6).filter(
+    ([l, h]) => l !== "" && safeHref(h) !== ""
+  );
   const faq = parseRows(props.faq, 2, 10).filter(([q]) => q !== "");
   const tel = phoneHref(props.phone);
   return (
@@ -21,7 +27,9 @@ export function DetailView({ props }: ViewProps<DetailProps>) {
             {props.eyebrow && <p className="pf-kicker">{props.eyebrow}</p>}
             <h2>{props.heading}</h2>
             {paragraphs(props.body).map((p, i) => (
-              <p className="pf-body" key={i}>{p}</p>
+              <p className="pf-body" key={i}>
+                {p}
+              </p>
             ))}
           </div>
           {props.note && <p className="pf-note">{props.note}</p>}
@@ -41,7 +49,9 @@ export function DetailView({ props }: ViewProps<DetailProps>) {
           {factors.length > 0 && (
             <div>
               {props.factorsTitle && <h3>{props.factorsTitle}</h3>}
-              {props.factorsIntro && <p className="pf-small">{props.factorsIntro}</p>}
+              {props.factorsIntro && (
+                <p className="pf-small">{props.factorsIntro}</p>
+              )}
               <ul className="pf-checkgrid">
                 {factors.map((f, i) => (
                   <li key={i}>
@@ -55,7 +65,9 @@ export function DetailView({ props }: ViewProps<DetailProps>) {
           {links.length > 0 && (
             <div className="pf-linkbar">
               {links.map(([l, h], i) => (
-                <a key={i} href={h}>{l}</a>
+                <a key={i} href={h}>
+                  {l}
+                </a>
               ))}
             </div>
           )}

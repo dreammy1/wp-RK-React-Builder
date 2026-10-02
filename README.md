@@ -183,6 +183,6 @@ The full-width look needs the **standalone** rendering mode (Settings → RK Bui
 
 Small behaviours ship as one inline script (no extra file): `calculator` (project type × quantity → a planning range; one
 `Label|rate|unit` line per type), filter buttons on `catalog`/`gallery` (`filters`; a catalog card's tag is the text after the
-last ` · ` in its blurb, a gallery photo's tag is its category), product pop-ups on `catalog` (`modals`, one line per card:
+last `·` in its blurb, a gallery photo's tag is its category), product pop-ups on `catalog` (`modals`, one line per card:
 `image|Title|Intro|item; item`), the navbar's mobile menu, and the active-page underline. Without JavaScript the pages still
 render; only the interaction is missing.

@@ -34,13 +34,15 @@ export const detailDefaults: DetailProps = {
   stepsTitle: "How the process works",
   steps: "",
   factorsTitle: "What affects your price",
-  factorsIntro: "Every project is unique — these are the main factors we weigh when quoting.",
+  factorsIntro:
+    "Every project is unique — these are the main factors we weigh when quoting.",
   factors: "",
   links: "",
   faqTitle: "Frequently asked",
   faq: "",
   asideTitle: "Discuss your project",
-  asideText: "Tell us about your space and we'll give honest guidance and a realistic estimate — no pressure.",
+  asideText:
+    "Tell us about your space and we'll give honest guidance and a realistic estimate — no pressure.",
   phone: "",
   ctaLabel: "",
   ctaHref: "",

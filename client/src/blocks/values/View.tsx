@@ -13,7 +13,9 @@ export function ValuesView({ props }: ViewProps<ValuesProps>) {
         </div>
         <div
           className="pf-cardgrid"
-          style={{ gridTemplateColumns: `repeat(${props.cols}, minmax(0, 1fr))` }}
+          style={{
+            gridTemplateColumns: `repeat(${props.cols}, minmax(0, 1fr))`,
+          }}
         >
           {items.map(([title, body], i) => (
             <article key={i}>

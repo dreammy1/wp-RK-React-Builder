@@ -29,7 +29,12 @@ export function SitefooterView({ props }: ViewProps<SitefooterProps>) {
       <div className="pf-foot-grid">
         <div className="pf-foot-col">
           {props.logoUrl ? (
-            <img className="pf-foot-logo" src={props.logoUrl} alt={props.brand} height="64" />
+            <img
+              className="pf-foot-logo"
+              src={props.logoUrl}
+              alt={props.brand}
+              height="64"
+            />
           ) : (
             <strong className="pf-foot-brand">{props.brand}</strong>
           )}

@@ -5,7 +5,9 @@ import type { SectionProps } from "./schema";
 
 export function SectionView({ props }: ViewProps<SectionProps>) {
   return (
-    <section className={`pf-section ${props.tone}${props.center ? " center" : ""}`}>
+    <section
+      className={`pf-section ${props.tone}${props.center ? " center" : ""}`}
+    >
       <div className="pf-wrap">
         <div className="pf-section-head">
           <div>
