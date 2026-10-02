@@ -10,6 +10,7 @@ export function ServicesView({ props, mode }: ViewProps<ServicesProps>) {
       cols={props.cols}
       noun="service"
       mode={mode}
+      opts={props}
     />
   );
 }

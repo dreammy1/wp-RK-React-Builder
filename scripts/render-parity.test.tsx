@@ -26,12 +26,12 @@ const root = path.resolve(import.meta.dirname, "..");
 const cli = path.join(root, "wp-plugin/tests/render-cli.php");
 
 /** Must match the deterministic grid content that render-cli.php stubs. */
-const GRID_ITEMS: ContentItem[] = [
+const gridItems = (type: string): ContentItem[] => [
   {
     id: 1,
     title: "Alpha <service>",
     excerpt: "First & best",
-    link: "https://cms.example.com/a",
+    link: `https://cms.example.com/${type}-alpha/`,
     categories: ["energy"],
     image: {
       url: "https://cms.example.com/a.jpg",
@@ -44,7 +44,7 @@ const GRID_ITEMS: ContentItem[] = [
     id: 2,
     title: "Beta",
     excerpt: "",
-    link: "https://cms.example.com/b",
+    link: `https://cms.example.com/${type}-beta/`,
     categories: [],
     image: null,
   },
@@ -77,9 +77,13 @@ describe("PHP renderer ↔ React views parity", () => {
       const results = new Map<string, ContentResult>();
       for (const b of parsed.value.blocks) {
         if (b.type === "services" || b.type === "portfolio") {
-          const items = GRID_ITEMS.filter(
-            i => !b.props.category || i.categories.includes(b.props.category)
-          ).slice(0, b.props.limit);
+          const items = gridItems(
+            b.type === "services" ? "service" : "portfolio"
+          )
+            .filter(
+              i => !b.props.category || i.categories.includes(b.props.category)
+            )
+            .slice(0, b.props.limit);
           results.set(contentKey(b.props), {
             status: "ready",
             items,

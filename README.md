@@ -247,3 +247,8 @@ All in the dashboard (WordPress-hosted editor):
 - **Code & tracking**: Search Console and Bing verification (paste the code or the whole meta tag), GA4 and Tag Manager IDs (not loaded for signed-in editors by default) and free-form head, after-`<body>` and footer snippets (administrators with `unfiltered_html` only).
 - **Reviews**: add the Place ID and a Google API key (Places API (New)) to pull the rating, the review count and up to five reviews, refreshed daily if you wish, or add reviews by hand; hide any of them. The **Google reviews** block shows the rating, the cards and "See all reviews" / "Leave a review" buttons. Review ratings are deliberately not added to the structured data (Google does not allow self-serving review markup). The key can also be set with `RK_BUILDER_PLACES_KEY` in `wp-config.php`.
 - **Redirects**: 301/302 rules from an old path to a new path or address.
+
+## Editor controls for cards and grids
+
+- **Card catalog**: the inspector edits one card at a time: photo or color swatch (media picker), title, small label, description, filter tag, checklist, name/value details, link, reordering, duplicating, and an optional pop-up per card with its own image, text and list. Block-wide switches cover filters, joined grid, columns, numbering and background.
+- **Services grid / Portfolio grid**: equal-height cards, image shape (landscape, wide, square, portrait, natural), show or hide image, description and categories, description length, link the title or add a button, card style, spacing, phone columns, background, eyebrow, intro and a "view all" button. All options are optional, so existing pages keep their look.

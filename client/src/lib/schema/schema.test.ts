@@ -169,6 +169,7 @@ describe("block registry ↔ schema", () => {
       ).toBe(true);
       const keys = Object.keys(def.defaults);
       for (const f of def.fields) {
+        if (f.kind === "group") continue;
         if ("optional" in f && f.optional) continue;
         expect(keys).toContain(f.key);
       }

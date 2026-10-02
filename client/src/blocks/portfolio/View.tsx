@@ -10,6 +10,7 @@ export function PortfolioView({ props, mode }: ViewProps<PortfolioProps>) {
       cols={props.cols}
       noun="project"
       mode={mode}
+      opts={props}
     />
   );
 }

@@ -1,6 +1,8 @@
 import type { FieldDef } from "../fields";
+import { gridOptionFields } from "../gridOptions";
 
 export const servicesFields: FieldDef[] = [
+  { kind: "group", label: "Content" },
   { kind: "text", key: "title", label: "Section title", maxLength: 120 },
   { kind: "number", key: "limit", label: "Items to show", min: 1, max: 24 },
   {
@@ -40,4 +42,5 @@ export const servicesFields: FieldDef[] = [
       { value: "desc", label: "Descending" },
     ],
   },
+  ...gridOptionFields,
 ];

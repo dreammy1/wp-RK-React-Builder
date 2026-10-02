@@ -2518,3 +2518,21 @@ button.stat-card:hover {
 .cc-popup-settings .cc-row.two {
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
 }
+
+.field-group {
+  margin: 18px 0 2px;
+  padding-top: 14px;
+  border-top: 1px solid #2c333c;
+  font:
+    11px "IBM Plex Mono",
+    ui-monospace,
+    monospace;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #c7f36b;
+}
+.field-group:first-child {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}

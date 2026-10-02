@@ -204,7 +204,7 @@ test.describe("editing round trip", () => {
     await expect(cards).toHaveCount(2);
     await page.getByLabel("Items to show").fill("1");
     await expect(cards).toHaveCount(1);
-    await page.getByLabel("Columns").selectOption("2");
+    await page.getByLabel("Columns", { exact: true }).selectOption("2");
     await expect(
       page.getByTestId("block-services").locator(".cards")
     ).toHaveCSS("grid-template-columns", /^[\d.]+px [\d.]+px$/);

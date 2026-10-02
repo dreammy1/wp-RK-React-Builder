@@ -329,6 +329,53 @@
         }
       },
       {
+        "id": "svc-opts",
+        "type": "services",
+        "props": {
+          "title": "Services <all>",
+          "source": "service",
+          "limit": 2,
+          "cols": 2,
+          "category": "",
+          "orderBy": "menu_order",
+          "order": "asc",
+          "eyebrow": "Our work",
+          "intro": "What we do & why",
+          "tone": "muted",
+          "equalHeight": true,
+          "imageRatio": "square",
+          "showImage": true,
+          "showExcerpt": true,
+          "excerptLines": 2,
+          "showCategories": true,
+          "cardLink": "button",
+          "buttonLabel": "See <more>",
+          "cardStyle": "soft",
+          "gap": "lg",
+          "mobileCols": 2,
+          "viewAllLabel": "All services",
+          "viewAllHref": "/services"
+        }
+      },
+      {
+        "id": "port-opts",
+        "type": "portfolio",
+        "props": {
+          "title": "Work",
+          "source": "portfolio",
+          "limit": 2,
+          "cols": 3,
+          "category": "",
+          "orderBy": "date",
+          "order": "desc",
+          "cardLink": "title",
+          "showImage": false,
+          "showExcerpt": false,
+          "viewAllLabel": "Bad link",
+          "viewAllHref": ""
+        }
+      },
+      {
         "id": "rev",
         "type": "reviews",
         "props": {

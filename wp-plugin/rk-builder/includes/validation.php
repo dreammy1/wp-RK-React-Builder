@@ -189,12 +189,12 @@ function rk_builder_check_social_url( $v ) {
 
 /* Field spec constructors. */
 function rk_builder_f_text( $min, $max, $optional = false ) { return array( 't' => 'text', 'min' => $min, 'max' => $max, 'opt' => $optional ); }
-function rk_builder_f_link() { return array( 't' => 'link' ); }
+function rk_builder_f_link( $optional = false ) { return array( 't' => 'link', 'opt' => $optional ); }
 function rk_builder_f_image() { return array( 't' => 'image' ); }
 function rk_builder_f_image_opt() { return array( 't' => 'image', 'opt' => true ); }
 function rk_builder_f_int( $min, $max, $optional = false ) { return array( 't' => 'int', 'min' => $min, 'max' => $max, 'opt' => $optional ); }
 function rk_builder_f_bool( $optional = false ) { return array( 't' => 'bool', 'opt' => $optional ); }
-function rk_builder_f_enum( array $values ) { return array( 't' => 'enum', 'values' => $values ); }
+function rk_builder_f_enum( array $values, $optional = false ) { return array( 't' => 'enum', 'values' => $values, 'opt' => $optional ); }
 function rk_builder_f_slug() { return array( 't' => 'slug' ); }
 
 /** Block prop specs. Mirrors client/src/blocks/<type>/schema.ts. */
@@ -212,6 +212,23 @@ function rk_builder_block_specs() {
 			'category' => rk_builder_f_slug(),
 			'orderBy'  => $order_by,
 			'order'    => $order,
+			// display options (all optional; see client/src/blocks/gridOptions.ts)
+			'eyebrow'        => rk_builder_f_text( 0, 80, true ),
+			'intro'          => rk_builder_f_text( 0, 300, true ),
+			'tone'           => rk_builder_f_enum( array( 'light', 'muted' ), true ),
+			'equalHeight'    => rk_builder_f_bool( true ),
+			'imageRatio'     => rk_builder_f_enum( array( 'auto', 'landscape', 'wide', 'square', 'portrait' ), true ),
+			'showImage'      => rk_builder_f_bool( true ),
+			'showExcerpt'    => rk_builder_f_bool( true ),
+			'excerptLines'   => rk_builder_f_int( 0, 8, true ),
+			'showCategories' => rk_builder_f_bool( true ),
+			'cardLink'       => rk_builder_f_enum( array( 'none', 'title', 'button' ), true ),
+			'buttonLabel'    => rk_builder_f_text( 0, 40, true ),
+			'cardStyle'      => rk_builder_f_enum( array( 'bordered', 'soft', 'plain' ), true ),
+			'gap'            => rk_builder_f_enum( array( 'sm', 'md', 'lg' ), true ),
+			'mobileCols'     => rk_builder_f_int( 1, 2, true ),
+			'viewAllLabel'   => rk_builder_f_text( 0, 60, true ),
+			'viewAllHref'    => rk_builder_f_link( true ),
 		);
 	};
 	$specs = array(

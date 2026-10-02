@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { slug, text } from "@/lib/schema/primitives";
+import { gridOptionDefaults, gridOptionShape } from "../gridOptions";
 
 export const portfolioProps = z.strictObject({
   title: text(0, 120),
@@ -9,6 +10,7 @@ export const portfolioProps = z.strictObject({
   category: slug,
   orderBy: z.enum(["date", "title", "menu_order"]),
   order: z.enum(["asc", "desc"]),
+  ...gridOptionShape,
 });
 export type PortfolioProps = z.infer<typeof portfolioProps>;
 export const portfolioDefaults: PortfolioProps = {
@@ -19,4 +21,5 @@ export const portfolioDefaults: PortfolioProps = {
   category: "",
   orderBy: "menu_order",
   order: "asc",
+  ...gridOptionDefaults,
 };

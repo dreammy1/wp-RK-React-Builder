@@ -1,5 +1,12 @@
 /** Declarative inspector fields. Rendered by components/editor/FieldsForm. */
-export type FieldDef =
+export type FieldDef = FieldBase & FieldVariant;
+
+type FieldBase = {
+  /** Hide the field unless this returns true for the block's current values. */
+  showIf?: (values: Record<string, unknown>) => boolean;
+};
+
+type FieldVariant =
   | {
       kind: "text" | "url" | "textarea";
       key: string;
@@ -31,6 +38,7 @@ export type FieldDef =
       idKey?: string;
       optional?: boolean;
     }
+  | { kind: "group"; label: string }
   | {
       /** Card-by-card editor for the catalog block: writes `items`, `modals`, `modalLabel` and `modalCta` together. */
       kind: "catalogCards";
