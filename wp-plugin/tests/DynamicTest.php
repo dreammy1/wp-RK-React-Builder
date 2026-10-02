@@ -669,3 +669,12 @@ rk_test( 'listing SEO: the type\'s archive title and description, collection sch
 	t_assert( in_array( 'CollectionPage', array_map( function ( $n ) { return $n['@type']; }, $g['@graph'] ), true ) );
 	rk_builder_dyn_request( 'reset' );
 } );
+
+rk_test( 'entries of a type with no fields send fields and terms as JSON objects, not []', function () {
+	rk_dyn_boot();
+	rk_test_login( 'admin' );
+	$id = wp_insert_post( array( 'post_type' => 'service', 'post_status' => 'publish', 'post_title' => 'Plain service' ) );
+	$entry = t_ok( rk_get( '/rk/v1/builder/entry/' . $id ) )['entry'];
+	t_eq( json_encode( $entry['fields'] ), '{}' );
+	t_eq( json_encode( $entry['terms'] ), '{"service_cat":[]}', 'a taxonomy with no terms is still a key' );
+} );

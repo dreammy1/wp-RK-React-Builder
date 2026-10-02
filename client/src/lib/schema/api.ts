@@ -576,6 +576,7 @@ export const EntryList = z.object({
   total: z.number().int(),
   pages: z.number().int(),
 });
+const emptyMap = (v: unknown) => (Array.isArray(v) && v.length === 0 ? {} : v);
 export const Entry = z.object({
   id: z.number().int(),
   type: z.string(),
@@ -586,8 +587,9 @@ export const Entry = z.object({
   content: z.string(),
   image: EntryMedia.nullable(),
   menuOrder: z.number().int(),
-  terms: z.record(z.string(), z.array(z.string())),
-  fields: z.record(z.string(), z.unknown()),
+  // PHP sends an empty map as []
+  terms: z.preprocess(emptyMap, z.record(z.string(), z.array(z.string()))),
+  fields: z.preprocess(emptyMap, z.record(z.string(), z.unknown())),
   link: z.string(),
   modified: z.string(),
   seo: z.object({

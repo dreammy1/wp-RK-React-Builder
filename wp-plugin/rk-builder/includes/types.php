@@ -476,6 +476,9 @@ function rk_builder_dyn_store( $post_id, array $f, $clean ) {
  * Entries
  * ------------------------------------------------------------------ */
 
+/** An empty PHP array would encode as JSON `[]`; these are maps, so send `{}`. */
+function rk_builder_dyn_obj( array $a ) { return array() === $a ? new stdClass() : $a; }
+
 /** Full entry for the dashboard editor. */
 function rk_builder_dyn_entry( $post ) {
 	$def    = rk_builder_dyn_type( $post->post_type );
@@ -489,7 +492,7 @@ function rk_builder_dyn_entry( $post ) {
 	return array(
 		'id' => (int) $post->ID, 'type' => (string) $post->post_type, 'title' => rk_builder_plain( get_the_title( $post ) ), 'slug' => (string) $post->post_name,
 		'status' => (string) $post->post_status, 'excerpt' => (string) $post->post_excerpt, 'content' => (string) $post->post_content,
-		'image' => rk_builder_dyn_thumb( $post->ID ), 'menuOrder' => (int) $post->menu_order, 'terms' => $terms, 'fields' => $fields,
+		'image' => rk_builder_dyn_thumb( $post->ID ), 'menuOrder' => (int) $post->menu_order, 'terms' => rk_builder_dyn_obj( $terms ), 'fields' => rk_builder_dyn_obj( $fields ),
 		'link' => (string) get_permalink( $post->ID ), 'modified' => rk_builder_mysql_gmt_to_iso( $post->post_modified_gmt ),
 		'seo' => rk_builder_dyn_seo_out( $post->ID ),
 	);
