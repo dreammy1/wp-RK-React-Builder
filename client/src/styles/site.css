@@ -3728,7 +3728,12 @@ html.rk-menu-open {
   white-space: nowrap;
   background: var(--site-primary);
   color: #131313;
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-family:
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
   font-size: 13px;
   line-height: 1;
 }
