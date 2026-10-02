@@ -30,4 +30,10 @@ export type FieldDef =
       /** Decorative single-image mode: writes only `key` (url) and `idKey` (attachment id). */
       idKey?: string;
       optional?: boolean;
+    }
+  | {
+      /** Card-by-card editor for the catalog block: writes `items`, `modals`, `modalLabel` and `modalCta` together. */
+      kind: "catalogCards";
+      key: "items";
+      label: string;
     };

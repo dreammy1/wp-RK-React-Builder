@@ -2386,3 +2386,135 @@ button.stat-card:hover {
 .dash .inline-check {
   width: auto;
 }
+
+/* Catalog card editor */
+.cc {
+  display: grid;
+  gap: 10px;
+}
+.cc-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.cc-card {
+  background: #1d242c;
+  border: 1px solid #303a44;
+  border-radius: 10px;
+  overflow: hidden;
+}
+.cc-card.open {
+  border-color: #48555b;
+}
+.cc-card > header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px 6px 6px;
+}
+.cc-toggle {
+  display: flex;
+  align-items: center;
+  flex: 1 1 auto;
+  gap: 8px;
+  min-width: 0;
+  padding: 4px;
+  color: #dfe5e8;
+  background: transparent;
+  border: 0;
+  text-align: left;
+}
+.cc-mini {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 6px;
+  background: #11151b center / cover no-repeat;
+  border: 1px solid #303a44;
+}
+.cc-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+}
+.cc-title b {
+  color: #c7f36b;
+  font-weight: 600;
+}
+.cc-tools {
+  display: flex;
+  flex: none;
+  gap: 4px;
+}
+.cc-tools .icon-btn {
+  width: 28px;
+  height: 28px;
+}
+.cc-body {
+  display: grid;
+  gap: 14px;
+  padding: 12px 12px 16px;
+  border-top: 1px solid #303a44;
+}
+.cc-image {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 6px;
+}
+.cc-thumb {
+  width: 72px;
+  height: 54px;
+  display: grid;
+  place-items: center;
+  color: #5f6c74;
+  background: #11151b center / cover no-repeat;
+  border: 1px solid #303a44;
+  border-radius: 6px;
+}
+.cc-image-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.cc-color {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+.cc-color input[type="color"] {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.cc-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.cc-row.two {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) auto;
+}
+.cc-popup,
+.cc-popup-settings {
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+  background: #171c23;
+  border: 1px dashed #3a4651;
+  border-radius: 8px;
+}
+.cc-popup-settings .cc-row.two {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+}

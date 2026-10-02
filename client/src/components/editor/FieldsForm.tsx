@@ -1,6 +1,7 @@
 import { useId, useState } from "react";
 import type { FieldDef } from "@/blocks/fields";
 import type { MediaItem } from "@/lib/schema/api";
+import { CatalogCardsEditor } from "./CatalogCardsEditor";
 import { MediaPicker } from "./MediaPicker";
 
 type Props = {
@@ -127,6 +128,19 @@ export function FieldsForm({ fields, values, errors, onChange }: Props) {
                 </select>
                 {error}
               </div>
+            );
+          case "catalogCards":
+            return (
+              <CatalogCardsEditor
+                key={f.key}
+                uid={id}
+                items={String(values.items ?? "")}
+                modals={String(values.modals ?? "")}
+                modalLabel={String(values.modalLabel ?? "")}
+                modalCta={String(values.modalCta ?? "")}
+                errors={errors}
+                onChange={onChange}
+              />
             );
           case "checkbox":
             return (
