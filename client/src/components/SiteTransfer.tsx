@@ -205,23 +205,29 @@ export function ImportSiteDialog({
       </label>
       <fieldset className="field" disabled={busy}>
         <legend>Also import</legend>
-        <label>
-          <input
-            type="checkbox"
-            checked={opts.theme}
-            onChange={e => setOpts({ ...opts, theme: e.target.checked })}
-          />{" "}
-          The theme (colors, logo, header and footer) — replaces the current
-          theme on every page
-        </label>
-        <label>
-          <input
-            type="checkbox"
-            checked={opts.content}
-            onChange={e => setOpts({ ...opts, content: e.target.checked })}
-          />{" "}
-          Services and portfolio projects (as drafts)
-        </label>
+        <div className="field check">
+          <label>
+            <input
+              type="checkbox"
+              checked={opts.theme}
+              onChange={e => setOpts({ ...opts, theme: e.target.checked })}
+            />{" "}
+            <span>
+              The theme (colors, logo, header and footer) — replaces the current
+              theme on every page
+            </span>
+          </label>
+        </div>
+        <div className="field check">
+          <label>
+            <input
+              type="checkbox"
+              checked={opts.content}
+              onChange={e => setOpts({ ...opts, content: e.target.checked })}
+            />{" "}
+            <span>Services and portfolio projects (as drafts)</span>
+          </label>
+        </div>
       </fieldset>
 
       {phase.kind === "error" && (
