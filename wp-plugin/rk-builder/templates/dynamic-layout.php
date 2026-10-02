@@ -45,6 +45,7 @@ $rk_has  = function ( $type ) use ( $rk_layout ) {
 <?php if ( ! function_exists( 'wp_is_block_theme' ) || ! wp_is_block_theme() ) : ?>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <?php endif; ?>
+<?php echo rk_builder_topbar_head_script( $rk_parts['header'] . $rk_html ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- the key is digits only ?>
 <?php wp_head(); ?>
 </head>
 <body <?php body_class( $rk_ctx['solid_nav'] && ( $rk_has( 'navbar' ) || $rk_parts['has_header'] ) ? 'rk-standalone rk-dynamic rk-solid-nav' : 'rk-standalone rk-dynamic' ); ?>>

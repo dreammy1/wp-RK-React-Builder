@@ -109,6 +109,29 @@ function rk_builder_theme_logo_url( array $theme ) {
 	return isset( $theme['logoUrl'] ) && is_string( $theme['logoUrl'] ) ? $theme['logoUrl'] : '';
 }
 
+/**
+ * The browser-storage key under which a visitor's dismissal of the announcement bar is kept: the same string the page
+ * script builds from the message (a 32-bit hash of its UTF-16 code units). '' when the markup has no dismissible bar.
+ */
+function rk_builder_topbar_key( $html ) {
+	if ( 1 !== preg_match( '#<div class="pf-topbar [^"]*"><span>(.*?)</span>.*?pf-topbar-close#s', (string) $html, $m ) ) { return ''; }
+	$text  = html_entity_decode( $m[1], ENT_QUOTES | ENT_HTML5, 'UTF-8' );
+	$units = unpack( 'v*', (string) mb_convert_encoding( $text, 'UTF-16LE', 'UTF-8' ) );
+	$h     = 0;
+	foreach ( is_array( $units ) ? $units : array() as $u ) {
+		$h = ( $h * 31 + $u ) & 0xFFFFFFFF;
+	}
+	if ( $h >= 0x80000000 ) { $h -= 0x100000000; }
+	return 'rk-top-' . $h;
+}
+
+/** A one-line script for <head>: hide an already-dismissed announcement bar before the first paint (no flash). */
+function rk_builder_topbar_head_script( $html ) {
+	$key = rk_builder_topbar_key( $html );
+	if ( '' === $key ) { return ''; }
+	return '<script>try{if(localStorage.getItem("' . $key . '"))document.documentElement.classList.add("rk-topbar-off")}catch(e){}</script>' . "\n";
+}
+
 /** Site header (brand) — same markup as the Node server's shell. */
 function rk_builder_site_header_html( array $theme ) {
 	$name = (string) get_bloginfo( 'name' );

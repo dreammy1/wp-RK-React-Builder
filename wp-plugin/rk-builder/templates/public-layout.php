@@ -32,6 +32,7 @@ $rk_has = function ( $type ) use ( $rk_page ) {
 <?php if ( ! function_exists( 'wp_is_block_theme' ) || ! wp_is_block_theme() ) : // block themes already print the viewport tag ?>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <?php endif; ?>
+<?php echo rk_builder_topbar_head_script( $rk_parts['header'] . $rk_html ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- the key is digits only ?>
 <?php wp_head(); ?>
 </head>
 <body <?php body_class( $rk_parts['has_header'] && ! empty( $rk_parts['ctx']['solid_nav'] ) ? 'rk-standalone rk-solid-nav' : 'rk-standalone' ); ?>>

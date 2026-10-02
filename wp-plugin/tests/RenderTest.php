@@ -360,3 +360,17 @@ rk_test( 'header: drop-down items, appearance classes, extra button; footer: ton
 	t_assert( false !== strpos( $foot, '<a href="https://facebook.com/s" rel="noopener noreferrer">Facebook</a>' ) && false === strpos( $foot, 'javascript' ), 'social links, safe only' );
 	t_assert( false !== strpos( $foot, '<ul class="pf-foot-legal"><li><a href="/privacy">Privacy</a></li><li><a href="/terms">Terms</a></li></ul>' ), 'bottom links' );
 } );
+
+rk_test( 'announcement bar: the head script uses the same storage key the page script builds', function () {
+	$nav = function ( $text, $dismiss ) {
+		return rk_builder_render_block( array( 'id' => 'n', 'type' => 'navbar', 'props' => array( 'brand' => 'S', 'links' => '', 'phone' => '', 'phoneHref' => '', 'overlay' => false, 'topText' => $text, 'topDismiss' => $dismiss ) ), array() );
+	};
+	// 1526879879 is the key the live site stored for this exact message (hash computed in the browser).
+	t_eq( rk_builder_topbar_key( $nav( 'Free estimates this month', true ) ), 'rk-top-1526879879' );
+	t_assert( false !== strpos( rk_builder_topbar_head_script( $nav( 'Free estimates this month', true ) ), 'localStorage.getItem("rk-top-1526879879")' ), 'script reads that key' );
+	t_eq( rk_builder_topbar_head_script( $nav( 'Free estimates this month', false ) ), '', 'no close button, no script' );
+	t_eq( rk_builder_topbar_head_script( $nav( '', true ) ), '', 'no bar, no script' );
+	$a = rk_builder_topbar_key( $nav( 'Sale <b>now</b> & more — café', true ) );
+	t_assert( 1 === preg_match( '/^rk-top--?\d+$/', $a ), 'entities and non-ASCII text give a numeric key: ' . $a );
+	t_assert( $a !== rk_builder_topbar_key( $nav( 'Sale now', true ) ), 'a different message gives a different key' );
+} );
