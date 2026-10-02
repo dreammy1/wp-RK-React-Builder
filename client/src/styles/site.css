@@ -3709,7 +3709,7 @@ html.rk-menu-open {
 }
 
 /* ---- Announcement bar (top of the header) ---- */
-.pf-nav:has(> .pf-topbar) {
+html:not(.rk-topbar-off) .pf-nav:has(> .pf-topbar) {
   padding-top: calc(var(--pf-pt) + 36px);
 }
 .pf-nav > .pf-topbar {
@@ -3767,7 +3767,7 @@ html.rk-menu-open {
 .pf-nav.overlay > .pf-topbar.tone-dark {
   color: #fff;
 }
-body.rk-solid-nav:has(.pf-topbar) #main {
+html:not(.rk-topbar-off) body.rk-solid-nav:has(.pf-topbar) #main {
   padding-top: 148px;
 }
 /* signed-in admins: the fixed header starts below WordPress's own bar */
@@ -3784,7 +3784,39 @@ body.rk-standalone.admin-bar .pf-nav {
     font-size: 12px;
     gap: 10px;
   }
-  body.rk-solid-nav:has(.pf-topbar) #main {
+  html:not(.rk-topbar-off) body.rk-solid-nav:has(.pf-topbar) #main {
     padding-top: 128px;
   }
+}
+
+/* close button on the announcement bar */
+.pf-topbar-close {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.7;
+}
+.pf-topbar-close:hover,
+.pf-topbar-close:focus-visible {
+  opacity: 1;
+}
+.pf-nav > .pf-topbar:has(.pf-topbar-close) {
+  padding-right: 44px;
+  padding-left: 44px;
+}
+html.rk-topbar-off .pf-nav > .pf-topbar {
+  display: none;
 }

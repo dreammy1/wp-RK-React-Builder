@@ -26,7 +26,8 @@
           "topText": "Free estimates this month",
           "topLabel": "Book now",
           "topHref": "/contact",
-          "topTone": "dark"
+          "topTone": "dark",
+          "topDismiss": true
         }
       },
       {

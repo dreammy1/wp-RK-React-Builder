@@ -36,6 +36,15 @@ export function NavbarView({ props }: ViewProps<NavbarProps>) {
           {props.topLabel && props.topHref && (
             <a href={props.topHref}>{props.topLabel}</a>
           )}
+          {props.topDismiss && (
+            <button
+              type="button"
+              className="pf-topbar-close"
+              aria-label="Dismiss announcement"
+            >
+              <span aria-hidden="true">×</span>
+            </button>
+          )}
         </div>
       )}
       <a className="pf-brand" href="/">

@@ -30,6 +30,8 @@ export const navbarProps = z.strictObject({
   topLabel: text(0, 40).optional(),
   topHref: linkUrl.optional(),
   topTone: z.enum(["primary", "dark", "light"]).optional(),
+  /** A close button; the choice is remembered in the visitor's browser until the message changes. */
+  topDismiss: z.boolean().optional(),
 });
 export type NavbarProps = z.infer<typeof navbarProps>;
 export const navbarDefaults: NavbarProps = {
@@ -51,4 +53,5 @@ export const navbarDefaults: NavbarProps = {
   topLabel: "",
   topHref: "",
   topTone: "primary",
+  topDismiss: false,
 };

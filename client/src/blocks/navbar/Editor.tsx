@@ -21,6 +21,12 @@ export const navbarFields: FieldDef[] = [
       { value: "light", label: "Light" },
     ],
   },
+  {
+    kind: "checkbox",
+    key: "topDismiss",
+    label: "Let visitors close the announcement bar",
+    help: "Adds a close button. It stays closed in that visitor's browser until you change the message.",
+  },
   { kind: "group", label: "Brand" },
   { kind: "text", key: "brand", label: "Brand name", maxLength: 80 },
   {

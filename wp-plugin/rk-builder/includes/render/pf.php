@@ -91,7 +91,7 @@ function rk_builder_render_navbar( array $p, array $context = array() ) {
 	$top_lab  = isset( $p['topLabel'] ) ? $p['topLabel'] : '';
 	$html  = '<header ' . rk_builder_root_attrs( 'navbar', $cls ) . '>';
 	if ( '' !== $top_text ) {
-		$html .= '<div class="pf-topbar tone-' . ( isset( $p['topTone'] ) ? $p['topTone'] : 'primary' ) . '"><span>' . rk_builder_h( $top_text ) . '</span>' . ( '' !== $top_lab && '' !== $top_href ? '<a href="' . rk_builder_href( $top_href ) . '">' . rk_builder_h( $top_lab ) . '</a>' : '' ) . '</div>';
+		$html .= '<div class="pf-topbar tone-' . ( isset( $p['topTone'] ) ? $p['topTone'] : 'primary' ) . '"><span>' . rk_builder_h( $top_text ) . '</span>' . ( '' !== $top_lab && '' !== $top_href ? '<a href="' . rk_builder_href( $top_href ) . '">' . rk_builder_h( $top_lab ) . '</a>' : '' ) . ( ! empty( $p['topDismiss'] ) ? '<button type="button" class="pf-topbar-close" aria-label="Dismiss announcement"><span aria-hidden="true">×</span></button>' : '' ) . '</div>';
 	}
 	$html .= '<a class="pf-brand" href="/">' . ( '' !== $logo ? '<img src="' . $logo . '" alt="' . rk_builder_h( $p['brand'] ) . '" height="' . $height . '"/>' : '<span>' . rk_builder_h( $p['brand'] ) . '</span>' ) . '</a>';
 	if ( $menu ) {

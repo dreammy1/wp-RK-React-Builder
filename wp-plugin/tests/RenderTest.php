@@ -346,6 +346,9 @@ rk_test( 'header: drop-down items, appearance classes, extra button; footer: ton
 	$tb = rk_builder_render_block( array( 'id' => 'n', 'type' => 'navbar', 'props' => array( 'brand' => 'S', 'links' => '', 'phone' => '', 'phoneHref' => '', 'overlay' => false, 'topText' => 'Free <b>estimates</b>', 'topLabel' => 'Book', 'topHref' => '/contact', 'topTone' => 'dark' ) ), array() );
 	t_assert( false !== strpos( $tb, '<div class="pf-topbar tone-dark"><span>Free &lt;b&gt;estimates&lt;/b&gt;</span><a href="/contact">Book</a></div>' ), 'announcement bar first, escaped, with link: ' . $tb );
 	t_assert( 0 === strpos( substr( $tb, strpos( $tb, '>' ) + 1 ), '<div class="pf-topbar' ), 'the bar is the first thing in the header' );
+	$tbd = rk_builder_render_block( array( 'id' => 'n', 'type' => 'navbar', 'props' => array( 'brand' => 'S', 'links' => '', 'phone' => '', 'phoneHref' => '', 'overlay' => false, 'topText' => 'News', 'topDismiss' => true ) ), array() );
+	t_assert( false !== strpos( $tbd, '<button type="button" class="pf-topbar-close" aria-label="Dismiss announcement"><span aria-hidden="true">×</span></button></div>' ), 'close button inside the bar' );
+	t_assert( false === strpos( $tb, 'pf-topbar-close' ), 'no close button unless asked' );
 	$tb2 = rk_builder_render_block( array( 'id' => 'n', 'type' => 'navbar', 'props' => array( 'brand' => 'S', 'links' => '', 'phone' => '', 'phoneHref' => '', 'overlay' => false, 'topText' => 'News', 'topLabel' => 'Go', 'topHref' => 'javascript:x' ) ), array() );
 	t_eq( $tb2, '', 'a header with an unsafe announcement link is not rendered at all' );
 	t_assert( false === strpos( rk_builder_render_block( array( 'id' => 'n', 'type' => 'navbar', 'props' => array( 'brand' => 'S', 'links' => '', 'phone' => '', 'phoneHref' => '', 'overlay' => false, 'topText' => '' ) ), array() ), 'pf-topbar' ), 'no message, no bar' );
