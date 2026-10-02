@@ -194,6 +194,10 @@ function rk_builder_seo_title_parts( $parts ) {
 	$seo   = rk_builder_seo_read( (int) $rk['page']->ID );
 	$title = apply_filters( 'rk_builder_seo_title', isset( $seo['title'] ) ? $seo['title'] : rk_builder_plain( get_the_title( $rk['page'] ) ), (int) $rk['page']->ID );
 	if ( is_string( $title ) && '' !== trim( $title ) ) { $parts['title'] = trim( rk_builder_plain( $title ) ); }
+	if ( isset( $seo['title'] ) && empty( $parts['site'] ) ) { // front page: "Title | Site" like every other page
+		$parts['site'] = (string) get_bloginfo( 'name' );
+		unset( $parts['tagline'] );
+	}
 	return $parts;
 }
 
@@ -256,6 +260,8 @@ function rk_builder_seo_print_schema() {
 	if ( ! rk_builder_seo_owns_output() || class_exists( '\\RK\\SEO\\Schema', false ) ) { return; }
 	$rk = rk_builder_current_request_page();
 	if ( null === $rk ) { return; }
+	$seo = rk_builder_seo_read( (int) $rk['page']->ID );
+	if ( ! empty( $seo['noindex'] ) ) { return; } // like the source: utility pages carry no schema
 	$graph = rk_builder_seo_graph( $rk['page'], rk_builder_seo_data( $rk['page'], $rk['layout'] ) );
 	echo '<script type="application/ld+json">' . wp_json_encode( $graph, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP ) . '</script>' . "\n"; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- JSON, tag-safe
 }

@@ -106,10 +106,16 @@ rk_test( 'seo: per-page title, description, image, noindex and the schema graph'
 	t_assert( false !== strpos( $head, '<meta name="description" content="Custom description.">' ), 'description from the SEO field' );
 	t_assert( false !== strpos( $head, '<meta property="og:title" content="Hardwood Products">' ), 'title from the SEO field, tags stripped' );
 	t_assert( false !== strpos( $head, 'og:image" content="' ), 'image from the SEO field' );
-	t_eq( apply_filters( 'document_title_parts', array( 'title' => 'orig' ) ), array( 'title' => 'Hardwood Products' ) );
+	$parts = apply_filters( 'document_title_parts', array( 'title' => 'orig' ) );
+	t_eq( $parts['title'], 'Hardwood Products' );
 	t_eq( apply_filters( 'document_title_separator', '-' ), '|' );
 	$robots = apply_filters( 'wp_robots', array( 'max-image-preview' => 'large' ) );
 	t_eq( ! empty( $robots['noindex'] ) && ! empty( $robots['follow'] ), true, 'noindex, follow' );
+	t_eq( false !== strpos( $head, 'ld+json' ), false, 'noindex pages carry no schema' );
+	$seo = rk_builder_seo_read( $id );
+	unset( $seo['noindex'] );
+	rk_builder_seo_write( $id, $seo );
+	$head = rk_seo_head( $id );
 	t_assert( preg_match( '#<script type="application/ld\+json">(.+?)</script>#s', $head, $m ) === 1, 'JSON-LD printed' );
 	$g = json_decode( $m[1], true );
 	$types = array_map( function ( $n ) { return $n['@type']; }, $g['@graph'] );
@@ -117,7 +123,7 @@ rk_test( 'seo: per-page title, description, image, noindex and the schema graph'
 	t_eq( $g['@graph'][0]['name'], 'Acme Floors' );
 	t_eq( isset( $g['@graph'][0]['logo'] ), false, 'unsafe logo dropped' );
 	t_eq( count( $g['@graph'][4]['itemListElement'] ), 3, 'Home > Services > page' );
-	t_eq( rk_builder_seo_read( $id )['noindex'], true );
+	t_eq( isset( rk_builder_seo_read( $id )['noindex'] ), false );
 	rk_builder_seo_write( $id, array() );
 	t_eq( rk_builder_seo_read( $id ), array(), 'cleared' );
 } );
