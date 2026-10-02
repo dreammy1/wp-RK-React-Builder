@@ -102,6 +102,8 @@ try {
         "wp_builder_unpublish",
         "wp_builder_get_theme",
         "wp_builder_save_theme",
+        "wp_builder_export_site",
+        "wp_builder_import_site",
         "wp_builder_list_media",
         "wp_list_pages",
       ])
@@ -249,6 +251,60 @@ try {
         (await tool("wp_builder_get_theme", {})).data.primary,
         "#8a5a2b"
       );
+    }
+  );
+  await check(
+    "export_site → import_site: dry run by default, real import needs confirm, pages arrive as drafts",
+    async () => {
+      const ex = await tool("wp_builder_export_site", {});
+      assert.equal(ex.isError, false, JSON.stringify(ex.data).slice(0, 200));
+      assert.equal(ex.data.format, "rk-builder-site");
+      const bundle = structuredClone(ex.data);
+      bundle.pages = [
+        {
+          slug: "from-bundle",
+          title: "From Bundle",
+          layout: {
+            version: 1,
+            blocks: [
+              {
+                id: "s1",
+                type: "spacer",
+                props: { h: 40 },
+              },
+            ],
+          },
+        },
+      ];
+      bundle.media = [];
+      const dry = await tool("wp_builder_import_site", { bundle });
+      assert.equal(dry.isError, false, JSON.stringify(dry.data));
+      assert.equal(dry.data.dryRun, true);
+      assert.equal(dry.data.pages.create, 1);
+      const list0 = await tool("wp_builder_list_pages", {
+        search: "From Bundle",
+      });
+      assert.equal(list0.data.total, 0);
+      const noConfirm = await tool("wp_builder_import_site", {
+        bundle,
+        dryRun: false,
+      });
+      assert.equal(noConfirm.isError, true);
+      assert.equal(noConfirm.data.code, "rk_confirmation_required");
+      const real = await tool("wp_builder_import_site", {
+        bundle,
+        dryRun: false,
+        confirm: true,
+      });
+      assert.equal(real.isError, false, JSON.stringify(real.data));
+      assert.equal(real.data.pages.done[0].action, "created");
+      const list1 = await tool("wp_builder_list_pages", {
+        search: "From Bundle",
+      });
+      assert.equal(list1.data.pages[0].status, "draft");
+      const denied = await tool("wp_builder_export_site", {}, asEditor);
+      assert.equal(denied.isError, true);
+      assert.equal(denied.data.code, "rk_forbidden");
     }
   );
   await check(

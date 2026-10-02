@@ -1269,3 +1269,44 @@ select {
     top: 0;
   }
 }
+
+/* Media upload + site transfer */
+.media-upload {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  margin: 0 0 14px;
+}
+.media-upload .field {
+  flex: 1 1 260px;
+  margin: 0;
+}
+.media-upload-btn {
+  position: relative;
+  cursor: pointer;
+}
+.media-upload-btn input[type="file"] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  font-size: 0;
+}
+.media-upload-btn:focus-within {
+  outline: 2px solid var(--accent, #c7f36b);
+  outline-offset: 2px;
+}
+.selector-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.import-report ul {
+  margin: 8px 0;
+  padding-left: 18px;
+}
+.import-report details {
+  margin: 8px 0;
+}

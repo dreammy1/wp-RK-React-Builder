@@ -130,6 +130,52 @@ export const MediaItem = z.object({
 });
 export type MediaItem = z.infer<typeof MediaItem>;
 export const MediaListResponse = z.object({ items: z.array(MediaItem) });
+export const MediaUploadResponse = z.object({ item: MediaItem });
+
+/** Whole-site export file. Contents are validated by the server on import; the client only checks the envelope. */
+export const SiteBundle = z
+  .object({ format: z.literal("rk-builder-site"), version: z.literal(1) })
+  .passthrough();
+export type SiteBundle = z.infer<typeof SiteBundle>;
+
+export type SiteImportOptions = {
+  dryRun: boolean;
+  theme: boolean;
+  content: boolean;
+  contentStatus: "draft" | "publish";
+};
+const Skipped = z.object({ slug: z.string(), issues: z.array(z.string()) });
+export const SiteImportReport = z.object({
+  dryRun: z.boolean(),
+  pages: z.object({
+    create: z.number(),
+    update: z.number(),
+    skipped: z.array(Skipped),
+    done: z.array(
+      z.object({
+        slug: z.string(),
+        id: z.number(),
+        action: z.enum(["created", "updated"]),
+        revision: z.number(),
+        link: z.string(),
+      })
+    ),
+  }),
+  media: z.object({
+    total: z.number(),
+    imported: z.number(),
+    reused: z.number(),
+    failed: z.array(z.object({ url: z.string(), reason: z.string() })),
+  }),
+  theme: z.object({ included: z.boolean(), applied: z.boolean() }),
+  content: z.object({
+    included: z.number(),
+    created: z.number(),
+    updated: z.number(),
+  }),
+  warnings: z.array(z.string()),
+});
+export type SiteImportReport = z.infer<typeof SiteImportReport>;
 
 export const ContentItem = z.object({
   id: z.number().int(),

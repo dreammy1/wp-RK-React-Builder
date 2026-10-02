@@ -14,6 +14,9 @@ heading, text, image, CTA, live services/portfolio grids, spacer, divider), twea
 - **Plugin** — `wp-plugin/rk-builder`: storage, REST, permissions, revisions, locks, CPTs, preview links, **PHP public
   rendering**, SEO metadata, cache purging, settings, setup wizard and migration tool. The built React editor ships
   inside it (`assets/`) and runs in wp-admin on the WordPress login cookie + REST nonce.
+- **Media upload & site export/import** (WordPress-hosted editor) — upload images straight from the media picker; administrators
+  can export every builder page, the theme and the media they use as one JSON file and import it on another site
+  (see [Site export / import](#site-export--import)).
 - **Server (optional, headless mode)** — Node/Express: public SSR, session-protected WordPress proxy, cache, metrics.
 
 Details: [ARCHITECTURE.md](ARCHITECTURE.md) · [SECURITY.md](SECURITY.md) · [DEPLOYMENT.md](DEPLOYMENT.md) ·
@@ -64,6 +67,37 @@ pnpm dev           # terminal 2 — Node server :3001 (public site, API) + Vite 
    ```
 
 See [DEPLOYMENT.md](DEPLOYMENT.md) for the embedded wp-admin ("nonce") mode and production hardening.
+
+## Site export / import
+
+Administrators get **Export site** and **Import site** on the page list (WordPress-hosted editor: all-in-one plugin or RK Suite).
+
+- **Export** downloads `rk-builder-site-YYYY-MM-DD.json` with: every page that has a builder layout (the working **draft**), the
+  theme, the media those pages use (URL, alt, title, size), and Services / Portfolio posts.
+- **Import** first runs a **check** (dry run) that reports what would change; nothing is written until you click _Import now_.
+  - Pages arrive as **drafts**. A page whose slug already exists gets a new draft revision; if it is live it **stays live
+    until you publish**. Import never publishes. Services / projects arrive as drafts too (unless you choose otherwise through the API).
+  - Images are **copied into this site's media library** (downloaded over http/https with WordPress' safe HTTP client; JPEG, PNG, GIF,
+    WebP, AVIF only), and layouts are rewritten to the local copies. Attachment IDs from another site are never trusted.
+  - Every layout is checked by the same strict validator as the editor. An invalid page is **skipped and listed**, never half-imported.
+  - Importing the same file again **updates by slug** and re-uses images (matched by source URL): no duplicates.
+  - The theme is only replaced if you tick _The theme_. It changes every page, so it is off by default.
+- Limits: 8 MB file, 500 pages, 150 images, 300 content posts per import. The source site must be reachable for images to copy;
+  otherwise those pages are skipped with a hint to fix the image or allow its host (Settings → RK Builder → Allowed image hosts).
+
+REST (administrators): `GET /rk/v1/builder/site-export`, `POST /rk/v1/builder/site-import` with `{ "bundle": {...}, "options": { "dryRun": true, "theme": false, "content": false, "contentStatus": "draft" } }`
+(`dryRun` defaults to **true**).
+
+Bundle: `{ format: "rk-builder-site", version: 1, exportedAt, source: {url, plugin}, theme, media: [{id,url,alt,title,width?,height?}], pages: [{slug,title,wasPublished,layout}], content: [{type,slug,title,status,excerpt,content,order,terms,featured}] }`.
+
+## Media upload
+
+In the media picker choose **Upload image** (WordPress-hosted editor; needs the `upload_files` capability). Type the alt text first
+and it is saved with the image. The server checks the file's real type (not its name): JPEG, PNG, GIF, WebP or AVIF, up to the
+smaller of WordPress' upload limit and 10 MB. **SVG is refused** because it can carry script. REST: `POST /rk/v1/builder/media`
+(multipart field `file`, optional `alt`, `title`) → `201 { item }`.
+
+> The headless Node proxy deliberately exposes only the editing routes, so upload and site export/import are not available there.
 
 ## Using the builder
 

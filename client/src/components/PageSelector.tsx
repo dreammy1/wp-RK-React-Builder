@@ -3,6 +3,8 @@ import { api } from "@/lib/api/builder";
 import { pageHref } from "@/lib/router";
 import { describeError } from "@/lib/api/errors";
 import type { PageSummary } from "@/lib/schema/api";
+import { ExportSiteButton, ImportSiteDialog } from "./SiteTransfer";
+import { Upload } from "lucide-react";
 
 type Props = { navigate: (to: string) => void; onSignOut?: () => void };
 
@@ -15,6 +17,8 @@ export function PageSelector({ navigate, onSignOut }: Props) {
     error?: string;
   }>({ phase: "loading", pages: [] });
   const [attempt, setAttempt] = useState(0);
+  const [importing, setImporting] = useState(false);
+  const transfer = api.canTransferSite();
 
   useEffect(() => {
     const ctrl = new AbortController();
@@ -44,12 +48,28 @@ export function PageSelector({ navigate, onSignOut }: Props) {
           <span className="eyebrow">RK / BUILDER</span>
           <h1>Choose a page to edit</h1>
         </div>
-        {onSignOut && (
-          <button className="top-btn" onClick={onSignOut}>
-            Sign out
-          </button>
-        )}
+        <div className="selector-actions">
+          {transfer && (
+            <>
+              <ExportSiteButton />
+              <button className="top-btn" onClick={() => setImporting(true)}>
+                <Upload size={14} aria-hidden="true" /> Import site
+              </button>
+            </>
+          )}
+          {onSignOut && (
+            <button className="top-btn" onClick={onSignOut}>
+              Sign out
+            </button>
+          )}
+        </div>
       </header>
+      {importing && (
+        <ImportSiteDialog
+          onClose={() => setImporting(false)}
+          onImported={() => setAttempt(a => a + 1)}
+        />
+      )}
       <div className="selector-filters">
         <div className="field">
           <label htmlFor="ps-search">

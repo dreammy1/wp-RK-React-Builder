@@ -35,6 +35,8 @@ $file = $upload['path'] . '/seed.png';
 file_put_contents($file, base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='));
 $att = wp_insert_attachment(array('post_mime_type'=>'image/png','post_title'=>'Seed image','post_status'=>'inherit'), $file, 0);
 update_post_meta($att, '_wp_attachment_image_alt', 'Seed alt text');
+// pretend this attachment was copied from a bundle, so imports can re-use it without network access
+update_post_meta($att, '_rk_import_source', 'https://assets.example.com/seed.png');
 wp_update_attachment_metadata($att, wp_generate_attachment_metadata($att, $file));
 $creds['mediaId'] = $att;
 $cat = wp_insert_term('Energy', 'service_cat', array('slug'=>'energy'));

@@ -42,6 +42,8 @@ function rk_builder_mcp_catalog( $catalog ) {
 		'wp_builder_unpublish'    => array( 'Take a published page offline (back to draft). Only call after the user explicitly asked.', rk_builder_mcp_schema( array( 'id' => $id, 'confirm' => $confirm ), array( 'id', 'confirm' ) ) ),
 		'wp_builder_get_theme'    => array( 'Read the site-wide RK Builder theme (colors, font, logo, header, footer, social links).', rk_builder_mcp_schema( array() ) ),
 		'wp_builder_save_theme'   => array( 'Replace the site-wide theme. Administrators only. Affects every page, including live ones.', rk_builder_mcp_schema( array( 'theme' => array( 'type' => 'object' ), 'confirm' => $confirm ), array( 'theme', 'confirm' ) ) ),
+		'wp_builder_export_site'  => array( 'Export every builder page (the working DRAFT), the theme, the media they use and Services / Portfolio posts as one JSON bundle. Administrators only.', rk_builder_mcp_schema( array() ) ),
+		'wp_builder_import_site'  => array( 'Import a bundle made by wp_builder_export_site (or the editor\'s Export site). Defaults to a DRY RUN that only reports. A real import (dryRun=false) needs confirm=true; pages arrive as drafts, images are copied into the media library, nothing is published. Administrators only.', rk_builder_mcp_schema( array( 'bundle' => array( 'type' => 'object', 'description' => 'The export bundle.' ), 'dryRun' => array( 'type' => 'boolean', 'description' => 'Default true.' ), 'theme' => array( 'type' => 'boolean', 'description' => 'Also replace the site theme.' ), 'content' => array( 'type' => 'boolean', 'description' => 'Also import Services and Portfolio posts.' ), 'contentStatus' => array( 'type' => 'string', 'description' => 'draft (default) or publish, for NEW content posts.' ), 'confirm' => $confirm ), array( 'bundle' ) ) ),
 		'wp_builder_list_media'   => array( 'List media-library images (id, url, alt) for image blocks and hero backgrounds (bgMediaId + bgUrl).', rk_builder_mcp_schema( array( 'search' => array( 'type' => 'string' ), 'per_page' => array( 'type' => 'integer' ) ) ) ),
 	);
 	foreach ( $tools as $name => $def ) {
@@ -52,7 +54,7 @@ function rk_builder_mcp_catalog( $catalog ) {
 
 function rk_builder_mcp_handlers( $handlers ) {
 	$handlers = is_array( $handlers ) ? $handlers : array();
-	foreach ( array( 'block_types', 'list_pages', 'get_layout', 'save_layout', 'preview_link', 'publish', 'unpublish', 'get_theme', 'save_theme', 'list_media' ) as $tool ) {
+	foreach ( array( 'block_types', 'list_pages', 'get_layout', 'save_layout', 'preview_link', 'publish', 'unpublish', 'get_theme', 'save_theme', 'export_site', 'import_site', 'list_media' ) as $tool ) {
 		$handlers[ 'wp_builder_' . $tool ] = 'rk_builder_mcp_tool_' . $tool;
 	}
 	return $handlers;
@@ -199,4 +201,19 @@ function rk_builder_suite_open_builder() {
 	if ( 'admin.php' === $pagenow && isset( $_GET['page'] ) && 'rk-builder' === $_GET['page'] ) { // phpcs:ignore WordPress.Security.NonceVerification -- read-only routing check.
 		rk_builder_render_standalone();
 	}
+}
+
+function rk_builder_mcp_tool_export_site( array $a ) {
+	return rk_builder_mcp_run( 'rk_builder_handle_site_export', 'rk_builder_perm_site_transfer', 'GET' );
+}
+
+function rk_builder_mcp_tool_import_site( array $a ) {
+	if ( ! isset( $a['bundle'] ) ) { return rk_builder_invalid( 'rk_invalid_bundle', array( array( 'path' => 'bundle', 'message' => 'Required' ) ) ); }
+	$options = array( 'dryRun' => ! isset( $a['dryRun'] ) || false !== $a['dryRun'] );
+	foreach ( array( 'theme', 'content', 'contentStatus' ) as $k ) { if ( isset( $a[ $k ] ) ) { $options[ $k ] = $a[ $k ]; } }
+	if ( false === $options['dryRun'] ) {
+		$ok = rk_builder_mcp_need_confirm( $a );
+		if ( true !== $ok ) { return $ok; }
+	}
+	return rk_builder_mcp_run( 'rk_builder_handle_site_import', 'rk_builder_perm_site_transfer', 'POST', array(), array( 'bundle' => $a['bundle'], 'options' => $options ) );
 }

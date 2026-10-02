@@ -3,6 +3,10 @@ import {
   ContentListResponse,
   LoadResponse,
   MediaListResponse,
+  MediaUploadResponse,
+  SiteBundle,
+  SiteImportReport,
+  type SiteImportOptions,
   PageListResponse,
   PreviewTokenResponse,
   PublishResponse,
@@ -178,6 +182,31 @@ export const api = {
       MediaListResponse,
       { signal }
     ),
+
+  /** Upload an image into the WordPress media library. WordPress-hosted editor only. */
+  uploadMedia(file: File, alt: string) {
+    const form = new FormData();
+    form.append("file", file, file.name);
+    if (alt.trim()) form.append("alt", alt.trim());
+    return request("builder/media", MediaUploadResponse, {
+      method: "POST",
+      body: form,
+      timeoutMs: 120_000,
+    }).then(r => r.item);
+  },
+  /** Media upload and site export/import run through the WordPress REST API (not the headless proxy allow-list). */
+  canUploadMedia: () => getBoot()?.mode === "nonce",
+  canTransferSite: () =>
+    getBoot()?.mode === "nonce" &&
+    getBoot()?.currentUser?.capabilities.manageTheme === true,
+  exportSite: () =>
+    request("builder/site-export", SiteBundle, { timeoutMs: 120_000 }),
+  importSite: (bundle: unknown, options: SiteImportOptions) =>
+    request("builder/site-import", SiteImportReport, {
+      method: "POST",
+      body: { bundle, options },
+      timeoutMs: 300_000,
+    }),
 
   listContent(q: ContentQuery, signal?: AbortSignal) {
     const qs = new URLSearchParams({

@@ -373,3 +373,7 @@ if ( ! function_exists( 'nocache_headers' ) ) { function nocache_headers() { $GL
 if ( ! function_exists( 'add_theme_support' ) ) { function add_theme_support( $f ) { $GLOBALS['RK']['theme_support'][ $f ] = true; } }
 if ( ! function_exists( 'current_theme_supports' ) ) { function current_theme_supports( $f ) { return ! empty( $GLOBALS['RK']['theme_support'][ $f ] ); } }
 if ( ! function_exists( 'wp_is_post_revision' ) ) { function wp_is_post_revision( $id ) { return false; } }
+
+if ( ! function_exists( 'sanitize_text_field' ) ) {
+	function sanitize_text_field( $s ) { return trim( preg_replace( '/\s+/', ' ', strip_tags( (string) $s ) ) ); }
+}

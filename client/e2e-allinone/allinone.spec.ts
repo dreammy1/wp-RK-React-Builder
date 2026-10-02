@@ -1,5 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { expect, test, type Browser, type Page } from "@playwright/test";
 import { AIO } from "../../playwright.allinone.config";
 import { STATE_FILE } from "./global-setup";
@@ -303,4 +305,269 @@ test("9 · unpublish returns the public page to 404", async ({
       timeout: 15_000,
     })
     .toBe(404);
+});
+
+const PNG_1X1 = Buffer.from(
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+  "base64"
+);
+
+/** fetch() inside the page so the WordPress cookie and the builder's REST nonce are used. */
+const wpFetch = (
+  page: Page,
+  path: string,
+  init?: {
+    method?: string;
+    json?: unknown;
+    file?: { name: string; type: string; text?: string };
+  }
+) =>
+  page.evaluate(
+    async ({ path, init }) => {
+      const boot = (
+        window as unknown as {
+          RK_BUILDER_BOOT: { apiBase: string; nonce: string };
+        }
+      ).RK_BUILDER_BOOT;
+      const headers: Record<string, string> = { "X-WP-Nonce": boot.nonce };
+      let body: BodyInit | undefined;
+      if (init?.file) {
+        const f = new FormData();
+        f.append(
+          "file",
+          new Blob([init.file.text ?? ""], { type: init.file.type }),
+          init.file.name
+        );
+        body = f;
+      } else if (init?.json !== undefined) {
+        headers["Content-Type"] = "application/json";
+        body = JSON.stringify(init.json);
+      }
+      const r = await fetch(boot.apiBase + path, {
+        method: init?.method ?? "GET",
+        headers,
+        body,
+        credentials: "include",
+      });
+      return { status: r.status, json: await r.json().catch(() => null) };
+    },
+    { path, init }
+  );
+
+test("10 · media upload: add an image from the editor; non-images and SVG are refused", async ({
+  page,
+}) => {
+  await login(page, AIO.admin, AIO.adminPass);
+  await page.goto(builderUrl(state().pageId));
+  await page.getByRole("button", { name: "Add Image block" }).click();
+  await page.getByRole("button", { name: "Choose from media library" }).click();
+  await page.getByLabel("Alt text for a new upload").fill("A tiny upload");
+  await page.locator('.media-upload input[type="file"]').setInputFiles({
+    name: "Tiny Upload.png",
+    mimeType: "image/png",
+    buffer: PNG_1X1,
+  });
+  // the picker closes and the block now shows the uploaded attachment
+  await expect(
+    page.getByRole("heading", { name: "Choose an image" })
+  ).toBeHidden({ timeout: 20_000 });
+  await expect(
+    page.locator('.canvas-block img[src*="/wp-content/uploads/"]').first()
+  ).toBeVisible();
+  await expect(page.getByLabel("Alt text", { exact: true })).toHaveValue(
+    "A tiny upload"
+  );
+
+  // The server decides by content, not by name or declared type.
+  const svg = await wpFetch(page, "builder/media", {
+    method: "POST",
+    file: {
+      name: "x.svg",
+      type: "image/svg+xml",
+      text: '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>',
+    },
+  });
+  expect(svg.status).toBe(415);
+  expect((svg.json as { code: string }).code).toBe("rk_invalid_media");
+  const fake = await wpFetch(page, "builder/media", {
+    method: "POST",
+    file: { name: "evil.png", type: "image/png", text: "<?php echo 1;" },
+  });
+  expect(fake.status).toBe(415);
+  const none = await wpFetch(page, "builder/media", {
+    method: "POST",
+    json: {},
+  });
+  expect(none.status).toBe(400);
+});
+
+test("11 · site export, then import: drafts only, media re-used, stale attachment ids dropped", async ({
+  page,
+}, testInfo) => {
+  await login(page, AIO.admin, AIO.adminPass);
+  await page.goto(builderUrl());
+  const [download] = await Promise.all([
+    page.waitForEvent("download"),
+    page.getByRole("button", { name: "Export site" }).click(),
+  ]);
+  const bundle = JSON.parse(readFileSync(await download.path(), "utf8"));
+  expect(bundle.format).toBe("rk-builder-site");
+  expect(bundle.version).toBe(1);
+  expect(bundle.pages.some((p: { slug: string }) => p.slug === "smoke")).toBe(
+    true
+  );
+  expect(Array.isArray(bundle.media)).toBe(true);
+
+  // Make it look like it came from another site: one page, one image already known here by its source URL.
+  const seed = state() as unknown as { mediaId: number };
+  const imported = {
+    ...bundle,
+    source: { url: "https://old.example.com/" },
+    theme: null,
+    content: [],
+    media: [
+      {
+        id: 4242,
+        url: "https://assets.example.com/seed.png",
+        alt: "Seed alt text",
+        title: "Seed image",
+      },
+    ],
+    pages: [
+      {
+        slug: "imported-copy",
+        title: "Imported Copy",
+        wasPublished: true,
+        layout: {
+          version: 1,
+          blocks: [
+            {
+              id: "hero-1",
+              type: "hero",
+              props: {
+                heading: "From another site",
+                sub: "",
+                cta: "",
+                ctaHref: "",
+                bgMediaId: 4242,
+                bgUrl: "https://assets.example.com/seed.png",
+              },
+            },
+            {
+              id: "img-1",
+              type: "image",
+              props: {
+                mediaId: 4242,
+                url: "https://assets.example.com/seed.png",
+                alt: "Seed",
+                decorative: false,
+              },
+            },
+            {
+              id: "img-2",
+              type: "image",
+              props: {
+                mediaId: 999999,
+                url: "/placeholder.svg",
+                alt: "Gone",
+                decorative: false,
+              },
+            },
+          ],
+        },
+      },
+      {
+        slug: "broken",
+        title: "Broken",
+        layout: { version: 1, blocks: [{ id: "x", type: "nope", props: {} }] },
+      },
+    ],
+  };
+  const file = join(tmpdir(), `rk-import-${testInfo.workerIndex}.json`);
+  writeFileSync(file, JSON.stringify(imported));
+
+  await page.getByRole("button", { name: "Import site" }).click();
+  await page.getByLabel("Export file (.json)").setInputFiles(file);
+  await page.getByRole("button", { name: "Check file" }).click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog.getByText("This is what will happen")).toBeVisible({
+    timeout: 20_000,
+  });
+  await expect(dialog.getByText(/skipped/)).toBeVisible(); // the invalid page is reported, not imported
+  // a dry run writes nothing
+  const before = await wpFetch(page, "builder/pages?search=imported");
+  expect((before.json as { total: number }).total).toBe(0);
+
+  await dialog.getByRole("button", { name: "Import now" }).click();
+  await expect(dialog.getByText("Import finished")).toBeVisible({
+    timeout: 60_000,
+  });
+
+  const list = await wpFetch(page, "builder/pages?search=imported");
+  const pages = (list.json as { pages: { id: number; status: string }[] })
+    .pages;
+  expect(pages).toHaveLength(1);
+  expect(pages[0]!.status).toBe("draft"); // never published, even though the source page was
+  const loaded = await wpFetch(page, `builder/layout/${pages[0]!.id}`);
+  const blocks = (
+    loaded.json as { layout: { blocks: { props: Record<string, unknown> }[] } }
+  ).layout.blocks;
+  expect(blocks[0]!.props.bgMediaId).toBe(seed.mediaId); // re-mapped to this site's attachment
+  expect(String(blocks[0]!.props.bgUrl)).toContain("/wp-content/uploads/");
+  expect(blocks[1]!.props.mediaId).toBe(seed.mediaId);
+  // an attachment id from the other site that has no copy here is dropped, never trusted
+  expect(blocks[2]!.props.mediaId).toBeUndefined();
+  expect(blocks[2]!.props.url).toBe("/placeholder.svg");
+});
+
+test("12 · re-importing updates by slug (no duplicates); editors cannot import or export", async ({
+  page,
+  browser,
+}) => {
+  await login(page, AIO.admin, AIO.adminPass);
+  await page.goto(builderUrl());
+  const [download] = await Promise.all([
+    page.waitForEvent("download"),
+    page.getByRole("button", { name: "Export site" }).click(),
+  ]);
+  const bundle = JSON.parse(readFileSync(await download.path(), "utf8"));
+  const slugs = bundle.pages.map((p: { slug: string }) => p.slug);
+  expect(slugs).toContain("imported-copy");
+  const again = await wpFetch(page, "builder/site-import", {
+    method: "POST",
+    json: {
+      bundle,
+      options: {
+        dryRun: false,
+        theme: false,
+        content: false,
+        contentStatus: "draft",
+      },
+    },
+  });
+  expect(again.status).toBe(200);
+  const report = again.json as { pages: { create: number; update: number } };
+  expect(report.pages.create).toBe(0);
+  expect(report.pages.update).toBeGreaterThanOrEqual(1);
+  const all = await wpFetch(page, "builder/pages?search=imported");
+  expect((all.json as { total: number }).total).toBe(1);
+
+  const ed = await asRole(browser, AIO.editor, AIO.editorPass);
+  await ed.page.goto(builderUrl());
+  await expect(
+    ed.page.getByRole("heading", { name: "Choose a page to edit" })
+  ).toBeVisible();
+  await expect(
+    ed.page.getByRole("button", { name: "Export site" })
+  ).toHaveCount(0);
+  expect((await wpFetch(ed.page, "builder/site-export")).status).toBe(403);
+  expect(
+    (
+      await wpFetch(ed.page, "builder/site-import", {
+        method: "POST",
+        json: { bundle },
+      })
+    ).status
+  ).toBe(403);
+  await ed.ctx.close();
 });

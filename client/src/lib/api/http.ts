@@ -29,9 +29,11 @@ const TIMEOUT_MS = 20_000;
 
 type Init = {
   method?: "GET" | "POST";
+  /** JSON-serialisable value, or a FormData (multipart upload; the browser sets the boundary). */
   body?: unknown;
   signal?: AbortSignal;
   absolute?: boolean;
+  timeoutMs?: number;
 };
 
 export async function request<S extends z.ZodTypeAny>(
@@ -42,20 +44,30 @@ export async function request<S extends z.ZodTypeAny>(
   const cfg = getApiConfig();
   const method = init.method ?? "GET";
   const headers: Record<string, string> = { Accept: "application/json" };
-  if (method !== "GET") headers["Content-Type"] = "application/json";
+  const isForm =
+    typeof FormData !== "undefined" && init.body instanceof FormData;
+  if (method !== "GET" && !isForm) headers["Content-Type"] = "application/json";
   if (cfg.mode === "nonce" && cfg.nonce) headers["X-WP-Nonce"] = cfg.nonce;
   if (cfg.mode === "proxy" && cfg.csrf && method !== "GET")
     headers["X-RK-CSRF"] = cfg.csrf;
 
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  const timer = setTimeout(
+    () => controller.abort(),
+    init.timeoutMs ?? TIMEOUT_MS
+  );
   init.signal?.addEventListener("abort", () => controller.abort());
   let res: Response;
   try {
     res = await fetch(init.absolute ? path : cfg.apiBase + path, {
       method,
       headers,
-      body: init.body === undefined ? undefined : JSON.stringify(init.body),
+      body:
+        init.body === undefined
+          ? undefined
+          : isForm
+            ? (init.body as FormData)
+            : JSON.stringify(init.body),
       credentials: cfg.mode === "nonce" ? "include" : "same-origin",
       signal: controller.signal,
     });

@@ -301,6 +301,24 @@ function rk_builder_handle_preview_token( $req ) {
  * Media
  * ------------------------------------------------------------------ */
 
+/** The picker's view of one attachment (post object or ID), or null when it has no image source. */
+function rk_builder_media_item( $attachment ) {
+	$att = is_object( $attachment ) ? $attachment : get_post( (int) $attachment );
+	$src = $att ? wp_get_attachment_image_src( (int) $att->ID, 'full' ) : false;
+	if ( ! $att || ! $src ) { return null; }
+	$item = array(
+		'id'    => (int) $att->ID,
+		'url'   => (string) $src[0],
+		'alt'   => rk_builder_plain( get_post_meta( $att->ID, '_wp_attachment_image_alt', true ) ),
+		'title' => rk_builder_plain( $att->post_title ),
+	);
+	if ( ! empty( $src[1] ) ) { $item['width'] = (int) $src[1]; }
+	if ( ! empty( $src[2] ) ) { $item['height'] = (int) $src[2]; }
+	$srcset = wp_get_attachment_image_srcset( $att->ID, 'full' );
+	if ( is_string( $srcset ) && '' !== $srcset ) { $item['srcset'] = $srcset; }
+	return $item;
+}
+
 function rk_builder_handle_media( $req ) {
 	$per_page = (int) $req->get_param( 'per_page' );
 	$per_page = $per_page >= 1 ? min( 50, $per_page ) : 20;
@@ -316,19 +334,8 @@ function rk_builder_handle_media( $req ) {
 	if ( is_string( $search ) && '' !== trim( $search ) ) { $args['s'] = trim( $search ); }
 	$items = array();
 	foreach ( get_posts( $args ) as $att ) {
-		$src = wp_get_attachment_image_src( $att->ID, 'full' );
-		if ( ! $src ) { continue; }
-		$item = array(
-			'id'    => (int) $att->ID,
-			'url'   => (string) $src[0],
-			'alt'   => rk_builder_plain( get_post_meta( $att->ID, '_wp_attachment_image_alt', true ) ),
-			'title' => rk_builder_plain( $att->post_title ),
-		);
-		if ( ! empty( $src[1] ) ) { $item['width'] = (int) $src[1]; }
-		if ( ! empty( $src[2] ) ) { $item['height'] = (int) $src[2]; }
-		$srcset = wp_get_attachment_image_srcset( $att->ID, 'full' );
-		if ( is_string( $srcset ) && '' !== $srcset ) { $item['srcset'] = $srcset; }
-		$items[] = $item;
+		$item = rk_builder_media_item( $att );
+		if ( null !== $item ) { $items[] = $item; }
 	}
 	return rk_builder_no_store( array( 'items' => $items ) );
 }

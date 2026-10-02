@@ -122,6 +122,8 @@ function rk_builder_perm_edit_page( $req ) { return rk_builder_authorize_page( $
 function rk_builder_perm_publish_page( $req ) { return rk_builder_authorize_page( $req, array( 'edit_post', 'publish_post' ) ); }
 function rk_builder_perm_media( $req ) { return rk_builder_authorize_caps( array( 'upload_files' ) ); }
 function rk_builder_perm_theme_write( $req ) { return rk_builder_authorize_caps( array( 'manage_options' ) ); }
+/** Whole-site export/import touches every page, the theme and media: administrators only. */
+function rk_builder_perm_site_transfer( $req ) { return rk_builder_authorize_caps( array( 'manage_options', 'edit_pages' ) ); }
 
 /* ------------------------------------------------------------------ *
  * Route registration
@@ -165,11 +167,26 @@ function rk_builder_register_routes() {
 		'methods' => $POST, 'callback' => 'rk_builder_handle_preview_token', 'permission_callback' => 'rk_builder_perm_edit_page', 'args' => $id,
 	) );
 	register_rest_route( $ns, '/builder/media', array(
-		'methods' => $GET, 'callback' => 'rk_builder_handle_media', 'permission_callback' => 'rk_builder_perm_media',
-		'args'    => array(
-			'search'   => array( 'type' => 'string', 'validate_callback' => 'rk_builder_validate_short_string' ),
-			'per_page' => array( 'type' => 'integer', 'default' => 20, 'validate_callback' => 'rk_builder_validate_per_page_50' ),
+		array(
+			'methods' => $GET, 'callback' => 'rk_builder_handle_media', 'permission_callback' => 'rk_builder_perm_media',
+			'args'    => array(
+				'search'   => array( 'type' => 'string', 'validate_callback' => 'rk_builder_validate_short_string' ),
+				'per_page' => array( 'type' => 'integer', 'default' => 20, 'validate_callback' => 'rk_builder_validate_per_page_50' ),
+			),
 		),
+		array(
+			'methods' => $POST, 'callback' => 'rk_builder_handle_upload_media', 'permission_callback' => 'rk_builder_perm_media',
+			'args'    => array(
+				'alt'   => array( 'type' => 'string', 'validate_callback' => 'rk_builder_validate_alt_text' ),
+				'title' => array( 'type' => 'string', 'validate_callback' => 'rk_builder_validate_short_string' ),
+			),
+		),
+	) );
+	register_rest_route( $ns, '/builder/site-export', array(
+		'methods' => $GET, 'callback' => 'rk_builder_handle_site_export', 'permission_callback' => 'rk_builder_perm_site_transfer',
+	) );
+	register_rest_route( $ns, '/builder/site-import', array(
+		'methods' => $POST, 'callback' => 'rk_builder_handle_site_import', 'permission_callback' => 'rk_builder_perm_site_transfer',
 	) );
 	register_rest_route( $ns, '/theme-config', array(
 		array( 'methods' => $GET, 'callback' => 'rk_builder_handle_get_theme', 'permission_callback' => '__return_true' ),
@@ -192,6 +209,7 @@ function rk_builder_register_routes() {
 
 /* Param validators: return true/false (core turns false into 400 rest_invalid_param). */
 function rk_builder_validate_short_string( $v ) { return is_string( $v ) && strlen( $v ) <= 512; }
+function rk_builder_validate_alt_text( $v ) { return is_string( $v ) && strlen( $v ) <= 1200; }
 function rk_builder_validate_positive_int( $v ) { return is_numeric( $v ) && (string) (int) $v === (string) $v && (int) $v >= 1 && (int) $v <= 1000000; }
 function rk_builder_validate_per_page_100( $v ) { return rk_builder_validate_positive_int( $v ) && (int) $v <= 100; }
 function rk_builder_validate_per_page_50( $v ) { return rk_builder_validate_positive_int( $v ) && (int) $v <= 50; }
