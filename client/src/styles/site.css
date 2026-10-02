@@ -3709,33 +3709,33 @@ html.rk-menu-open {
 }
 
 /* ---- Announcement bar (top of the header) ---- */
-.pf-nav.has-topbar,
 .pf-nav:has(> .pf-topbar) {
-  flex-wrap: wrap;
+  padding-top: calc(var(--pf-pt) + 36px);
 }
 .pf-nav > .pf-topbar {
-  order: -1;
-  flex: 0 0 auto;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
   box-sizing: border-box;
-  width: calc(100% + 2 * var(--pf-px));
-  margin: calc(-1 * var(--pf-pt)) calc(-1 * var(--pf-px)) 0;
-  padding: 9px 20px;
+  height: 36px;
+  padding: 0 16px;
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  gap: 4px 14px;
+  gap: 14px;
+  overflow: hidden;
+  white-space: nowrap;
   background: var(--site-primary);
   color: #131313;
-  font-family:
-    system-ui,
-    -apple-system,
-    "Segoe UI",
-    Roboto,
-    sans-serif;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   font-size: 13px;
-  line-height: 1.4;
-  text-align: center;
+  line-height: 1;
+}
+.pf-nav > .pf-topbar > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .pf-nav > .pf-topbar.tone-dark {
   background: #131313;
@@ -3746,11 +3746,12 @@ html.rk-menu-open {
   color: #131313;
 }
 .pf-topbar a {
+  flex: none;
   font-weight: 700;
   color: inherit;
   text-decoration: none;
   border-bottom: 1px solid currentColor;
-  white-space: nowrap;
+  padding-bottom: 1px;
 }
 .pf-topbar a::after {
   content: " →";
@@ -3764,10 +3765,19 @@ html.rk-menu-open {
 body.rk-solid-nav:has(.pf-topbar) #main {
   padding-top: 148px;
 }
+/* signed-in admins: the fixed header starts below WordPress's own bar */
+body.rk-standalone.admin-bar .pf-nav {
+  top: 32px;
+}
+@media (max-width: 782px) {
+  body.rk-standalone.admin-bar .pf-nav {
+    top: 46px;
+  }
+}
 @media (max-width: 560px) {
   .pf-nav > .pf-topbar {
     font-size: 12px;
-    padding: 8px 12px;
+    gap: 10px;
   }
   body.rk-solid-nav:has(.pf-topbar) #main {
     padding-top: 128px;
