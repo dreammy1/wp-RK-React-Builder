@@ -46,7 +46,7 @@ $rk_has  = function ( $type ) use ( $rk_layout ) {
 <?php endif; ?>
 <?php wp_head(); ?>
 </head>
-<body <?php body_class( 'rk-standalone rk-dynamic' ); ?>>
+<body <?php body_class( $rk_ctx['solid_nav'] && $rk_has( 'navbar' ) ? 'rk-standalone rk-dynamic rk-solid-nav' : 'rk-standalone rk-dynamic' ); ?>>
 <?php
 if ( function_exists( 'wp_body_open' ) ) { wp_body_open(); }
 echo '<div class="site-root rk-root">';

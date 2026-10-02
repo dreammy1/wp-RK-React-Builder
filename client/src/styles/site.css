@@ -3299,3 +3299,8 @@ h4.dyn-field {
 .dyn-empty {
   padding: 8px var(--dyn-gutter);
 }
+
+/* A template whose header is a normal bar: the header is fixed on the site, so make room for it. */
+body.rk-solid-nav #main {
+  padding-top: 108px;
+}
