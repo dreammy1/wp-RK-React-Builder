@@ -1733,3 +1733,12 @@ select {
     transition: none;
   }
 }
+
+/* Side panel scrolls without a visible scrollbar */
+.side-body {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.side-body::-webkit-scrollbar {
+  display: none;
+}
