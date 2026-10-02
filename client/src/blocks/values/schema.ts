@@ -8,6 +8,8 @@ export const valuesProps = z.strictObject({
   items: text(0, 3000),
   cols: z.number().int().min(2).max(4),
   tone: z.enum(["light", "muted"]),
+  /** Centred bordered cards with a quote mark above the title (a numbered process). */
+  quote: z.boolean().optional(),
 });
 export type ValuesProps = z.infer<typeof valuesProps>;
 export const valuesDefaults: ValuesProps = {
@@ -16,4 +18,5 @@ export const valuesDefaults: ValuesProps = {
   items: "",
   cols: 4,
   tone: "muted",
+  quote: false,
 };

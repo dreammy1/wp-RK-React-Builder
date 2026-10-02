@@ -19,6 +19,7 @@ import {
   FileText,
   Images,
   Calculator,
+  Tags,
   MapPin,
   MessageSquareQuote,
   Pilcrow,
@@ -96,6 +97,9 @@ import { detailFields } from "./detail/Editor";
 import { galleryDefaults, galleryProps } from "./gallery/schema";
 import { GalleryView } from "./gallery/View";
 import { galleryFields } from "./gallery/Editor";
+import { brandstripDefaults, brandstripProps } from "./brandstrip/schema";
+import { BrandstripView } from "./brandstrip/View";
+import { brandstripFields } from "./brandstrip/Editor";
 import { calculatorDefaults, calculatorProps } from "./calculator/schema";
 import { CalculatorView } from "./calculator/View";
 import { calculatorFields } from "./calculator/Editor";
@@ -354,6 +358,16 @@ export const registry: Registry = {
     View: CalculatorView,
     fields: calculatorFields,
   },
+  brandstrip: {
+    type: "brandstrip",
+    label: "Brand strip",
+    icon: Tags,
+    description: "A quiet row of partner or product names",
+    defaults: brandstripDefaults,
+    schema: brandstripProps,
+    View: BrandstripView,
+    fields: brandstripFields,
+  },
   reusable: {
     type: "reusable",
     label: "Reusable block",
@@ -390,4 +404,5 @@ export const PALETTE_ORDER: BlockType[] = [
   "detail",
   "gallery",
   "calculator",
+  "brandstrip",
 ];

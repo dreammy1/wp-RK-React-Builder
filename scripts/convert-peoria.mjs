@@ -159,6 +159,7 @@ const EYEBROWS = {
   finishes: "The final layer",
   services: "Services",
   products: "Flooring products",
+  visualizer: "AI flooring visualizer",
 };
 class Page {
   constructor(slug, title) {
@@ -258,13 +259,21 @@ class Page {
       ...o,
     });
   }
-  values({ eyebrow = "", heading, items, cols = 4, tone = "muted" }) {
+  values({
+    eyebrow = "",
+    heading,
+    items,
+    cols = 4,
+    tone = "muted",
+    quote = false,
+  }) {
     return this.add("values", {
       eyebrow,
       heading,
       items: rows(items.map(i => [i[0], i[1]])),
       cols,
       tone,
+      ...(quote ? { quote: true } : {}),
     });
   }
   // cards: [{ image, eyebrow, title, blurb, specs: [[k,v]], bullets: [..], href }]
@@ -278,6 +287,7 @@ class Page {
     items,
     filters = false,
     modals = null,
+    joined = false,
   }) {
     const line = c => {
       const img =
@@ -306,6 +316,7 @@ class Page {
       numbered,
     };
     if (filters) props.filters = true;
+    if (joined) props.joined = true;
     if (modals) {
       // One pop-up per card, matched in order: image|Title|Intro|item; item
       props.modals = modals.items
@@ -411,7 +422,7 @@ const tel = site.phoneHref;
 const callLabel = `Call ${site.phone}`;
 
 /* ---------- reusable library ---------- */
-// The source's primary nav, on the flat URLs used here. "Visualizer" is left out until that tool exists as a block.
+// The source's primary nav, on the flat URLs used here. /visualizer is a page of blocks that sends visitors to the live tool.
 function primaryNavLinks() {
   return [
     "About|/about",
@@ -421,6 +432,7 @@ function primaryNavLinks() {
     "Products|/products",
     "Gallery|/gallery",
     "Pricing|/pricing",
+    "Visualizer|/visualizer",
   ].join("\n");
 }
 
@@ -468,6 +480,7 @@ const reusables = [
           "Products|/products",
           "Gallery|/gallery",
           "Estimate Calculator|/estimate-calculator",
+          "Flooring Visualizer|/visualizer",
           "Contact|/contact",
         ].join("\n"),
         contactTitle: "Get in touch",
@@ -538,9 +551,10 @@ const reusables = [
     slug: "trusted-products",
     name: "Trusted flooring products",
     block: {
-      type: "text",
+      type: "brandstrip",
       props: {
-        text: `We work with trusted flooring products: ${clients.join(" · ")}.`,
+        label: "We work with trusted flooring products",
+        items: clients.join("\n"),
       },
     },
   },
@@ -586,7 +600,27 @@ const add = p => (pages[p.slug] = p);
     linkLabel: "All services",
     linkHref: "/services",
   });
-  p.grid("", 6);
+  p.cards({
+    cols: 3,
+    joined: true,
+    items: services.slice(0, 6).map(s => ({
+      image: s.image,
+      title: s.title,
+      blurb: s.short,
+      href: `/${s.slug}`,
+    })),
+  });
+  p.split({
+    eyebrow: "New — flooring visualizer",
+    heading: "See your room with a new floor.",
+    body: "Answer a few quick questions about your space and style, and our assistant generates a visual concept to help you explore directions before we talk. It's an approximate guide — final color and finish decisions always use real samples in your own lighting.",
+    cta: "Try the visualizer",
+    ctaHref: "/visualizer",
+    img: "/images/cta-room.png",
+    alt: "Living room concept showing new hardwood flooring",
+    side: "right",
+    tone: "muted",
+  });
   p.ref("area");
   p.values({
     eyebrow: "A thoughtful process",
@@ -598,6 +632,7 @@ const add = p => (pages[p.slug] = p);
     ],
     cols: 3,
     tone: "light",
+    quote: true,
   });
   p.ref("products");
   p.ref("cta");
@@ -943,6 +978,44 @@ for (const s of services) {
   p.ref("cta");
   add(p);
 }
+// Visualizer: the AI tool itself (uploads, generation, quotas, lead capture) needs its own server, so this page
+// introduces it and sends visitors to the live tool.
+{
+  const p = new Page("visualizer", "Visualizer");
+  p.crumb = "";
+  p.hero({
+    heading: "Picture a new direction for your room.",
+    sub: "Upload a room photo, choose the look you like, and generate an AI-assisted visual concept of your space with new flooring. It's a visual concept to help you explore options — not an exact rendering, a guaranteed color match, or a construction-ready plan.",
+  });
+  p.values({
+    eyebrow: "How it works",
+    heading: "Three quick steps",
+    items: [
+      ["01", "Upload a room photo"],
+      [
+        "02",
+        "Choose the look you like — room, project type, style, species and finish",
+      ],
+      ["03", "Generate a visual concept and talk through real samples with us"],
+    ],
+    cols: 3,
+    tone: "light",
+    quote: true,
+  });
+  p.split({
+    eyebrow: "Approximate color preview",
+    heading: "Want a real sample in your lighting?",
+    body: "The visualizer is a guide, not a promise. Final color and finish decisions always use real samples on your own floor in your own light.",
+    cta: "Open the visualizer",
+    ctaHref: "https://profahim.com/visualizer",
+    img: "/images/cta-room.png",
+    alt: "Living room concept showing new hardwood flooring",
+    side: "right",
+    tone: "muted",
+    links: "Talk with Peoria Hardwood Floors|/contact",
+  });
+  add(p);
+}
 // Gallery
 {
   const p = new Page("gallery", "Gallery");
@@ -1031,7 +1104,15 @@ function bundle(pageSlugs, { withTheme = false, withContent = false } = {}) {
 const serviceSlugs = services.map(s => s.slug);
 const files = {
   "1-core.json": bundle(
-    ["home", "about", "contact", "services", "pricing", "estimate-calculator"],
+    [
+      "home",
+      "about",
+      "contact",
+      "services",
+      "pricing",
+      "estimate-calculator",
+      "visualizer",
+    ],
     { withTheme: true, withContent: true }
   ),
   "2-services.json": bundle(serviceSlugs),

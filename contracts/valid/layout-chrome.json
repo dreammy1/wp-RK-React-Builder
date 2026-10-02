@@ -293,6 +293,40 @@
           "tone": "muted",
           "pill": "Peoria and nearby communities"
         }
+      },
+      {
+        "id": "val2",
+        "type": "values",
+        "props": {
+          "eyebrow": "Process",
+          "heading": "Clear guidance",
+          "items": "01|Assess\n02|Compare\n03",
+          "cols": 3,
+          "tone": "light",
+          "quote": true
+        }
+      },
+      {
+        "id": "cat3",
+        "type": "catalog",
+        "props": {
+          "eyebrow": "",
+          "heading": "",
+          "intro": "",
+          "items": "/placeholder.svg||Linked card|Short blurb|||/services\n/placeholder.svg||Plain card|Another||",
+          "cols": 3,
+          "tone": "light",
+          "numbered": false,
+          "joined": true
+        }
+      },
+      {
+        "id": "brand",
+        "type": "brandstrip",
+        "props": {
+          "label": "We work with <trusted> products",
+          "items": "Bona\n\nDuraSeal\nRubio & Monocoat"
+        }
       }
     ]
   }

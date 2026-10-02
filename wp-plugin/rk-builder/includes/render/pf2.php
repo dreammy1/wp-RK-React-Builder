@@ -15,6 +15,7 @@ function rk_builder_icon( $name, $size = 16 ) {
 		'mail'         => array( 'lucide-mail', '<rect width="20" height="16" x="2" y="4" rx="2"></rect><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>' ),
 		'map-pin'      => array( 'lucide-map-pin', '<path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"></path><circle cx="12" cy="10" r="3"></circle>' ),
 		'arrow-right'  => array( 'lucide-arrow-right', '<path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path>' ),
+		'quote'        => array( 'lucide-quote', '<path d="M16 3a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2 1 1 0 0 1 1 1v1a2 2 0 0 1-2 2 1 1 0 0 0-1 1v2a1 1 0 0 0 1 1 6 6 0 0 0 6-6V5a2 2 0 0 0-2-2z"></path><path d="M5 3a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2 1 1 0 0 1 1 1v1a2 2 0 0 1-2 2 1 1 0 0 0-1 1v2a1 1 0 0 0 1 1 6 6 0 0 0 6-6V5a2 2 0 0 0-2-2z"></path>' ),
 		'arrow-up-right' => array( 'lucide-arrow-up-right', '<path d="M7 7h10v10"></path><path d="M7 17 17 7"></path>' ),
 	);
 	$i = $inner[ $name ];
@@ -109,12 +110,12 @@ function rk_builder_render_contactband( array $p, array $context = array() ) {
 }
 
 function rk_builder_render_values( array $p, array $context = array() ) {
-	$html = '<section ' . rk_builder_root_attrs( 'values', 'pf-section pf-values ' . $p['tone'] ) . '><div class="pf-wrap"><div class="pf-center">';
+	$html = '<section ' . rk_builder_root_attrs( 'values', 'pf-section pf-values ' . $p['tone'] . ( ! empty( $p['quote'] ) ? ' quote' : '' ) ) . '><div class="pf-wrap"><div class="pf-center">';
 	if ( '' !== $p['eyebrow'] ) { $html .= '<p class="pf-kicker">' . rk_builder_h( $p['eyebrow'] ) . '</p>'; }
 	$html .= '<h2>' . rk_builder_h( $p['heading'] ) . '</h2></div>';
 	$html .= '<div class="pf-cardgrid" style="grid-template-columns:repeat(' . (int) $p['cols'] . ', minmax(0, 1fr))">';
 	foreach ( rk_builder_parse_rows( $p['items'], 2, 8 ) as $r ) {
-		$html .= '<article><h3>' . rk_builder_h( $r[0] ) . '</h3>' . ( '' !== $r[1] ? '<p>' . rk_builder_h( $r[1] ) . '</p>' : '' ) . '</article>';
+		$html .= '<article>' . ( ! empty( $p['quote'] ) ? rk_builder_icon( 'quote', 32 ) : '' ) . '<h3>' . rk_builder_h( $r[0] ) . '</h3>' . ( '' !== $r[1] ? '<p>' . rk_builder_h( $r[1] ) . '</p>' : '' ) . '</article>';
 	}
 	return $html . '</div></div></section>';
 }
@@ -183,7 +184,7 @@ function rk_builder_render_catalog( array $p, array $context = array() ) {
 		$html .= rk_builder_paragraphs_html( $p['intro'] ) . '</div>';
 	}
 	$html .= rk_builder_filters_html( $tags );
-	$html .= '<div class="pf-cards" style="grid-template-columns:repeat(' . (int) $p['cols'] . ', minmax(0, 1fr))">';
+	$html .= '<div class="' . ( ! empty( $p['joined'] ) ? 'pf-cards joined' : 'pf-cards' ) . '" style="grid-template-columns:repeat(' . (int) $p['cols'] . ', minmax(0, 1fr))">';
 	foreach ( $rows_all as $i => $r ) {
 		list( $image, $eyebrow, $title, $blurb, $specs, $bullets, $link ) = $r;
 		$swatch = rk_builder_is_hex( $image );
@@ -196,7 +197,7 @@ function rk_builder_render_catalog( array $p, array $context = array() ) {
 		}
 		$body .= '<div class="pf-card-body">';
 		if ( '' !== $eyebrow ) { $body .= '<p class="pf-card-eyebrow">' . rk_builder_h( $eyebrow ) . '</p>'; }
-		$body .= '<h3>' . rk_builder_h( $title ) . '</h3>';
+		$body .= '' !== $href ? '<div class="pf-card-title"><h3>' . rk_builder_h( $title ) . '</h3>' . rk_builder_icon( 'arrow-up-right', 20 ) . '</div>' : '<h3>' . rk_builder_h( $title ) . '</h3>';
 		if ( '' !== $blurb ) { $body .= '<p>' . rk_builder_h( $blurb ) . '</p>'; }
 		$spec_rows = array();
 		foreach ( rk_builder_semi( $specs ) as $s ) {
@@ -338,4 +339,16 @@ function rk_builder_render_calculator( array $p, array $context = array() ) {
 		$html .= '<a class="pf-btn dark" href="' . rk_builder_href( $href ) . '">' . rk_builder_h( $p['ctaLabel'] ) . rk_builder_arrow_right_icon() . '</a>';
 	}
 	return $html . '</div></div></section>';
+}
+
+function rk_builder_render_brandstrip( array $p, array $context = array() ) {
+	$html = '<section ' . rk_builder_root_attrs( 'brandstrip', 'pf-section pf-brands' ) . '><div class="pf-wrap">';
+	if ( '' !== $p['label'] ) { $html .= '<p class="pf-brands-label">' . rk_builder_h( $p['label'] ) . '</p>'; }
+	$names = rk_builder_lines( $p['items'], 12 );
+	if ( $names ) {
+		$html .= '<ul>';
+		foreach ( $names as $n ) { $html .= '<li>' . rk_builder_h( $n ) . '</li>'; }
+		$html .= '</ul>';
+	}
+	return $html . '</div></section>';
 }

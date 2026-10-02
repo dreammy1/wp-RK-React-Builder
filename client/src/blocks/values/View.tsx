@@ -1,3 +1,4 @@
+import { Quote } from "lucide-react";
 import type { ViewProps } from "@/render/ViewProps";
 import { parseRows } from "../links";
 import type { ValuesProps } from "./schema";
@@ -5,7 +6,9 @@ import type { ValuesProps } from "./schema";
 export function ValuesView({ props }: ViewProps<ValuesProps>) {
   const items = parseRows(props.items, 2, 8);
   return (
-    <section className={`pf-section pf-values ${props.tone}`}>
+    <section
+      className={`pf-section pf-values ${props.tone}${props.quote ? " quote" : ""}`}
+    >
       <div className="pf-wrap">
         <div className="pf-center">
           {props.eyebrow && <p className="pf-kicker">{props.eyebrow}</p>}
@@ -19,6 +22,7 @@ export function ValuesView({ props }: ViewProps<ValuesProps>) {
         >
           {items.map(([title, body], i) => (
             <article key={i}>
+              {props.quote && <Quote size={32} aria-hidden="true" />}
               <h3>{title}</h3>
               {body && <p>{body}</p>}
             </article>

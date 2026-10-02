@@ -16,6 +16,8 @@ export const catalogProps = z.strictObject({
   numbered: z.boolean(),
   /** A row of filter buttons above the cards; a card's tag is the text after the last " · " in its blurb. */
   filters: z.boolean().optional(),
+  /** Cards share one outer border and 1px dividers instead of sitting apart. */
+  joined: z.boolean().optional(),
   /**
    * Pop-ups, one per line and matched to the cards in order: image|Title|Intro|item; item; item.
    * A card with a pop-up gets a button that opens it.
@@ -35,6 +37,7 @@ export const catalogDefaults: CatalogProps = {
   tone: "light",
   numbered: false,
   filters: false,
+  joined: false,
   modals: "",
   modalLabel: "View all products",
   modalCta: "",

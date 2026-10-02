@@ -11,6 +11,7 @@ export const valuesFields: FieldDef[] = [
     help: "One per line: Title|Text (up to 8)",
   },
   { kind: "number", key: "cols", label: "Columns", min: 2, max: 4 },
+  { kind: "checkbox", key: "quote", label: "Centred cards with a quote mark" },
   {
     kind: "select",
     key: "tone",

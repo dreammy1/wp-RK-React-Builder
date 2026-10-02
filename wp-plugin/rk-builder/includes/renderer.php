@@ -162,6 +162,7 @@ function rk_builder_block_renderers() {
 		'detail' => 'rk_builder_render_detail',
 		'gallery' => 'rk_builder_render_gallery',
 		'calculator' => 'rk_builder_render_calculator',
+		'brandstrip' => 'rk_builder_render_brandstrip',
 		'reusable'  => 'rk_builder_render_reusable',
 	);
 }

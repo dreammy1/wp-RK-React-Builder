@@ -296,7 +296,7 @@ function rk_builder_block_specs() {
 			'links'        => rk_builder_f_text( 0, 600, true ),
 		),
 		'contactband' => array( 'heading' => rk_builder_f_text( 1, 160 ), 'sub' => rk_builder_f_text( 0, 400 ), 'phone' => rk_builder_f_text( 0, 40 ), 'email' => rk_builder_f_text( 0, 120 ) ),
-		'values'    => array( 'eyebrow' => rk_builder_f_text( 0, 80 ), 'heading' => rk_builder_f_text( 1, 200 ), 'items' => rk_builder_f_text( 0, 3000 ), 'cols' => rk_builder_f_int( 2, 4 ), 'tone' => rk_builder_f_enum( array( 'light', 'muted' ) ) ),
+		'values'    => array( 'eyebrow' => rk_builder_f_text( 0, 80 ), 'heading' => rk_builder_f_text( 1, 200 ), 'items' => rk_builder_f_text( 0, 3000 ), 'cols' => rk_builder_f_int( 2, 4 ), 'tone' => rk_builder_f_enum( array( 'light', 'muted' ) ), 'quote' => rk_builder_f_bool( true ) ),
 		'panel'     => array(
 			'mode'      => rk_builder_f_enum( array( 'rows', 'intro' ) ),
 			'eyebrow'   => rk_builder_f_text( 0, 80 ),
@@ -320,6 +320,7 @@ function rk_builder_block_specs() {
 			'tone'     => rk_builder_f_enum( array( 'light', 'muted' ) ),
 			'numbered' => rk_builder_f_bool(),
 			'filters'  => rk_builder_f_bool( true ),
+			'joined'   => rk_builder_f_bool( true ),
 			'modals'     => rk_builder_f_text( 0, 8000, true ),
 			'modalLabel' => rk_builder_f_text( 0, 40, true ),
 			'modalCta'   => rk_builder_f_text( 0, 120, true ),
@@ -344,6 +345,7 @@ function rk_builder_block_specs() {
 			'ctaHref'      => rk_builder_f_link(),
 		),
 		'calculator' => array( 'heading' => rk_builder_f_text( 0, 120 ), 'types' => rk_builder_f_text( 0, 1200 ), 'amount' => rk_builder_f_int( 1, 100000 ), 'resultLabel' => rk_builder_f_text( 0, 60 ), 'note' => rk_builder_f_text( 0, 400 ), 'ctaLabel' => rk_builder_f_text( 0, 60 ), 'ctaHref' => rk_builder_f_link() ),
+		'brandstrip' => array( 'label' => rk_builder_f_text( 0, 120 ), 'items' => rk_builder_f_text( 0, 600 ) ),
 		'gallery'   => array( 'items' => rk_builder_f_text( 0, 12000 ), 'filters' => rk_builder_f_bool( true ) ),
 		'sitefooter' => array(
 			'brand'        => rk_builder_f_text( 1, 80 ),

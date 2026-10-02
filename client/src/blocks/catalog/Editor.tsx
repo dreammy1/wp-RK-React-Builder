@@ -13,6 +13,11 @@ export const catalogFields: FieldDef[] = [
   },
   { kind: "checkbox", key: "filters", label: "Show filter buttons" },
   {
+    kind: "checkbox",
+    key: "joined",
+    label: "Join the cards into one bordered grid",
+  },
+  {
     kind: "textarea",
     key: "modals",
     label: "Pop-ups",

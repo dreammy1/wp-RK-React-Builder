@@ -2104,3 +2104,128 @@
   border-left: 2px solid var(--pf-accent, #a97c50);
   font-size: 14px;
 }
+
+/* Joined card grid (one border, 1px dividers), linked-card arrow */
+.pf-card-title {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.pf-card-title svg {
+  flex-shrink: 0;
+  color: #666;
+  transition: color 0.2s;
+}
+.pf-card:hover .pf-card-title svg {
+  color: var(--pf-accent, #a97c50);
+}
+.pf-cards.joined {
+  gap: 1px;
+  border: 1px solid #e3e3e3;
+  background: #e3e3e3;
+  overflow: hidden;
+}
+.pf-cards.joined .pf-card {
+  border: 0;
+  background: #fff;
+}
+.site-root .pf-cards.joined a.pf-card:hover {
+  background: #f3f3f3;
+}
+.pf-cards.joined .pf-card-media {
+  aspect-ratio: 3 / 2;
+}
+.pf-cards.joined .pf-card-body {
+  padding: 24px;
+}
+.pf-cards.joined .pf-card h3 {
+  font-size: 20px;
+}
+.pf-cards.joined .pf-card-body > p {
+  margin: 12px 0 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #666;
+}
+
+/* Process cards with a quote mark */
+.pf-values.quote .pf-cardgrid {
+  gap: 32px;
+  max-width: 768px;
+  margin: 56px auto 0;
+  border: 0;
+  background: transparent;
+}
+.pf-values.quote .pf-cardgrid article {
+  padding: 32px;
+  border: 1px solid #e3e3e3;
+  text-align: center;
+}
+.pf-values.quote .pf-cardgrid article svg {
+  display: block;
+  margin: 0 auto;
+  color: var(--pf-accent, #a97c50);
+}
+.pf-values.quote .pf-cardgrid h3 {
+  margin: 20px 0 0;
+  font-size: 20px;
+}
+.pf-values.quote .pf-cardgrid p {
+  margin-top: 12px;
+  font-size: 14px;
+}
+
+/* Brand strip */
+.pf-brands {
+  text-align: center;
+}
+.pf-brands-label {
+  margin: 0 0 32px;
+  font-size: 12px;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: #666;
+}
+.pf-brands ul {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 24px 48px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.pf-brands li {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 20px;
+  color: rgba(19, 19, 19, 0.4);
+  transition: color 0.2s;
+}
+.pf-brands li:hover {
+  color: rgba(19, 19, 19, 0.7);
+}
+
+/* The menu button keeps its own colours whatever the theme paints on buttons */
+.site-root .pf-nav-toggle:hover,
+.site-root .pf-nav-toggle:focus,
+.site-root .pf-nav-toggle:active,
+.site-root .pf-nav-toggle:focus-visible {
+  background: none;
+  background-color: transparent;
+  color: inherit;
+  border: 0;
+  outline: none;
+}
+.site-root .pf-nav-toggle:focus-visible .pf-burger,
+.site-root .pf-nav-toggle:focus-visible .pf-burger::before,
+.site-root .pf-nav-toggle:focus-visible .pf-burger::after {
+  background-color: currentColor;
+}
+.site-root .pf-nav-toggle {
+  background-color: transparent;
+  border: 0;
+  border-radius: 0;
+  color: inherit;
+}

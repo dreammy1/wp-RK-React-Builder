@@ -1,4 +1,4 @@
-import { ArrowRight, CheckCircle2 } from "lucide-react";
+import { ArrowRight, ArrowUpRight, CheckCircle2 } from "lucide-react";
 import type { ViewProps } from "@/render/ViewProps";
 import {
   HEX,
@@ -51,7 +51,7 @@ export function CatalogView({ props }: ViewProps<CatalogProps>) {
           </div>
         )}
         <div
-          className="pf-cards"
+          className={props.joined ? "pf-cards joined" : "pf-cards"}
           style={{
             gridTemplateColumns: `repeat(${props.cols}, minmax(0, 1fr))`,
           }}
@@ -89,7 +89,14 @@ export function CatalogView({ props }: ViewProps<CatalogProps>) {
                   )}
                   <div className="pf-card-body">
                     {eyebrow && <p className="pf-card-eyebrow">{eyebrow}</p>}
-                    <h3>{title}</h3>
+                    {href ? (
+                      <div className="pf-card-title">
+                        <h3>{title}</h3>
+                        <ArrowUpRight size={20} aria-hidden="true" />
+                      </div>
+                    ) : (
+                      <h3>{title}</h3>
+                    )}
                     {blurb && <p>{blurb}</p>}
                     {specRows.length > 0 && (
                       <dl className="pf-specs">
