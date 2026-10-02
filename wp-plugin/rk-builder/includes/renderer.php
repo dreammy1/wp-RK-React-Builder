@@ -21,6 +21,7 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 require_once __DIR__ . '/render/hero.php';
 require_once __DIR__ . '/render/pf.php';
 require_once __DIR__ . '/render/pf2.php';
+require_once __DIR__ . '/render/viz.php';
 require_once __DIR__ . '/render/heading.php';
 require_once __DIR__ . '/render/text.php';
 require_once __DIR__ . '/render/image.php';
@@ -163,6 +164,7 @@ function rk_builder_block_renderers() {
 		'gallery' => 'rk_builder_render_gallery',
 		'calculator' => 'rk_builder_render_calculator',
 		'brandstrip' => 'rk_builder_render_brandstrip',
+		'visualizer' => 'rk_builder_render_visualizer',
 		'reusable'  => 'rk_builder_render_reusable',
 	);
 }

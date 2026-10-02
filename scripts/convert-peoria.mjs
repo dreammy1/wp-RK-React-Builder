@@ -88,6 +88,7 @@ function extract(file, name) {
 }
 
 const site = extract("lib/site.ts", "site");
+const serviceAreas = extract("lib/site.ts", "serviceAreas");
 const services = extract("lib/site.ts", "services");
 const finishes = extract("lib/site.ts", "finishes");
 const stains = extract("lib/site.ts", "stains");
@@ -978,8 +979,7 @@ for (const s of services) {
   p.ref("cta");
   add(p);
 }
-// Visualizer: the AI tool itself (uploads, generation, quotas, lead capture) needs its own server, so this page
-// introduces it and sends visitors to the live tool.
+// Visualizer: the form and preview are a block; the plugin's Settings > Visualizer picks the image backend.
 {
   const p = new Page("visualizer", "Visualizer");
   p.crumb = "";
@@ -987,32 +987,11 @@ for (const s of services) {
     heading: "Picture a new direction for your room.",
     sub: "Upload a room photo, choose the look you like, and generate an AI-assisted visual concept of your space with new flooring. It's a visual concept to help you explore options — not an exact rendering, a guaranteed color match, or a construction-ready plan.",
   });
-  p.values({
-    eyebrow: "How it works",
-    heading: "Three quick steps",
-    items: [
-      ["01", "Upload a room photo"],
-      [
-        "02",
-        "Choose the look you like — room, project type, style, species and finish",
-      ],
-      ["03", "Generate a visual concept and talk through real samples with us"],
-    ],
-    cols: 3,
-    tone: "light",
-    quote: true,
-  });
-  p.split({
-    eyebrow: "Approximate color preview",
-    heading: "Want a real sample in your lighting?",
-    body: "The visualizer is a guide, not a promise. Final color and finish decisions always use real samples on your own floor in your own light.",
-    cta: "Open the visualizer",
-    ctaHref: "https://profahim.com/visualizer",
-    img: "/images/cta-room.png",
-    alt: "Living room concept showing new hardwood flooring",
-    side: "right",
-    tone: "muted",
-    links: "Talk with Peoria Hardwood Floors|/contact",
+  p.add("visualizer", {
+    cities: serviceAreas.join("\n"),
+    submitLabel: "Create my floor visualization",
+    ctaLabel: `Talk with ${site.name}`,
+    ctaHref: "/contact",
   });
   add(p);
 }
@@ -1177,7 +1156,7 @@ lines.push(
 lines.push(
   "## Not converted",
   "",
-  "- **Visualizer** (`/visualizer`): an AI image tool with uploads, quota and lead capture. Not representable as blocks; keep it on the Next.js site or rebuild separately.",
+  "- **Visualizer** (`/visualizer`): built as the AI flooring visualizer block. Turn it on and pick the image backend (Hugging Face token, your own API, or test mode) in Settings > RK Visualizer.",
   "- **Estimate calculator**: interactive; replaced by a short contact page.",
   "- **Header, footer and navigation**: RK Builder's theme has colors, logo, social links, sticky header and footer columns only. Navigation comes from your WordPress menu; the footer content is the reusable *Contact details* block.",
   "- **Gallery filter, product catalog dialog, stain swatches, animations, structured data**: the images and text are converted as plain blocks. SEO metadata is not carried over; set titles and descriptions in RK SEO.",

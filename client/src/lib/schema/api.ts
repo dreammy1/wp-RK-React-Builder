@@ -163,6 +163,7 @@ export const ReusableItem = z.object({
       "gallery",
       "calculator",
       "brandstrip",
+      "visualizer",
     ]),
     props: z.unknown(),
   }),

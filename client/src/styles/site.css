@@ -2229,3 +2229,271 @@
   border-radius: 0;
   color: inherit;
 }
+
+/* AI flooring visualizer */
+.pf-viz-grid {
+  display: grid;
+  gap: 56px;
+  grid-template-columns: 1fr;
+  align-items: start;
+}
+@media (min-width: 1024px) {
+  .pf-viz-grid {
+    grid-template-columns: 1fr 0.9fr;
+  }
+}
+.site-root .pf-viz-form > * + * {
+  margin-top: 32px;
+}
+.pf-viz-drop {
+  display: block;
+  padding: 24px;
+  border: 1px dashed color-mix(in srgb, var(--site-ink) 30%, transparent);
+  cursor: pointer;
+}
+.pf-viz-drop-title {
+  display: block;
+  font-weight: 500;
+}
+.pf-viz-hint {
+  display: block;
+  margin-top: 8px;
+  font-size: 14px;
+  color: #666;
+}
+.pf-viz-drop input[type="file"] {
+  display: block;
+  width: 100%;
+  margin-top: 16px;
+  font-size: 14px;
+}
+.pf-viz-error {
+  margin: 0;
+  padding: 12px 16px;
+  border: 1px solid #e5b4b4;
+  background: #fdf1f1;
+  color: #8a1f1f;
+  font-size: 14px;
+}
+.pf-viz-group {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.pf-viz-group legend {
+  padding: 0;
+  font-size: 14px;
+  font-weight: 500;
+}
+.pf-viz-group > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+.pf-chip {
+  position: relative;
+  cursor: pointer;
+}
+.pf-chip input {
+  position: absolute;
+  opacity: 0;
+  inset: 0;
+  margin: 0;
+  cursor: pointer;
+}
+.pf-chip span {
+  display: block;
+  padding: 10px 16px;
+  border: 1px solid color-mix(in srgb, var(--site-ink) 18%, transparent);
+  font-size: 14px;
+  transition:
+    background 0.15s,
+    color 0.15s,
+    border-color 0.15s;
+}
+.pf-chip:hover span {
+  border-color: var(--site-ink);
+}
+.pf-chip input:checked + span {
+  background: var(--site-ink);
+  border-color: var(--site-ink);
+  color: var(--site-bg);
+}
+.pf-chip input:focus-visible + span {
+  outline: 2px solid var(--pf-accent, #a97c50);
+  outline-offset: 2px;
+}
+.pf-viz-field {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+}
+.pf-viz-field[hidden] {
+  display: none;
+}
+.pf-viz-field input,
+.pf-viz-field textarea {
+  display: block;
+  width: 100%;
+  margin-top: 12px;
+  padding: 12px 16px;
+  border: 1px solid color-mix(in srgb, var(--site-ink) 22%, transparent);
+  border-radius: 0;
+  background: #fff;
+  color: var(--site-ink);
+  font: inherit;
+  font-weight: 400;
+  box-sizing: border-box;
+}
+.pf-viz-field textarea {
+  min-height: 96px;
+  resize: vertical;
+}
+.pf-viz-quota {
+  min-height: 1.4em;
+  margin: 0;
+  font-size: 14px;
+  color: #666;
+}
+.pf-viz-form .pf-btn[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.pf-viz-aside {
+  position: relative;
+}
+@media (min-width: 1024px) {
+  .pf-viz-aside {
+    position: sticky;
+    top: 96px;
+  }
+}
+.pf-viz-stage {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--site-ink) 6%, var(--site-bg));
+}
+.pf-viz-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.pf-viz-img[hidden],
+.pf-viz-empty[hidden],
+.pf-viz-busy[hidden],
+.pf-viz-done[hidden],
+.pf-viz-error[hidden] {
+  display: none;
+}
+.pf-viz-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  margin: 0;
+  padding: 0 40px;
+  box-sizing: border-box;
+  text-align: center;
+  font-size: 14px;
+  color: #666;
+}
+.pf-viz-badge {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.92);
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.pf-viz-busy {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.7);
+}
+.pf-viz-busy span {
+  padding: 8px 16px;
+  background: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.15);
+}
+.pf-viz-done {
+  margin-top: 24px;
+  padding-left: 20px;
+  border-left: 2px solid var(--pf-accent, #a97c50);
+}
+.pf-viz-done p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #666;
+}
+.pf-viz-orig {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+}
+.pf-viz-orig img {
+  width: 80px;
+  height: 56px;
+  object-fit: cover;
+  border: 1px solid #e3e3e3;
+}
+.pf-viz-orig span {
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #666;
+}
+.pf-viz-talk {
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid color-mix(in srgb, var(--site-ink) 14%, transparent);
+}
+.pf-viz-talk p {
+  margin: 0 0 12px;
+  font-size: 14px;
+  color: #666;
+}
+.pf-viz-lead {
+  max-width: 28rem;
+}
+.pf-viz-leadform {
+  padding: 40px 32px 32px;
+}
+.pf-viz-leadform h2 {
+  margin: 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.6rem;
+  font-weight: 400;
+}
+.pf-viz-leadform > p:not(.pf-viz-error) {
+  margin: 12px 0 8px;
+  font-size: 14px;
+  color: #666;
+}
+.pf-viz-leadform .pf-viz-field {
+  margin-top: 20px;
+}
+.pf-viz-leadform .pf-viz-error {
+  margin-top: 20px;
+}
+.pf-viz-leadform .pf-btn {
+  margin-top: 24px;
+}
+.site-root .pf-chip input,
+.site-root .pf-viz-field input,
+.site-root .pf-viz-field textarea {
+  box-shadow: none;
+}

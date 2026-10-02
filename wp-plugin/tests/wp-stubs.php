@@ -17,7 +17,7 @@ function rk_test_reset() {
 	$GLOBALS['RK'] = array(
 		'options' => array(), 'posts' => array(), 'meta' => array(), 'terms' => array(), 'attachments' => array(),
 		'filters' => array(), 'http' => array(), 'user' => 0, 'next_id' => 100, 'menu' => array(),
-		'fail_update_post' => false, 'routes' => isset( $GLOBALS['RK']['routes'] ) ? $GLOBALS['RK']['routes'] : array(),
+		'fail_update_post' => false, 'transients' => array(), 'routes' => isset( $GLOBALS['RK']['routes'] ) ? $GLOBALS['RK']['routes'] : array(),
 		'users' => array(
 			1 => array( 'name' => 'Ada Admin', 'role' => 'administrator' ),
 			2 => array( 'name' => 'Ed Editor', 'role' => 'editor' ),
@@ -52,7 +52,8 @@ class WP_REST_Response {
 }
 
 class WP_REST_Request implements ArrayAccess {
-	public $method; public $route; public $url = array(); public $query = array(); public $body = ''; public $hdr = array();
+	public $method; public $route; public $url = array(); public $query = array(); public $body = ''; public $hdr = array(); public $files = array();
+	public function get_file_params() { return $this->files; }
 	public function __construct( $method = 'GET', $route = '' ) { $this->method = $method; $this->route = $route; }
 	public function get_body() { return $this->body; }
 	public function get_json_params() {

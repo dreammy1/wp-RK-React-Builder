@@ -172,6 +172,26 @@ More in [OPERATIONS.md](OPERATIONS.md).
 
 MIT
 
+### AI flooring visualizer (v1.6)
+
+The **AI flooring visualizer** block is a photo upload, a set of look choices (room, project, style, species, direction,
+finish, sheen, city) and a preview, backed by REST endpoints under `/wp-json/rk/v1/visualizer/` (`quota`, `generate`,
+`status`, `lead`). Turn it on in **Settings > RK Visualizer** and choose where the images come from:
+
+- **Hugging Face (FLUX Kontext)**: the same model the source site uses, through the Hugging Face router. Needs an access
+  token: paste it in the field, set `RK_BUILDER_VIZ_HF_TOKEN` in `wp-config.php`, or set the `HF_TOKEN` environment variable.
+  Asynchronous: the browser polls `status`, so no PHP request waits on the model.
+- **My own backend API**: the plugin POSTs JSON `{prompt, image (data URI), mimeType, options}` to your URL, with your key in
+  the header you choose, and expects `{imageUrl}`, `{image: base64 or data URI}` or `{statusUrl}` (polled until it returns one
+  of those). Use this to put your own model, queue or serverless function behind the page.
+- **Test mode**: returns the uploaded photo, so you can try the whole page without a provider or any cost.
+
+Visitors are limited per browser (a cookie) and per IP address: a few free visualizations (2 by default), then a short
+contact form that unlocks one more and stores the lead (listed on the settings page, optionally emailed to you), then one
+more each waiting period. A generation is counted when it starts and given back if the provider fails. Photos are checked
+(JPEG, PNG or WebP, up to 10 MB, at least 640x480) and sent only to the backend you chose; results from your own backend
+that arrive as image data are kept in `uploads/rk-visualizer/` for a week.
+
 ### Marketing blocks (v1.5)
 
 For brochure-style sites: `navbar` (fixed header that turns solid on scroll), `coverhero` (full-bleed photo hero with

@@ -327,6 +327,16 @@
           "label": "We work with <trusted> products",
           "items": "Bona\n\nDuraSeal\nRubio & Monocoat"
         }
+      },
+      {
+        "id": "viz",
+        "type": "visualizer",
+        "props": {
+          "cities": "Peoria\nPeoria Heights\n\nDunlap",
+          "submitLabel": "Create my floor visualization",
+          "ctaLabel": "Talk with us",
+          "ctaHref": "/contact"
+        }
       }
     ]
   }

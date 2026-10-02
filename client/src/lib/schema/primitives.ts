@@ -34,6 +34,7 @@ export const BLOCK_TYPES = [
   "gallery",
   "calculator",
   "brandstrip",
+  "visualizer",
   "reusable",
 ] as const;
 export type BlockType = (typeof BLOCK_TYPES)[number];

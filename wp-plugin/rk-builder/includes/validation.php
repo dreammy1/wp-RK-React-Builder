@@ -345,6 +345,7 @@ function rk_builder_block_specs() {
 			'ctaHref'      => rk_builder_f_link(),
 		),
 		'calculator' => array( 'heading' => rk_builder_f_text( 0, 120 ), 'types' => rk_builder_f_text( 0, 1200 ), 'amount' => rk_builder_f_int( 1, 100000 ), 'resultLabel' => rk_builder_f_text( 0, 60 ), 'note' => rk_builder_f_text( 0, 400 ), 'ctaLabel' => rk_builder_f_text( 0, 60 ), 'ctaHref' => rk_builder_f_link() ),
+		'visualizer' => array( 'cities' => rk_builder_f_text( 0, 800 ), 'submitLabel' => rk_builder_f_text( 1, 80 ), 'ctaLabel' => rk_builder_f_text( 0, 80 ), 'ctaHref' => rk_builder_f_link() ),
 		'brandstrip' => array( 'label' => rk_builder_f_text( 0, 120 ), 'items' => rk_builder_f_text( 0, 600 ) ),
 		'gallery'   => array( 'items' => rk_builder_f_text( 0, 12000 ), 'filters' => rk_builder_f_bool( true ) ),
 		'sitefooter' => array(

@@ -91,3 +91,12 @@ export function blurbTag(blurb: string): string {
   const cut = blurb.lastIndexOf(" · ");
   return cut < 0 ? "" : blurb.slice(cut + 3).trim();
 }
+
+/** Non-empty trimmed lines, at most `max`. Mirrored by rk_builder_lines(). */
+export function lines(source: string, max: number): string[] {
+  return source
+    .split("\n")
+    .map(s => s.trim())
+    .filter(s => s !== "")
+    .slice(0, max);
+}

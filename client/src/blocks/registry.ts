@@ -20,6 +20,7 @@ import {
   Images,
   Calculator,
   Tags,
+  Sparkles,
   MapPin,
   MessageSquareQuote,
   Pilcrow,
@@ -97,6 +98,9 @@ import { detailFields } from "./detail/Editor";
 import { galleryDefaults, galleryProps } from "./gallery/schema";
 import { GalleryView } from "./gallery/View";
 import { galleryFields } from "./gallery/Editor";
+import { visualizerDefaults, visualizerProps } from "./visualizer/schema";
+import { VisualizerView } from "./visualizer/View";
+import { visualizerFields } from "./visualizer/Editor";
 import { brandstripDefaults, brandstripProps } from "./brandstrip/schema";
 import { BrandstripView } from "./brandstrip/View";
 import { brandstripFields } from "./brandstrip/Editor";
@@ -368,6 +372,17 @@ export const registry: Registry = {
     View: BrandstripView,
     fields: brandstripFields,
   },
+  visualizer: {
+    type: "visualizer",
+    label: "AI flooring visualizer",
+    icon: Sparkles,
+    description:
+      "Upload a room photo and get an AI floor concept (needs the visualizer backend)",
+    defaults: visualizerDefaults,
+    schema: visualizerProps,
+    View: VisualizerView,
+    fields: visualizerFields,
+  },
   reusable: {
     type: "reusable",
     label: "Reusable block",
@@ -405,4 +420,5 @@ export const PALETTE_ORDER: BlockType[] = [
   "gallery",
   "calculator",
   "brandstrip",
+  "visualizer",
 ];

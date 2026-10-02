@@ -173,6 +173,8 @@ function rk_builder_enqueue_public_assets( array $theme ) {
 function rk_builder_on_enqueue_scripts() {
 	if ( null === rk_builder_current_request_page() ) { return; }
 	rk_builder_enqueue_public_assets( rk_builder_get_theme() );
+	$rk = rk_builder_current_request_page();
+	if ( is_array( $rk ) && isset( $rk['layout'] ) && is_array( $rk['layout'] ) ) { rk_builder_viz_enqueue( $rk['layout'] ); }
 }
 
 /** Tracks "already replaced this request" so the layout is rendered once. Pass true to set, 'reset' to clear. */
