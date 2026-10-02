@@ -294,6 +294,8 @@ function rk_builder_handle_set_reviews_admin( $req ) {
 		$ct = isset( $body['summary']['count'] ) && is_numeric( $body['summary']['count'] ) ? max( 0, min( 1000000, (int) $body['summary']['count'] ) ) : 0;
 		$s['summary'] = array( 'rating' => (float) $rt, 'count' => $ct );
 	}
+	$changed = ! empty( $body['clearKey'] ) || ( isset( $body['apiKey'] ) && '' !== trim( (string) $body['apiKey'] ) ) || ( array_key_exists( 'placeId', $body ) && $body['placeId'] !== rk_builder_reviews_store()['placeId'] );
+	if ( $changed ) { $s['lastError'] = ''; } // the old error no longer applies once the key or Place ID changes
 	update_option( 'rk_builder_reviews', $s, false );
 	if ( ! empty( $body['clearKey'] ) ) { delete_option( 'rk_builder_reviews_key' ); }
 	if ( isset( $body['apiKey'] ) && is_string( $body['apiKey'] ) && '' !== trim( $body['apiKey'] ) ) {

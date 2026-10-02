@@ -132,6 +132,7 @@ rk_test( 'reviews: sync pulls rating, count and reviews from Places (faked HTTP)
 	add_filter( 'rk_builder_http', function () { return array( 'code' => 403, 'body' => json_encode( array( 'error' => array( 'message' => 'API key not valid' ) ) ) ); }, 20, 4 );
 	t_err( rk_post( '/rk/v1/builder/reviews-admin/sync', array() ), 'rk_upstream', 502 );
 	t_assert( false !== strpos( t_ok( rk_get( '/rk/v1/builder/reviews-admin' ) )['config']['lastError'], 'API key not valid' ) );
+	t_eq( t_ok( rk_post( '/rk/v1/builder/reviews-admin', array( 'apiKey' => 'AIzaFakeKeyFakeKeyFakeKeyFake999' ) ) )['config']['lastError'], '', 'a new key clears the old error' );
 } );
 
 rk_test( 'reviews block: summary, links, cards, escaping, hidden and low ratings left out', function () {
