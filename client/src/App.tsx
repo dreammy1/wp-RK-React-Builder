@@ -7,6 +7,7 @@ import { useRoute } from "@/lib/router";
 import { EditorPage } from "@/components/editor/EditorPage";
 import { LoginScreen } from "@/components/Login";
 import { PageSelector } from "@/components/PageSelector";
+import { Dashboard } from "@/components/dashboard/Dashboard";
 
 type Boot =
   | { phase: "booting" }
@@ -62,6 +63,8 @@ export default function App() {
       />
     );
   }
+  // The WordPress-hosted editor gets the full dashboard; the headless proxy keeps the plain page list.
+  if (api.hasDashboard()) return <Dashboard navigate={navigate} />;
   return (
     <PageSelector
       navigate={navigate}

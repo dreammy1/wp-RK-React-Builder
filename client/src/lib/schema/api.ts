@@ -53,8 +53,17 @@ export const PageSummary = z.object({
   publishedRevision: z.number().int().nullable().optional(),
 });
 export type PageSummary = z.infer<typeof PageSummary>;
+/** A page as the dashboard lists it (the extra fields come from the WordPress-hosted editor). */
+export const PageRow = PageSummary.extend({
+  link: z.string().optional(),
+  isFront: z.boolean().optional(),
+  noindex: z.boolean().optional(),
+  hasDescription: z.boolean().optional(),
+});
+export type PageRow = z.infer<typeof PageRow>;
+export const PageRowResponse = z.object({ page: PageRow });
 export const PageListResponse = z.object({
-  pages: z.array(PageSummary),
+  pages: z.array(PageRow),
   total: z.number().int(),
 });
 
@@ -304,3 +313,102 @@ export const PublicPageResponse = z.object({
   /** Library entries referenced by the layout, keyed by id (stringified). */
   reusables: z.record(z.string(), ReusableItem).optional(),
 });
+
+/* ---- Dashboard ---- */
+export const Overview = z.object({
+  pages: z.object({
+    total: z.number(),
+    publish: z.number(),
+    draft: z.number(),
+    other: z.number(),
+  }),
+  recent: z.array(PageRow),
+  attention: z.object({
+    unpublishedChanges: z.array(PageRow),
+    missingDescription: z.array(PageRow),
+  }),
+  media: z.number(),
+  content: z.object({ services: z.number(), projects: z.number() }),
+  themes: z.number(),
+  visualizer: z.object({
+    enabled: z.boolean(),
+    ready: z.boolean(),
+    provider: z.string(),
+    label: z.string(),
+    leads: z.number(),
+    lastLead: z.string(),
+  }),
+  site: z.object({
+    name: z.string(),
+    tagline: z.string(),
+    url: z.string(),
+    adminUrl: z.string(),
+    frontPageId: z.number(),
+    searchVisible: z.boolean(),
+    plugin: z.string(),
+  }),
+});
+export type Overview = z.infer<typeof Overview>;
+
+export const PageSeo = z.object({
+  seo: z.object({
+    title: z.string(),
+    description: z.string(),
+    image: z.string(),
+    noindex: z.boolean(),
+    pageTitle: z.string(),
+  }),
+});
+export type PageSeoFields = z.infer<typeof PageSeo>["seo"];
+
+export const SiteSettings = z.object({
+  name: z.string(),
+  tagline: z.string(),
+  searchVisible: z.boolean(),
+  frontPageId: z.number(),
+  organization: z.object({
+    name: z.string(),
+    telephone: z.string(),
+    email: z.string(),
+    description: z.string(),
+    logo: z.string(),
+  }),
+});
+export type SiteSettings = z.infer<typeof SiteSettings>;
+export const SiteSettingsResponse = z.object({
+  site: SiteSettings,
+  pages: z.array(z.object({ id: z.number(), title: z.string() })),
+});
+
+export const VizLead = z.object({
+  name: z.string(),
+  email: z.string(),
+  phone: z.string(),
+  at: z.string(),
+});
+export const VizSettings = z.object({
+  enabled: z.boolean(),
+  provider: z.string(),
+  gemini_model: z.string(),
+  custom_url: z.string(),
+  custom_header: z.string(),
+  free_count: z.number(),
+  bonus_count: z.number(),
+  cooldown_hours: z.number(),
+  ip_per_hour: z.number(),
+  timeout: z.number(),
+  notify_email: z.string(),
+  hf_token_set: z.boolean(),
+  gemini_key_set: z.boolean(),
+  custom_key_set: z.boolean(),
+  hf_token_env: z.boolean(),
+  gemini_key_env: z.boolean(),
+});
+export type VizSettings = z.infer<typeof VizSettings>;
+export const VizAdmin = z.object({
+  settings: VizSettings,
+  providers: z.record(z.string(), z.string()),
+  ready: z.boolean(),
+  leads: z.array(VizLead),
+});
+export type VizAdmin = z.infer<typeof VizAdmin>;

@@ -7,6 +7,13 @@ import {
   ReusableListResponse,
   ReusableResponse,
   type ReusableItem,
+  Overview,
+  PageRowResponse,
+  PageSeo,
+  type PageSeoFields,
+  SiteSettingsResponse,
+  type SiteSettings,
+  VizAdmin,
   SiteBundle,
   SiteImportReport,
   type SiteImportOptions,
@@ -185,9 +192,9 @@ export const api = {
       method: "POST",
       body: theme,
     }),
-  listMedia: (search: string, signal?: AbortSignal) =>
+  listMedia: (search: string, signal?: AbortSignal, page = 1) =>
     request(
-      `builder/media?${new URLSearchParams({ search, per_page: "24" })}`,
+      `builder/media?${new URLSearchParams({ search, per_page: "24", page: String(page) })}`,
       MediaListResponse,
       { signal }
     ),
@@ -236,6 +243,60 @@ export const api = {
       body: { bundle, options },
       timeoutMs: 300_000,
     }),
+
+  /* dashboard */
+  overview: () => request("builder/overview", Overview),
+  createPage: (title: string, slug = "", starter = true) =>
+    request("builder/pages/new", PageRowResponse, {
+      method: "POST",
+      body: { title, ...(slug ? { slug } : {}), starter },
+    }).then(r => r.page),
+  updatePageMeta: (id: number, patch: { title?: string; slug?: string }) =>
+    request(`builder/pages/${id}/update`, PageRowResponse, {
+      method: "POST",
+      body: patch,
+    }).then(r => r.page),
+  duplicatePage: (id: number) =>
+    request(`builder/pages/${id}/duplicate`, PageRowResponse, {
+      method: "POST",
+      body: {},
+    }).then(r => r.page),
+  trashPage: (id: number) =>
+    request(`builder/pages/${id}/trash`, z.object({ trashed: z.number() }), {
+      method: "POST",
+      body: {},
+    }),
+  makeFrontPage: (id: number) =>
+    request(`builder/pages/${id}/front`, PageRowResponse, {
+      method: "POST",
+      body: {},
+    }).then(r => r.page),
+  getPageSeo: (id: number) =>
+    request(`builder/pages/${id}/seo`, PageSeo).then(r => r.seo),
+  setPageSeo: (id: number, seo: Omit<PageSeoFields, "pageTitle">) =>
+    request(`builder/pages/${id}/seo`, PageSeo, {
+      method: "POST",
+      body: seo,
+    }).then(r => r.seo),
+  getSite: () => request("builder/site", SiteSettingsResponse),
+  setSite: (patch: Partial<SiteSettings>) =>
+    request("builder/site", SiteSettingsResponse, {
+      method: "POST",
+      body: patch,
+    }),
+  getViz: () => request("builder/visualizer-admin", VizAdmin),
+  setViz: (settings: Record<string, unknown>) =>
+    request("builder/visualizer-admin", VizAdmin, {
+      method: "POST",
+      body: settings,
+    }),
+  deleteVizLeads: (target: { email: string } | { all: true }) =>
+    request("builder/visualizer-admin/leads/delete", VizAdmin, {
+      method: "POST",
+      body: target,
+    }),
+  /** True inside the WordPress-hosted editor, where the dashboard API exists. */
+  hasDashboard: () => getBoot()?.mode === "nonce",
 
   listThemes: () => request("builder/themes", ThemeList),
   captureTheme: (meta: ThemeMetaInput) =>

@@ -172,6 +172,7 @@ function rk_builder_register_routes() {
 			'args'    => array(
 				'search'   => array( 'type' => 'string', 'validate_callback' => 'rk_builder_validate_short_string' ),
 				'per_page' => array( 'type' => 'integer', 'default' => 20, 'validate_callback' => 'rk_builder_validate_per_page_50' ),
+				'page'     => array( 'type' => 'integer', 'default' => 1, 'validate_callback' => 'rk_builder_validate_positive_int' ),
 			),
 		),
 		array(
@@ -199,6 +200,7 @@ function rk_builder_register_routes() {
 		'methods' => $POST, 'callback' => 'rk_builder_handle_site_import', 'permission_callback' => 'rk_builder_perm_site_transfer',
 	) );
 	rk_builder_register_theme_routes( $ns );
+	rk_builder_register_dashboard_routes( $ns );
 	register_rest_route( $ns, '/theme-config', array(
 		array( 'methods' => $GET, 'callback' => 'rk_builder_handle_get_theme', 'permission_callback' => '__return_true' ),
 		array( 'methods' => $POST, 'callback' => 'rk_builder_handle_save_theme', 'permission_callback' => 'rk_builder_perm_theme_write' ),

@@ -199,7 +199,7 @@ function current_user_can( $cap, $id = null ) {
 	$uid = get_current_user_id();
 	if ( $uid < 1 ) { return false; }
 	$caps = rk_test_role_caps( $GLOBALS['RK']['users'][ $uid ]['role'] );
-	if ( 'edit_post' === $cap || 'publish_post' === $cap ) {
+	if ( 'edit_post' === $cap || 'publish_post' === $cap || 'delete_post' === $cap ) {
 		$post = get_post( $id );
 		if ( ! $post ) { return false; }
 		if ( 'publish_post' === $cap ) { return in_array( 'publish_pages', $caps, true ); }
@@ -231,6 +231,7 @@ function wp_update_post( $arr, $err = false ) {
 	if ( 'publish' === $p->post_status && '' === $p->post_name ) { $p->post_name = 'page-' . $p->ID; }
 	return $p->ID;
 }
+function wp_trash_post( $id ) { $p = get_post( $id ); if ( ! $p ) { return false; } $p->post_status = 'trash'; return $p; }
 function get_post_meta( $id, $key = '', $single = false ) {
 	$v = isset( $GLOBALS['RK']['meta'][ $id ][ $key ] ) ? $GLOBALS['RK']['meta'][ $id ][ $key ] : null;
 	if ( null === $v ) { return $single ? '' : array(); }
@@ -384,7 +385,7 @@ if ( ! function_exists( 'wp_add_inline_script' ) ) {
 if ( ! function_exists( 'wp_add_inline_style' ) ) {
 	function wp_add_inline_style( $h, $css ) { $GLOBALS['RK']['styles'][ $h ]['inline'][] = $css; return true; }
 }
-if ( ! function_exists( 'get_bloginfo' ) ) { function get_bloginfo( $k = '' ) { return 'charset' === $k ? 'UTF-8' : 'Test Site'; } }
+if ( ! function_exists( 'get_bloginfo' ) ) { function get_bloginfo( $k = '' ) { return 'charset' === $k ? 'UTF-8' : ( 'description' === $k ? get_option( 'blogdescription', '' ) : get_option( 'blogname', 'Test Site' ) ); } }
 if ( ! function_exists( 'bloginfo' ) ) { function bloginfo( $k = '' ) { echo esc_html( get_bloginfo( $k ) ); } }
 if ( ! function_exists( 'language_attributes' ) ) { function language_attributes() { echo 'lang="en-US"'; } }
 if ( ! function_exists( 'body_class' ) ) { function body_class( $c = '' ) { echo 'class="' . esc_attr( $c ) . '"'; } }

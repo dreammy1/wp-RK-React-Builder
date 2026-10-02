@@ -83,7 +83,7 @@ if ( ! class_exists( 'RK_Test_REST_Server' ) ) {
 	}
 }
 if ( ! function_exists( 'rest_get_server' ) ) { function rest_get_server() { return new RK_Test_REST_Server(); } }
-if ( ! function_exists( 'get_bloginfo' ) ) { function get_bloginfo( $k = '' ) { return 'version' === $k ? ( isset( $GLOBALS['RK']['wp_version'] ) ? $GLOBALS['RK']['wp_version'] : '6.5.0' ) : 'Test Site'; } }
+if ( ! function_exists( 'get_bloginfo' ) ) { function get_bloginfo( $k = '' ) { return 'version' === $k ? ( isset( $GLOBALS['RK']['wp_version'] ) ? $GLOBALS['RK']['wp_version'] : '6.5.0' ) : ( 'description' === $k ? get_option( 'blogdescription', '' ) : get_option( 'blogname', 'Test Site' ) ); } }
 if ( ! function_exists( 'wp_upload_dir' ) ) {
 	function wp_upload_dir() { return isset( $GLOBALS['RK']['upload'] ) ? $GLOBALS['RK']['upload'] : array( 'basedir' => sys_get_temp_dir(), 'error' => false ); }
 }

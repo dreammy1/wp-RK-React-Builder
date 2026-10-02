@@ -60,15 +60,7 @@ function rk_builder_handle_list_pages( $req ) {
 	$pages = array();
 	foreach ( $query->posts as $post ) {
 		if ( ! current_user_can( 'edit_post', $post->ID ) ) { continue; }
-		$pages[] = array(
-			'id'                => (int) $post->ID,
-			'title'             => rk_builder_plain( get_the_title( $post ) ),
-			'slug'              => (string) $post->post_name,
-			'status'            => (string) $post->post_status,
-			'modified'          => rk_builder_page_modified( $post ),
-			'revision'          => rk_builder_get_revision( $post->ID ),
-			'publishedRevision' => rk_builder_get_published_revision( $post->ID ),
-		);
+		$pages[] = rk_builder_dash_page_row( $post );
 	}
 	return rk_builder_no_store( array( 'pages' => $pages, 'total' => (int) $query->found_posts ) );
 }
@@ -329,6 +321,7 @@ function rk_builder_handle_media( $req ) {
 		'posts_per_page' => $per_page,
 		'orderby'        => 'date',
 		'order'          => 'DESC',
+		'paged'          => max( 1, (int) $req->get_param( 'page' ) ),
 	);
 	$search = $req->get_param( 'search' );
 	if ( is_string( $search ) && '' !== trim( $search ) ) { $args['s'] = trim( $search ); }

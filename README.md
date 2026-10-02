@@ -224,3 +224,16 @@ A site bundle page can carry `seo: { title, description, image, noindex, service
 - **Export / Import theme file**: a package is the normal site export plus a `themeMeta` block, so the file also works with **Import site**. Importing a file adds it to the library without changing the site.
 - REST: `GET/POST /builder/themes`, `POST /builder/themes/import`, `POST /builder/themes/install`, `GET /builder/themes/export?slug=`, `POST /builder/themes/delete` (administrators only).
 - `node scripts/convert-peoria.mjs` also writes `dist/peoria/peoria-theme.json`, the Peoria site as one installable theme.
+
+## Dashboard
+
+Inside WordPress the builder opens on its own dashboard, so day-to-day work does not need wp-admin:
+
+- **Overview**: pages live/draft, images, services and projects, themes, visualizer status, recently edited pages and what needs attention (live pages with unpublished changes or no search description).
+- **Pages**: search and filter, **New page** (optionally starting with the site header and footer), rename or change the address, **Search & sharing** (title, description, social image, noindex with a live preview), duplicate, publish or unpublish, make front page, move to the trash.
+- **Media**: upload and browse images, copy an image address.
+- **Themes**: the theme engine, plus site export and import.
+- **Site & SEO**: site title, tagline, front page, search-engine visibility and the business details used in the structured data.
+- **Visualizer**: backend, keys (write-only), limits and the leads list with delete.
+
+On phones the left menu becomes a bottom tab bar. REST: `GET /builder/overview`, `POST /builder/pages/new`, `POST /builder/pages/{id}/update|duplicate|trash|front`, `GET|POST /builder/pages/{id}/seo`, `GET|POST /builder/site`, `GET|POST /builder/visualizer-admin`, `POST /builder/visualizer-admin/leads/delete`. The headless proxy keeps the plain page list.

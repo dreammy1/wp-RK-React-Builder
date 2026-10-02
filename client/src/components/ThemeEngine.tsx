@@ -160,13 +160,28 @@ function InstallPanel({
   );
 }
 
-/** The theme library: save this site as a theme, install one with a click, export and import theme files. */
+/** The theme library as a dialog. */
 export function ThemeEngineDialog({
   onClose,
   onInstalled,
 }: {
   onClose: () => void;
   onInstalled: () => void;
+}) {
+  return (
+    <Modal title="Theme engine" onClose={onClose} wide>
+      <ThemeEngine onInstalled={onInstalled} onClose={onClose} />
+    </Modal>
+  );
+}
+
+/** The theme library: save this site as a theme, install one with a click, export and import theme files. */
+export function ThemeEngine({
+  onInstalled,
+  onClose,
+}: {
+  onInstalled: () => void;
+  onClose?: () => void;
 }) {
   const [items, setItems] = useState<ThemeSummary[] | null>(null);
   const [view, setView] = useState<View>({ kind: "library" });
@@ -252,15 +267,8 @@ export function ThemeEngineDialog({
       );
     });
 
-  const title =
-    view.kind === "library"
-      ? "Theme engine"
-      : view.kind === "install"
-        ? `Install ${view.theme.name}`
-        : "Theme installed";
-
   return (
-    <Modal title={title} onClose={onClose} wide dismissable={!busy}>
+    <>
       {view.kind === "install" && (
         <InstallPanel
           theme={view.theme}
@@ -281,7 +289,12 @@ export function ThemeEngineDialog({
           </p>
           <Summary r={view.report} />
           <div className="dialog-actions">
-            <button className="save-btn" onClick={onClose}>
+            <button
+              className="save-btn"
+              onClick={() =>
+                onClose ? onClose() : setView({ kind: "library" })
+              }
+            >
               Done
             </button>
           </div>
@@ -445,6 +458,6 @@ export function ThemeEngineDialog({
           </div>
         </>
       )}
-    </Modal>
+    </>
   );
 }
