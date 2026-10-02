@@ -679,7 +679,7 @@
   font-size: 12px;
   color: rgba(255, 255, 255, 0.5);
 }
-@media (max-width: 1100px) {
+@media (max-width: 1280px) {
   .pf-nav nav {
     display: none;
   }
@@ -1848,7 +1848,7 @@
 .pf-nav-panel {
   display: none;
 }
-@media (max-width: 1100px) {
+@media (max-width: 1280px) {
   .site-root .pf-nav-toggle {
     display: inline-flex;
   }
@@ -3581,4 +3581,21 @@ body.rk-standalone .pf-nav.bg-primary:not(.overlay) {
   flex-wrap: wrap;
   gap: 6px 20px;
   font-size: 12px;
+}
+
+/* Keep the menu on one line; a header with an extra button turns the phone button into an icon on mid-size screens */
+.pf-nav nav ul {
+  flex-wrap: nowrap;
+  gap: clamp(14px, 1.5vw, 26px);
+}
+.pf-nav nav > ul > li > a {
+  white-space: nowrap;
+  letter-spacing: 0.12em;
+}
+@media (min-width: 1281px) and (max-width: 1440px) {
+  .site-root .pf-nav:has(.pf-nav-cta) .pf-nav-phone {
+    font-size: 0;
+    gap: 0;
+    padding: 12px 14px;
+  }
 }
