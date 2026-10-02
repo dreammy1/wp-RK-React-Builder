@@ -343,6 +343,12 @@ rk_test( 'header: drop-down items, appearance classes, extra button; footer: ton
 	t_assert( false !== strpos( $desc, '<a href="/s/h">Hardwood<span class="pf-sub-desc">New floors | any species</span></a>' ), 'description after the second bar' );
 	t_assert( false !== strpos( $desc, '<a href="/s/p">Plain</a>' ) && false !== strpos( $desc, 'pf-nav shrink' ), 'no description, shrink class' );
 	t_assert( false !== strpos( $html, '<a class="pf-nav-cta" href="/estimate">Quote</a>' ) && false !== strpos( $html, 'pf-nav-panel-cta' ), 'extra button in bar and menu' );
+	$tb = rk_builder_render_block( array( 'id' => 'n', 'type' => 'navbar', 'props' => array( 'brand' => 'S', 'links' => '', 'phone' => '', 'phoneHref' => '', 'overlay' => false, 'topText' => 'Free <b>estimates</b>', 'topLabel' => 'Book', 'topHref' => '/contact', 'topTone' => 'dark' ) ), array() );
+	t_assert( false !== strpos( $tb, '<div class="pf-topbar tone-dark"><span>Free &lt;b&gt;estimates&lt;/b&gt;</span><a href="/contact">Book</a></div>' ), 'announcement bar first, escaped, with link: ' . $tb );
+	t_assert( 0 === strpos( substr( $tb, strpos( $tb, '>' ) + 1 ), '<div class="pf-topbar' ), 'the bar is the first thing in the header' );
+	$tb2 = rk_builder_render_block( array( 'id' => 'n', 'type' => 'navbar', 'props' => array( 'brand' => 'S', 'links' => '', 'phone' => '', 'phoneHref' => '', 'overlay' => false, 'topText' => 'News', 'topLabel' => 'Go', 'topHref' => 'javascript:x' ) ), array() );
+	t_eq( $tb2, '', 'a header with an unsafe announcement link is not rendered at all' );
+	t_assert( false === strpos( rk_builder_render_block( array( 'id' => 'n', 'type' => 'navbar', 'props' => array( 'brand' => 'S', 'links' => '', 'phone' => '', 'phoneHref' => '', 'overlay' => false, 'topText' => '' ) ), array() ), 'pf-topbar' ), 'no message, no bar' );
 	$plain = rk_builder_render_block( array( 'id' => 'n', 'type' => 'navbar', 'props' => array( 'brand' => 'S', 'links' => 'Home|/', 'phone' => '', 'phoneHref' => '', 'overlay' => false ) ), array() );
 	t_assert( 1 === preg_match( '/<header [^>]*class="[^"]*pf-nav[^"]*"/', $plain ) && 1 !== preg_match( '/pf-nav[^"]*(bg-|size-|align-|btn-|shadow)/', $plain ), 'no options: the classic markup' );
 	t_assert( false === strpos( $plain, 'has-sub' ) && false === strpos( $plain, 'pf-nav-cta' ), 'no options: nothing extra' );

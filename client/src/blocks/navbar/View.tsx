@@ -27,8 +27,17 @@ export function NavbarView({ props }: ViewProps<NavbarProps>) {
   const menu = parseMenu(props.links);
   const [open, setOpen] = useState(false);
   const hasCta = Boolean(props.ctaText && props.ctaHref);
+  const topTone = props.topTone ?? "primary";
   return (
     <header className={navClasses(props, open)}>
+      {props.topText && (
+        <div className={`pf-topbar tone-${topTone}`}>
+          <span>{props.topText}</span>
+          {props.topLabel && props.topHref && (
+            <a href={props.topHref}>{props.topLabel}</a>
+          )}
+        </div>
+      )}
       <a className="pf-brand" href="/">
         {props.logoUrl ? (
           <img

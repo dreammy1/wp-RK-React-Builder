@@ -75,6 +75,7 @@ Go to **Templates → New template → Header** and again for **Footer**.
 
   On a computer the sub-menu opens on hover, keyboard focus or a click on the small arrow; on a phone it is listed under its parent in the menu. One level, up to 8 items each. Add a short description after a second bar to show it under the item: `- Hardwood installation|/services/hardwood|New floors, any species`.
 
+- **Announcement bar** (select the navbar block, _Announcement bar_ group): a message, an optional link and a colour (primary, dark or light) in a strip above the header, for example "Free estimates this month. Book now". Leave the message empty for no bar. It belongs to the header, so it appears on every page.
 - **Appearance** (select the navbar block): logo size, bar colour (automatic, light, dark or the primary colour), bar height, menu next to the logo or centred, a shadow, button style, and an **extra button** (for example "Get a quote") next to the phone button. The bar colour applies whenever the bar is solid; on a page that opens with a hero and has _Overlay the hero below_ on, the bar is transparent until the visitor scrolls.
 - **Footer options** (select the footer block): colour (dark, light or primary), social links (`Facebook|https://facebook.com/yourpage`), bottom links (`Privacy|/privacy`), plus the columns, contact details and small print.
 

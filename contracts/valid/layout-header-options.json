@@ -22,7 +22,11 @@
           "ctaText": "Get a quote",
           "ctaHref": "/estimate",
           "shadow": true,
-          "shrink": true
+          "shrink": true,
+          "topText": "Free estimates this month",
+          "topLabel": "Book now",
+          "topHref": "/contact",
+          "topTone": "dark"
         }
       },
       {

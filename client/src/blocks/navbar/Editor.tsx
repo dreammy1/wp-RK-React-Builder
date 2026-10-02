@@ -1,6 +1,26 @@
 import type { FieldDef } from "../fields";
 
 export const navbarFields: FieldDef[] = [
+  { kind: "group", label: "Announcement bar" },
+  {
+    kind: "text",
+    key: "topText",
+    label: "Message",
+    maxLength: 160,
+    help: "A strip above the header, e.g. “Free estimates this month”. Leave empty for none.",
+  },
+  { kind: "text", key: "topLabel", label: "Link text", maxLength: 40 },
+  { kind: "url", key: "topHref", label: "Link address", maxLength: 500 },
+  {
+    kind: "select",
+    key: "topTone",
+    label: "Bar colour",
+    options: [
+      { value: "primary", label: "Primary colour" },
+      { value: "dark", label: "Dark" },
+      { value: "light", label: "Light" },
+    ],
+  },
   { kind: "group", label: "Brand" },
   { kind: "text", key: "brand", label: "Brand name", maxLength: 80 },
   {

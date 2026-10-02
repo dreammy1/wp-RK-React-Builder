@@ -25,6 +25,11 @@ export const navbarProps = z.strictObject({
   shadow: z.boolean().optional(),
   /** Gets slimmer and gains a shadow once the visitor scrolls. */
   shrink: z.boolean().optional(),
+  /** Announcement bar above the header: a message, an optional link and a colour. */
+  topText: text(0, 160).optional(),
+  topLabel: text(0, 40).optional(),
+  topHref: linkUrl.optional(),
+  topTone: z.enum(["primary", "dark", "light"]).optional(),
 });
 export type NavbarProps = z.infer<typeof navbarProps>;
 export const navbarDefaults: NavbarProps = {
@@ -42,4 +47,8 @@ export const navbarDefaults: NavbarProps = {
   ctaHref: "",
   shadow: false,
   shrink: false,
+  topText: "",
+  topLabel: "",
+  topHref: "",
+  topTone: "primary",
 };

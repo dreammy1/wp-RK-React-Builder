@@ -291,6 +291,10 @@ function rk_builder_block_specs() {
 			'ctaHref'     => rk_builder_f_link( true ),
 			'shadow'      => rk_builder_f_bool( true ),
 			'shrink'      => rk_builder_f_bool( true ),
+			'topText'     => rk_builder_f_text( 0, 160, true ),
+			'topLabel'    => rk_builder_f_text( 0, 40, true ),
+			'topHref'     => rk_builder_f_link( true ),
+			'topTone'     => rk_builder_f_enum( array( 'primary', 'dark', 'light' ), true ),
 		),
 		'coverhero' => array(
 			'crumb'     => rk_builder_f_text( 0, 400 ),
