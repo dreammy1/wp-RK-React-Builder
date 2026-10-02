@@ -12,6 +12,7 @@ import {
   CodeXml,
   Shuffle,
 } from "lucide-react";
+import { api } from "@/lib/api/builder";
 import { getBoot } from "@/lib/boot";
 import { CodeSection } from "./CodeSection";
 import { MediaSection } from "./MediaSection";
@@ -57,6 +58,16 @@ const TABS: { id: DashView; label: string; icon: Icon }[] = [
   { id: "more", label: "More", icon: MoreHorizontal },
 ];
 
+/** Sections that need an administrator (the API refuses everyone else). */
+const ADMIN_ONLY = new Set<DashView>([
+  "themes",
+  "site",
+  "reviews",
+  "code",
+  "redirects",
+  "visualizer",
+]);
+
 const VIEWS = new Set<string>([...NAV.map(n => n.id), "more"]);
 
 function readView(): DashView {
@@ -66,8 +77,19 @@ function readView(): DashView {
 
 /** The builder's own dashboard: pages, media, themes, site settings and the visualizer in one place. */
 export function Dashboard({ navigate }: { navigate: (to: string) => void }) {
-  const [view, setViewState] = useState<DashView>(readView);
+  const admin = api.canTransferSite();
+  const [view, setViewState] = useState<DashView>(() => {
+    const v = readView();
+    return !admin && ADMIN_ONLY.has(v) ? "overview" : v;
+  });
   const boot = getBoot();
+  const items = NAV.filter(n => admin || !ADMIN_ONLY.has(n.id));
+  const tabs = admin
+    ? TABS
+    : [
+        ...items.slice(0, 3),
+        { id: "more" as DashView, label: "More", icon: MoreHorizontal },
+      ];
 
   const setView = (v: DashView) => {
     setViewState(v);
@@ -78,7 +100,7 @@ export function Dashboard({ navigate }: { navigate: (to: string) => void }) {
   };
 
   const body = {
-    overview: <Overview go={setView} navigate={navigate} />,
+    overview: <Overview go={setView} navigate={navigate} admin={admin} />,
     pages: <PagesSection navigate={navigate} />,
     media: <MediaSection />,
     themes: <ThemesSection />,
@@ -87,7 +109,7 @@ export function Dashboard({ navigate }: { navigate: (to: string) => void }) {
     code: <CodeSection />,
     redirects: <RedirectsSection />,
     visualizer: <VisualizerSection />,
-    more: <MoreSection go={setView} />,
+    more: <MoreSection go={setView} admin={admin} />,
   }[view];
 
   const nav = (id: DashView) =>
@@ -103,7 +125,7 @@ export function Dashboard({ navigate }: { navigate: (to: string) => void }) {
           <strong>Dashboard</strong>
         </div>
         <nav>
-          {NAV.map(n => (
+          {items.map(n => (
             <button
               key={n.id}
               className={view === n.id ? "active" : ""}
@@ -129,7 +151,7 @@ export function Dashboard({ navigate }: { navigate: (to: string) => void }) {
       </aside>
       <main className="dash-main">{body}</main>
       <nav className="bottom-nav dash-tabs" aria-label="Dashboard">
-        {TABS.map(t => (
+        {tabs.map(t => (
           <button
             key={t.id}
             className={nav(t.id) ? "on" : ""}

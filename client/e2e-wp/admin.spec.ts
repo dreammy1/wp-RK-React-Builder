@@ -43,7 +43,7 @@ test("logged-in editor uses the cookie + nonce flow end to end", async ({
 
   await page.goto("/wp-admin/admin.php?page=rk-builder");
   await expect(
-    page.getByRole("heading", { name: "Choose a page to edit" })
+    page.getByRole("complementary", { name: "Dashboard" })
   ).toBeVisible();
   await expect(
     page.getByRole("heading", { name: "Sign in to edit" })
@@ -58,6 +58,10 @@ test("logged-in editor uses the cookie + nonce flow end to end", async ({
   );
   expect(boot.mode).toBe("nonce");
 
+  await page
+    .getByRole("button", { name: "Pages", exact: true })
+    .first()
+    .click();
   await page.getByRole("link", { name: "Smoke Page" }).click();
   await expect(page).toHaveURL(new RegExp(`page_id=${state().pageId}$`));
   await expect(page.getByTestId("save-status")).toBeVisible();

@@ -69,9 +69,11 @@ function PageLink({
 export function Overview({
   go,
   navigate,
+  admin,
 }: {
   go: (v: DashView) => void;
   navigate: (to: string) => void;
+  admin: boolean;
 }) {
   const [data, setData] = useState<OverviewData | null>(null);
   const [error, setError] = useState("");
@@ -126,7 +128,7 @@ export function Overview({
         </div>
       </header>
 
-      {!site.searchVisible && (
+      {admin && !site.searchVisible && (
         <div className="notice warn" role="status">
           Search engines are asked <strong>not to index</strong> this site.{" "}
           <button className="top-btn" onClick={() => go("site")}>
@@ -157,13 +159,13 @@ export function Overview({
           label="Themes"
           value={data.themes}
           hint="saved in the library"
-          onClick={() => go("themes")}
+          onClick={admin ? () => go("themes") : undefined}
         />
         <Stat
           label="Visualizer"
           value={viz.ready ? "On" : viz.enabled ? "Needs setup" : "Off"}
           hint={`${viz.label} · ${viz.leads} lead${viz.leads === 1 ? "" : "s"}`}
-          onClick={() => go("visualizer")}
+          onClick={admin ? () => go("visualizer") : undefined}
         />
       </section>
 
@@ -204,49 +206,62 @@ export function Overview({
         </section>
       </div>
 
-      <section className="dash-card">
-        <h2>Search &amp; local setup</h2>
-        <ul className="checklist">
-          {(
-            [
+      {admin && (
+        <section className="dash-card">
+          <h2>Search &amp; local setup</h2>
+          <ul className="checklist">
+            {(
               [
-                "Google Search Console verified",
-                data.setup.searchConsole,
-                "code",
-              ],
-              ["Analytics or Tag Manager added", data.setup.analytics, "code"],
-              ["Default social sharing image", data.setup.socialImage, "site"],
-              [
-                "Business address for local search",
-                data.setup.localBusiness,
-                "site",
-              ],
-              [
-                "Google Business Profile linked",
-                data.setup.businessProfile,
-                "site",
-              ],
-              [
-                `Reviews to show (${data.setup.reviews})`,
-                data.setup.reviews > 0,
-                "reviews",
-              ],
-            ] as [string, boolean, DashView][]
-          ).map(([label, done, view]) => (
-            <li key={label}>
-              <span className={`tick${done ? " done" : ""}`} aria-hidden="true">
-                {done ? "✓" : ""}
-              </span>
-              <span>{label}</span>
-              {!done && (
-                <button className="top-btn" onClick={() => go(view)}>
-                  Set up
-                </button>
-              )}
-            </li>
-          ))}
-        </ul>
-      </section>
+                [
+                  "Google Search Console verified",
+                  data.setup.searchConsole,
+                  "code",
+                ],
+                [
+                  "Analytics or Tag Manager added",
+                  data.setup.analytics,
+                  "code",
+                ],
+                [
+                  "Default social sharing image",
+                  data.setup.socialImage,
+                  "site",
+                ],
+                [
+                  "Business address for local search",
+                  data.setup.localBusiness,
+                  "site",
+                ],
+                [
+                  "Google Business Profile linked",
+                  data.setup.businessProfile,
+                  "site",
+                ],
+                [
+                  `Reviews to show (${data.setup.reviews})`,
+                  data.setup.reviews > 0,
+                  "reviews",
+                ],
+              ] as [string, boolean, DashView][]
+            ).map(([label, done, view]) => (
+              <li key={label}>
+                <span
+                  className={`tick${done ? " done" : ""}`}
+                  aria-hidden="true"
+                >
+                  {done ? "✓" : ""}
+                </span>
+                <span>{label}</span>
+                {!done && (
+                  <button className="top-btn" onClick={() => go(view)}>
+                    Set up
+                  </button>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <section className="dash-card">
         <h2>Quick actions</h2>
@@ -257,9 +272,11 @@ export function Overview({
           <button className="top-btn" onClick={() => go("media")}>
             <UploadCloud size={14} aria-hidden="true" /> Upload images
           </button>
-          <button className="top-btn" onClick={() => go("themes")}>
-            <Package size={14} aria-hidden="true" /> Save or install a theme
-          </button>
+          {admin && (
+            <button className="top-btn" onClick={() => go("themes")}>
+              <Package size={14} aria-hidden="true" /> Save or install a theme
+            </button>
+          )}
         </div>
         <p className="muted">
           RK Builder {site.plugin} · <a href={site.adminUrl}>WordPress admin</a>

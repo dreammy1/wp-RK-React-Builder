@@ -69,7 +69,7 @@ test("1 · permissions: anonymous and subscriber are kept out; editor and admin 
   const ed = await asRole(browser, AIO.editor, AIO.editorPass);
   await ed.page.goto(builderUrl());
   await expect(
-    ed.page.getByRole("heading", { name: "Choose a page to edit" })
+    ed.page.getByRole("complementary", { name: "Dashboard" })
   ).toBeVisible();
   await ed.ctx.close();
 });
@@ -104,6 +104,10 @@ test("2 · open RK Builder from wp-admin, select a page, load, edit, reorder (mo
     )
   ).toBe(true);
 
+  await page
+    .getByRole("button", { name: "Pages", exact: true })
+    .first()
+    .click();
   await page.getByLabel("Search pages").fill("smoke");
   await page.getByRole("link", { name: "Smoke Page" }).click();
   await expect(page).toHaveURL(new RegExp(`page_id=${state().pageId}$`));
@@ -412,6 +416,10 @@ test("11 · site export, then import: drafts only, media re-used, stale attachme
 }, testInfo) => {
   await login(page, AIO.admin, AIO.adminPass);
   await page.goto(builderUrl());
+  await page
+    .getByRole("button", { name: "Themes", exact: true })
+    .first()
+    .click();
   const [download] = await Promise.all([
     page.waitForEvent("download"),
     page.getByRole("button", { name: "Export site" }).click(),
@@ -532,6 +540,10 @@ test("12 · re-importing updates by slug (no duplicates); editors cannot import 
 }) => {
   await login(page, AIO.admin, AIO.adminPass);
   await page.goto(builderUrl());
+  await page
+    .getByRole("button", { name: "Themes", exact: true })
+    .first()
+    .click();
   const [download] = await Promise.all([
     page.waitForEvent("download"),
     page.getByRole("button", { name: "Export site" }).click(),
@@ -561,7 +573,7 @@ test("12 · re-importing updates by slug (no duplicates); editors cannot import 
   const ed = await asRole(browser, AIO.editor, AIO.editorPass);
   await ed.page.goto(builderUrl());
   await expect(
-    ed.page.getByRole("heading", { name: "Choose a page to edit" })
+    ed.page.getByRole("complementary", { name: "Dashboard" })
   ).toBeVisible();
   await expect(
     ed.page.getByRole("button", { name: "Export site" })

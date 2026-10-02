@@ -10,7 +10,13 @@ import { getBoot } from "@/lib/boot";
 import type { DashView } from "./Dashboard";
 
 /** Phone-only menu for the sections that do not fit in the tab bar. */
-export function MoreSection({ go }: { go: (v: DashView) => void }) {
+export function MoreSection({
+  go,
+  admin,
+}: {
+  go: (v: DashView) => void;
+  admin: boolean;
+}) {
   const boot = getBoot();
   return (
     <>
@@ -18,21 +24,25 @@ export function MoreSection({ go }: { go: (v: DashView) => void }) {
         <h1>More</h1>
       </header>
       <div className="more-list">
-        <button className="more-item" onClick={() => go("site")}>
-          <Settings size={16} aria-hidden="true" /> Site &amp; SEO
-        </button>
-        <button className="more-item" onClick={() => go("reviews")}>
-          <Star size={16} aria-hidden="true" /> Reviews
-        </button>
-        <button className="more-item" onClick={() => go("code")}>
-          <CodeXml size={16} aria-hidden="true" /> Code &amp; tracking
-        </button>
-        <button className="more-item" onClick={() => go("redirects")}>
-          <Shuffle size={16} aria-hidden="true" /> Redirects
-        </button>
-        <button className="more-item" onClick={() => go("visualizer")}>
-          <Sparkles size={16} aria-hidden="true" /> Visualizer
-        </button>
+        {admin && (
+          <>
+            <button className="more-item" onClick={() => go("site")}>
+              <Settings size={16} aria-hidden="true" /> Site &amp; SEO
+            </button>
+            <button className="more-item" onClick={() => go("reviews")}>
+              <Star size={16} aria-hidden="true" /> Reviews
+            </button>
+            <button className="more-item" onClick={() => go("code")}>
+              <CodeXml size={16} aria-hidden="true" /> Code &amp; tracking
+            </button>
+            <button className="more-item" onClick={() => go("redirects")}>
+              <Shuffle size={16} aria-hidden="true" /> Redirects
+            </button>
+            <button className="more-item" onClick={() => go("visualizer")}>
+              <Sparkles size={16} aria-hidden="true" /> Visualizer
+            </button>
+          </>
+        )}
         {boot?.publicSiteUrl && (
           <a
             className="more-item"
