@@ -19,6 +19,15 @@ $rk_ctx    = array(
 	'template_id' => $rk_req ? (int) $rk_req['tpl']['id'] : 0,
 	'preview'     => false,
 );
+// A header that floats over a hero only makes sense when the template opens with one; otherwise it is a normal bar.
+$rk_ctx['solid_nav'] = true;
+foreach ( isset( $rk_layout['blocks'] ) ? $rk_layout['blocks'] : array() as $rk_b ) {
+	$rk_t = is_array( $rk_b ) && isset( $rk_b['type'] ) ? $rk_b['type'] : '';
+	if ( 'reusable' === $rk_t && isset( $rk_b['props']['refId'] ) ) { $rk_t = rk_builder_reusable_type( (int) $rk_b['props']['refId'] ); }
+	if ( in_array( $rk_t, array( 'navbar', 'sitefooter', 'spacer' ), true ) ) { continue; }
+	$rk_ctx['solid_nav'] = ! in_array( $rk_t, array( 'coverhero', 'hero' ), true );
+	break;
+}
 $rk_html = rk_builder_render_layout( $rk_layout, $rk_ctx );
 $rk_has  = function ( $type ) use ( $rk_layout ) {
 	foreach ( isset( $rk_layout['blocks'] ) ? $rk_layout['blocks'] : array() as $b ) {

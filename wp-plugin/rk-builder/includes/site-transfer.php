@@ -531,11 +531,10 @@ function rk_builder_site_import_run( array $bundle, array $opts ) {
 	$tpl_ok = array();
 	$tpl_skipped = array();
 	$entries_in = array();
-	if ( $opts['theme'] ) {
-		list( $types_in, $tw ) = rk_builder_dyn_import_types_in( $bundle );
-		$warnings = array_merge( $warnings, $tw );
-		list( $tpl_ok, $tpl_skipped ) = rk_builder_dyn_import_templates_in( $bundle, $pre_hosts );
-	}
+	// Types and templates are part of how the pages look, so they come with the pages (the theme toggle is for colours and fonts).
+	list( $types_in, $tw ) = rk_builder_dyn_import_types_in( $bundle );
+	$warnings = array_merge( $warnings, $tw );
+	list( $tpl_ok, $tpl_skipped ) = rk_builder_dyn_import_templates_in( $bundle, $pre_hosts );
 	if ( $opts['content'] ) {
 		$known = rk_builder_dyn_all_types();
 		foreach ( $types_in as $t ) { $known[ $t['slug'] ] = $t; }

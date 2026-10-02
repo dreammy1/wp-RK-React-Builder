@@ -565,21 +565,21 @@ rk_test( 'transfer: types, templates (card template ids follow), entries and the
 	t_eq( t_ok( rk_get( '/rk/v1/builder/entries/listing' ) )['total'], 1);
 } );
 
-rk_test( 'transfer: a bundle without the theme flag brings no types or templates; a template of an unknown type is skipped', function () {
+rk_test( 'transfer: types and templates come with the pages even without the theme-settings option; a template of an unknown type is skipped', function () {
 	rk_dyn_types();
 	rk_dyn_template( 'single' );
+	rk_dyn_template( 'archive' );
 	$bundle = json_decode( wp_json_encode( rk_builder_build_site_bundle() ), true );
-	$bundle['templates'][0]['postType'] = 'ghost';
+	$bundle['templates'][1]['postType'] = 'ghost';
 	rk_test_reset();
 	rk_test_login( 'admin' );
 	rk_builder_register_content_types();
 	rk_builder_register_template_type();
-	$plain = t_ok( rk_builder_site_import_run( $bundle, array( 'dryRun' => false, 'theme' => false, 'content' => false, 'contentStatus' => 'draft' ) ) );
-	t_eq( $plain['types']['included'], 0 );
-	t_eq( $plain['templates']['create'], 0 );
-	t_eq( rk_builder_dyn_type( 'listing' ), null );
-	$with = t_ok( rk_builder_site_import_run( $bundle, array( 'dryRun' => false, 'theme' => true, 'content' => false, 'contentStatus' => 'draft' ) ) );
-	t_eq( $with['templates']['create'], 0 );
-	t_eq( count( $with['templates']['skipped'] ), 1 );
-	t_assert( false !== strpos( $with['templates']['skipped'][0]['issues'][0], 'ghost' ) );
+	$r = t_ok( rk_builder_site_import_run( $bundle, array( 'dryRun' => false, 'theme' => false, 'content' => false, 'contentStatus' => 'draft' ) ) );
+	t_eq( $r['types']['applied'], true );
+	t_assert( null !== rk_builder_dyn_type( 'listing' ) );
+	t_eq( $r['templates']['create'], 1 );
+	t_eq( count( $r['templates']['skipped'] ), 1 );
+	t_assert( false !== strpos( $r['templates']['skipped'][0]['issues'][0], 'ghost' ) );
+	t_eq( $r['entries']['included'], 0, 'entries need the content option' );
 } );

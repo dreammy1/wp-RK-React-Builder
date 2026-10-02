@@ -2752,6 +2752,7 @@ button.stat-card:hover {
   color: #8fd3ff;
 }
 .switch-row {
+  white-space: nowrap;
   display: flex;
   align-items: center;
   gap: 8px;

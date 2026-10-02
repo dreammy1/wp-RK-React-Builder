@@ -42,7 +42,7 @@ function rk_builder_media_url( array $p, $id_key, $url_key ) {
 function rk_builder_render_navbar( array $p, array $context = array() ) {
 	$logo  = rk_builder_media_url( $p, 'logoMediaId', 'logoUrl' );
 	$links = rk_builder_parse_links( $p['links'] );
-	$html  = '<header ' . rk_builder_root_attrs( 'navbar', $p['overlay'] ? 'pf-nav overlay' : 'pf-nav' ) . '>';
+	$html  = '<header ' . rk_builder_root_attrs( 'navbar', $p['overlay'] && empty( $context['solid_nav'] ) ? 'pf-nav overlay' : 'pf-nav' ) . '>';
 	$html .= '<a class="pf-brand" href="/">' . ( '' !== $logo ? '<img src="' . $logo . '" alt="' . rk_builder_h( $p['brand'] ) . '" height="64"/>' : '<span>' . rk_builder_h( $p['brand'] ) . '</span>' ) . '</a>';
 	if ( $links ) {
 		$html .= '<nav aria-label="Main"><ul>';
