@@ -16,11 +16,9 @@ export function CatalogView({ props }: ViewProps<CatalogProps>) {
   const rows = parseRows(props.items, 7, 24);
   const modals = parseRows(props.modals ?? "", 4, 24);
   const modalLabel = props.modalLabel || "View all products";
-  const [ctaLabel, ctaLink] = parseRows(props.modalCta ?? "", 2, 1)[0] ?? [
-    "",
-    "",
-  ];
-  const ctaHref = safeHref(ctaLink);
+  const ctas = semi(props.modalCta ?? "", 2)
+    .map(c => parseRows(c, 2, 1)[0])
+    .filter(c => c && c[0] !== "" && safeHref(c[1]) !== "");
   const tags = props.filters ? uniqueTags(rows.map(r => blurbTag(r[3]))) : [];
   return (
     <section className={`pf-section pf-catalog ${props.tone}`}>
@@ -178,11 +176,21 @@ export function CatalogView({ props }: ViewProps<CatalogProps>) {
                       <li key={j}>{it}</li>
                     ))}
                   </ul>
-                  {ctaLabel && ctaHref && (
-                    <a className="pf-btn dark" href={ctaHref}>
-                      {ctaLabel}
-                      <ArrowRight size={16} aria-hidden="true" />
-                    </a>
+                  {ctas.length > 0 && (
+                    <div className="pf-modal-actions">
+                      {ctas.map(([label, link], k) => (
+                        <a
+                          className={k === 0 ? "pf-btn dark" : "pf-btn outline"}
+                          href={safeHref(link)}
+                          key={k}
+                        >
+                          {label}
+                          {k === 0 && (
+                            <ArrowRight size={16} aria-hidden="true" />
+                          )}
+                        </a>
+                      ))}
+                    </div>
                   )}
                 </div>
               </div>

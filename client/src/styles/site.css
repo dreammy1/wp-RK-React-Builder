@@ -2599,3 +2599,18 @@
 .pf-modal-body .pf-btn {
   align-self: flex-start;
 }
+
+.pf-modal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 32px;
+}
+.pf-modal-actions .pf-btn,
+.site-root .pf-modal-actions .pf-btn.dark {
+  margin-top: 0;
+}
+.site-root .pf-modal-actions .pf-btn {
+  padding: 12px 20px;
+  font-size: 14px;
+}

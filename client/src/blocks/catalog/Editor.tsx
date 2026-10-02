@@ -35,7 +35,7 @@ export const catalogFields: FieldDef[] = [
     key: "modalCta",
     label: "Pop-up link",
     maxLength: 120,
-    help: "Label|/link",
+    help: "Label|/link; second button Label|/link",
   },
   { kind: "number", key: "cols", label: "Columns", min: 2, max: 4 },
   { kind: "checkbox", key: "numbered", label: "Number the photos" },

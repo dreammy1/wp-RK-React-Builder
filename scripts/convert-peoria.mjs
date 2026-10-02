@@ -965,7 +965,7 @@ for (const s of services) {
     modals: {
       items: catalog,
       label: "View all products",
-      cta: "Ask about this category|/contact",
+      cta: `Ask about this category|/contact; Call ${site.phone}|${tel}`,
     },
   });
   p.panel({

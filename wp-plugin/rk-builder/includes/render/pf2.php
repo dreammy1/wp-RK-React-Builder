@@ -171,9 +171,11 @@ function rk_builder_render_catalog( array $p, array $context = array() ) {
 	$filters  = ! empty( $p['filters'] );
 	$modals   = rk_builder_parse_rows( isset( $p['modals'] ) ? $p['modals'] : '', 4, 24 );
 	$m_label  = ! empty( $p['modalLabel'] ) ? $p['modalLabel'] : 'View all products';
-	$cta      = rk_builder_parse_rows( isset( $p['modalCta'] ) ? $p['modalCta'] : '', 2, 1 );
-	$cta_label = $cta ? $cta[0][0] : '';
-	$cta_href  = $cta ? rk_builder_safe_href( $cta[0][1] ) : '';
+	$ctas     = array();
+	foreach ( rk_builder_semi( isset( $p['modalCta'] ) ? $p['modalCta'] : '', 2 ) as $c ) {
+		$r = rk_builder_parse_rows( $c, 2, 1 );
+		if ( $r && '' !== $r[0][0] && '' !== rk_builder_safe_href( $r[0][1] ) ) { $ctas[] = $r[0]; }
+	}
 	$tags = array();
 	if ( $filters ) { foreach ( $rows_all as $r ) { $t = rk_builder_blurb_tag( $r[3] ); if ( '' !== $t && ! in_array( $t, $tags, true ) ) { $tags[] = $t; } } }
 	$html = '<section ' . rk_builder_root_attrs( 'catalog', 'pf-section pf-catalog ' . $p['tone'] ) . '><div class="pf-wrap">';
@@ -238,7 +240,13 @@ function rk_builder_render_catalog( array $p, array $context = array() ) {
 		$html .= '<ul class="pf-modal-items">';
 		foreach ( rk_builder_semi( $m_items, 40 ) as $it ) { $html .= '<li>' . rk_builder_h( $it ) . '</li>'; }
 		$html .= '</ul>';
-		if ( '' !== $cta_label && '' !== $cta_href ) { $html .= '<a class="pf-btn dark" href="' . $cta_href . '">' . rk_builder_h( $cta_label ) . rk_builder_arrow_right_icon() . '</a>'; }
+		if ( $ctas ) {
+			$html .= '<div class="pf-modal-actions">';
+			foreach ( $ctas as $k => $c ) {
+				$html .= '<a class="pf-btn ' . ( 0 === $k ? 'dark' : 'outline' ) . '" href="' . rk_builder_safe_href( $c[1] ) . '">' . rk_builder_h( $c[0] ) . ( 0 === $k ? rk_builder_arrow_right_icon() : '' ) . '</a>';
+			}
+			$html .= '</div>';
+		}
 		$html .= '</div></div></dialog>';
 	}
 	return $html . '</div></section>';
