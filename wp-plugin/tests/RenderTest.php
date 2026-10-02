@@ -328,3 +328,22 @@ rk_test( 'log: levels are gated, secrets/tokens/layout bodies are redacted', fun
 		t_assert( false === strpos( $log, $secret ), $secret . ' leaked into the log: ' . $log );
 	}
 } );
+
+rk_test( 'header: drop-down items, appearance classes, extra button; footer: tone, social and bottom links', function () {
+	$nav = array( 'brand' => 'S', 'links' => "Home|/\nServices|/services\n- Hardwood|/services/hardwood\n- evil|javascript:alert(1)\n- Refinish|/services/refinish\n- No label\nAbout|/about", 'phone' => '', 'phoneHref' => '', 'overlay' => false,
+		'bg' => 'dark', 'size' => 'tall', 'align' => 'left', 'buttons' => 'outline', 'ctaText' => 'Quote', 'ctaHref' => '/estimate', 'shadow' => true, 'logoSize' => 'sm' );
+	$html = rk_builder_render_block( array( 'id' => 'n', 'type' => 'navbar', 'props' => $nav ), array() );
+	t_assert( false !== strpos( $html, 'pf-nav bg-dark size-tall align-left btn-outline shadow' ), 'appearance classes: ' . $html );
+	t_eq( substr_count( $html, 'class="has-sub"' ), 1, 'one item has a drop-down' );
+	t_assert( false !== strpos( $html, '<ul class="pf-sub"><li><a href="/services/hardwood">Hardwood</a></li><li><a href="/services/refinish">Refinish</a></li></ul>' ), 'two safe children in order' );
+	t_assert( false === strpos( $html, 'javascript' ), 'unsafe sub-links are dropped' );
+	t_assert( false !== strpos( $html, 'aria-label="Services submenu" aria-expanded="false"' ), 'toggle button is labelled' );
+	t_assert( false !== strpos( $html, '<a class="pf-nav-cta" href="/estimate">Quote</a>' ) && false !== strpos( $html, 'pf-nav-panel-cta' ), 'extra button in bar and menu' );
+	$plain = rk_builder_render_block( array( 'id' => 'n', 'type' => 'navbar', 'props' => array( 'brand' => 'S', 'links' => 'Home|/', 'phone' => '', 'phoneHref' => '', 'overlay' => false ) ), array() );
+	t_assert( 1 === preg_match( '/<header [^>]*class="[^"]*pf-nav[^"]*"/', $plain ) && 1 !== preg_match( '/pf-nav[^"]*(bg-|size-|align-|btn-|shadow)/', $plain ), 'no options: the classic markup' );
+	t_assert( false === strpos( $plain, 'has-sub' ) && false === strpos( $plain, 'pf-nav-cta' ), 'no options: nothing extra' );
+	$foot = rk_builder_render_block( array( 'id' => 'f', 'type' => 'sitefooter', 'props' => array( 'brand' => 'S', 'tagline' => '', 'colATitle' => '', 'colALinks' => '', 'colBTitle' => '', 'colBLinks' => '', 'contactTitle' => '', 'phone' => '', 'email' => '', 'address' => '', 'copyright' => '© S', 'note' => '', 'tone' => 'primary', 'social' => "Facebook|https://facebook.com/s\nx|javascript:1", 'legal' => "Privacy|/privacy\nTerms|/terms" ) ), array() );
+	t_assert( false !== strpos( $foot, 'pf-foot tone-primary' ), 'footer tone class' );
+	t_assert( false !== strpos( $foot, '<a href="https://facebook.com/s" rel="noopener noreferrer">Facebook</a>' ) && false === strpos( $foot, 'javascript' ), 'social links, safe only' );
+	t_assert( false !== strpos( $foot, '<ul class="pf-foot-legal"><li><a href="/privacy">Privacy</a></li><li><a href="/terms">Terms</a></li></ul>' ), 'bottom links' );
+} );

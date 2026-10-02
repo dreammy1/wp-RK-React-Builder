@@ -18,6 +18,35 @@ export function parseLinks(source: string, max = 12): NavLink[] {
   return out;
 }
 
+export type MenuItem = NavLink & { children: NavLink[] };
+
+/**
+ * A menu with drop-downs: "Label|/path" per line; a line that starts with "- " is a sub-item of the line above it
+ * (one level). Up to `max` top-level items and 8 sub-items each. Mirrored by rk_builder_parse_menu().
+ */
+export function parseMenu(source: string, max = 12): MenuItem[] {
+  const out: MenuItem[] = [];
+  for (const raw of source.split("\n")) {
+    let line = raw.trim();
+    const sub = line.startsWith("-");
+    if (sub) line = line.slice(1).trim();
+    const cut = line.indexOf("|");
+    if (cut < 1) continue;
+    const label = line.slice(0, cut).trim();
+    const href = line.slice(cut + 1).trim();
+    if (label === "" || href === "" || !isSafeLink(href)) continue;
+    if (sub) {
+      const parent = out[out.length - 1];
+      if (parent && parent.children.length < 8)
+        parent.children.push({ label, href });
+      continue;
+    }
+    if (out.length >= max) continue;
+    out.push({ label, href, children: [] });
+  }
+  return out;
+}
+
 export type Fact = { value: string; label: string };
 
 /** One fact per line, "Value|Label" (e.g. "75 mi|Service radius"). Mirrored by rk_builder_parse_facts(). */

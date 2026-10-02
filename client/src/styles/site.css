@@ -3341,3 +3341,244 @@ body.rk-solid-nav #main {
   margin-left: auto;
   margin-right: auto;
 }
+
+/* ---- Header: drop-down menus, appearance options, extra button ---- */
+.pf-nav nav ul ul,
+.pf-nav .pf-sub {
+  gap: 0;
+}
+.pf-nav nav li {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.pf-nav nav li.has-sub {
+  padding: 14px 0;
+  margin: -14px 0;
+}
+.pf-nav .pf-sub-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  margin-left: 2px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  opacity: 0.85;
+}
+.pf-chev {
+  display: block;
+  width: 6px;
+  height: 6px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: translateY(-2px) rotate(45deg);
+  transition: transform 0.2s;
+}
+.pf-nav li.has-sub.open .pf-chev,
+.pf-nav li.has-sub:hover .pf-chev {
+  transform: translateY(1px) rotate(225deg);
+}
+.pf-nav nav .pf-sub {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: -16px;
+  z-index: 30;
+  min-width: 230px;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  padding: 8px 0;
+  background: #fff;
+  color: #131313;
+  border: 1px solid #e5e5e5;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.14);
+}
+.pf-nav nav li.has-sub:hover > .pf-sub,
+.pf-nav nav li.has-sub:focus-within > .pf-sub,
+.pf-nav nav li.has-sub.open > .pf-sub {
+  display: flex;
+}
+.pf-nav nav .pf-sub li {
+  display: block;
+}
+.pf-nav nav .pf-sub a {
+  display: block;
+  padding: 11px 20px;
+  opacity: 1;
+  white-space: nowrap;
+}
+.pf-nav nav .pf-sub a::after {
+  display: none;
+}
+.pf-nav nav .pf-sub a:hover {
+  background: #f4f1ea;
+}
+.pf-panel-sub {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin: 0 0 8px;
+  padding: 0 0 0 18px;
+  list-style: none;
+}
+.pf-nav-panel .pf-panel-sub li {
+  border-bottom: 0;
+}
+.pf-nav-panel .pf-panel-sub a {
+  padding: 9px 0;
+  font-family: inherit;
+  font-size: 17px;
+  opacity: 0.8;
+}
+
+/* menu next to the logo */
+.pf-nav.align-left nav {
+  margin-right: auto;
+  margin-left: 12px;
+}
+
+/* bar height and logo */
+.pf-nav.size-compact {
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+.pf-nav.size-tall {
+  padding-top: 34px;
+  padding-bottom: 34px;
+}
+.pf-nav.shadow {
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12);
+}
+
+/* bar colour (when the bar is solid) */
+.pf-nav.bg-light:not(.overlay),
+body.rk-standalone .pf-nav.bg-light:not(.overlay) {
+  background: #fff;
+  color: #131313;
+}
+.pf-nav.bg-dark:not(.overlay),
+body.rk-standalone .pf-nav.bg-dark:not(.overlay) {
+  background: #131313;
+  color: #fff;
+  border-bottom-color: transparent;
+}
+.pf-nav.bg-primary:not(.overlay),
+body.rk-standalone .pf-nav.bg-primary:not(.overlay) {
+  background: var(--site-primary);
+  color: #131313;
+  border-bottom-color: transparent;
+}
+.pf-nav.bg-dark:not(.overlay) .pf-brand img,
+.pf-foot.tone-dark .pf-foot-logo {
+  filter: brightness(0) invert(1);
+}
+.pf-nav.bg-dark:not(.overlay) .pf-nav-phone {
+  background: #fff;
+  color: #131313;
+}
+
+/* extra button + button style */
+.site-root .pf-nav-cta {
+  display: inline-flex;
+  align-items: center;
+  padding: 12px 20px;
+  border: 1px solid var(--site-primary);
+  background: var(--site-primary);
+  color: #131313;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.site-root .pf-nav.btn-solid .pf-nav-phone {
+  background: var(--site-ink);
+  color: var(--site-bg);
+  border-color: var(--site-ink);
+}
+.site-root .pf-nav.btn-outline .pf-nav-phone,
+.site-root .pf-nav.btn-outline .pf-nav-cta {
+  background: transparent;
+  color: inherit;
+  border: 1px solid currentColor;
+}
+.pf-nav-panel .pf-nav-panel-cta {
+  display: block;
+  margin-top: 10px;
+  padding: 14px;
+  text-align: center;
+  background: var(--site-primary);
+  color: #131313;
+  font-weight: 700;
+  text-decoration: none;
+}
+@media (max-width: 560px) {
+  .site-root .pf-nav-cta {
+    display: none;
+  }
+}
+
+/* ---- Footer: tones, social links, bottom links ---- */
+.pf-foot.tone-light {
+  background: #f4f1ea;
+  color: #131313;
+}
+.pf-foot.tone-light p,
+.pf-foot.tone-light ul,
+.pf-foot.tone-light .pf-foot-base p,
+.pf-foot.tone-light h3 {
+  color: rgba(19, 19, 19, 0.7);
+}
+.pf-foot.tone-light a:hover {
+  color: #000;
+}
+.pf-foot.tone-light .pf-foot-base {
+  border-top-color: rgba(19, 19, 19, 0.15);
+}
+.pf-foot.tone-primary {
+  background: var(--site-primary);
+  color: #131313;
+}
+.pf-foot.tone-primary p,
+.pf-foot.tone-primary ul,
+.pf-foot.tone-primary .pf-foot-base p,
+.pf-foot.tone-primary h3 {
+  color: rgba(19, 19, 19, 0.75);
+}
+.pf-foot.tone-primary a:hover {
+  color: #000;
+}
+.pf-foot.tone-primary .pf-foot-base {
+  border-top-color: rgba(19, 19, 19, 0.2);
+}
+.pf-foot.tone-light .pf-foot-logo,
+.pf-foot.tone-primary .pf-foot-logo {
+  filter: none;
+}
+.pf-foot .pf-foot-social {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 18px;
+}
+.pf-foot .pf-foot-social a {
+  display: inline-block;
+  padding: 6px 12px;
+  border: 1px solid currentColor;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.85;
+}
+.pf-foot .pf-foot-legal {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 20px;
+  font-size: 12px;
+}

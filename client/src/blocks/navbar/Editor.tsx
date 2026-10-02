@@ -1,6 +1,7 @@
 import type { FieldDef } from "../fields";
 
 export const navbarFields: FieldDef[] = [
+  { kind: "group", label: "Brand" },
   { kind: "text", key: "brand", label: "Brand name", maxLength: 80 },
   {
     kind: "media",
@@ -10,12 +11,33 @@ export const navbarFields: FieldDef[] = [
     optional: true,
   },
   {
+    kind: "select",
+    key: "logoSize",
+    label: "Logo size",
+    options: [
+      { value: "sm", label: "Small (40 px)" },
+      { value: "md", label: "Medium (64 px)" },
+      { value: "lg", label: "Large (88 px)" },
+    ],
+  },
+  { kind: "group", label: "Menu" },
+  {
     kind: "textarea",
     key: "links",
     label: "Menu links",
-    maxLength: 1500,
-    help: "One per line: Label|/path (up to 12)",
+    maxLength: 3000,
+    help: "One per line: Label|/path (up to 12). Start a line with “- ” to put it in a drop-down under the line above (up to 8 each), e.g. “- Hardwood|/services/hardwood”.",
   },
+  {
+    kind: "select",
+    key: "align",
+    label: "Menu position",
+    options: [
+      { value: "spread", label: "Centre, between logo and buttons" },
+      { value: "left", label: "Next to the logo" },
+    ],
+  },
+  { kind: "group", label: "Buttons" },
   { kind: "text", key: "phone", label: "Phone button text", maxLength: 40 },
   {
     kind: "url",
@@ -23,6 +45,56 @@ export const navbarFields: FieldDef[] = [
     label: "Phone button link",
     maxLength: 500,
     help: "e.g. tel:+13098635246",
+  },
+  {
+    kind: "text",
+    key: "ctaText",
+    label: "Extra button text",
+    maxLength: 40,
+    help: "A second button, e.g. “Get a quote”. Leave empty for none.",
+  },
+  {
+    kind: "url",
+    key: "ctaHref",
+    label: "Extra button link",
+    maxLength: 500,
+  },
+  {
+    kind: "select",
+    key: "buttons",
+    label: "Button style",
+    options: [
+      { value: "auto", label: "Automatic (follows the bar)" },
+      { value: "solid", label: "Filled" },
+      { value: "outline", label: "Outlined" },
+    ],
+  },
+  { kind: "group", label: "Appearance" },
+  {
+    kind: "select",
+    key: "bg",
+    label: "Bar colour",
+    options: [
+      { value: "auto", label: "Automatic (site background)" },
+      { value: "light", label: "Light" },
+      { value: "dark", label: "Dark" },
+      { value: "primary", label: "Primary colour" },
+    ],
+  },
+  {
+    kind: "select",
+    key: "size",
+    label: "Bar height",
+    options: [
+      { value: "compact", label: "Compact" },
+      { value: "regular", label: "Regular" },
+      { value: "tall", label: "Tall" },
+    ],
+  },
+  {
+    kind: "checkbox",
+    key: "shadow",
+    label: "Shadow under the bar",
   },
   {
     kind: "checkbox",

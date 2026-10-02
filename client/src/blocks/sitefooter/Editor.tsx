@@ -36,6 +36,30 @@ export const sitefooterFields: FieldDef[] = [
     label: "Address / service area",
     maxLength: 300,
   },
+  {
+    kind: "textarea",
+    key: "social",
+    label: "Social links",
+    maxLength: 800,
+    help: "One per line: Label|https://… (up to 8), e.g. Facebook|https://facebook.com/yourpage",
+  },
   { kind: "text", key: "copyright", label: "Copyright line", maxLength: 200 },
+  {
+    kind: "textarea",
+    key: "legal",
+    label: "Bottom links",
+    maxLength: 800,
+    help: "Privacy, terms… One per line: Label|/path (up to 6)",
+  },
   { kind: "textarea", key: "note", label: "Small print", maxLength: 300 },
+  {
+    kind: "select",
+    key: "tone",
+    label: "Footer colour",
+    options: [
+      { value: "dark", label: "Dark" },
+      { value: "light", label: "Light" },
+      { value: "primary", label: "Primary colour" },
+    ],
+  },
 ];

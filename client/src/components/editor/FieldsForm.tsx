@@ -123,7 +123,7 @@ export function FieldsForm({ fields, values, errors, onChange }: Props) {
                   </label>
                   <select
                     id={id}
-                    value={String(value)}
+                    value={String(value ?? f.options[0]?.value ?? "")}
                     aria-invalid={!!err}
                     aria-describedby={describedBy}
                     onChange={e =>

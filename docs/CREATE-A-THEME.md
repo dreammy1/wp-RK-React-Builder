@@ -63,6 +63,20 @@ Go to **Templates → New template → Header** and again for **Footer**.
   navbar and footer blocks on every page and every template. Change them once and the whole site follows.
 - Only one header and one footer are live at a time. Switching a new one on switches the old one off.
 - A page that opens with a hero lets the header float over it; every other page gets a solid bar with room under it.
+- **Drop-down menus**: in _Menu links_, start a line with `- ` to put it under the line above:
+
+  ```
+  Home|/
+  Services|/services
+  - Hardwood installation|/services/hardwood
+  - Refinishing|/services/refinishing
+  About|/about
+  ```
+
+  On a computer the sub-menu opens on hover, keyboard focus or a click on the small arrow; on a phone it is listed under its parent in the menu. One level, up to 8 items each.
+
+- **Appearance** (select the navbar block): logo size, bar colour (automatic, light, dark or the primary colour), bar height, menu next to the logo or centred, a shadow, button style, and an **extra button** (for example "Get a quote") next to the phone button. The bar colour applies whenever the bar is solid; on a page that opens with a hero and has _Overlay the hero below_ on, the bar is transparent until the visitor scrolls.
+- **Footer options** (select the footer block): colour (dark, light or primary), social links (`Facebook|https://facebook.com/yourpage`), bottom links (`Privacy|/privacy`), plus the columns, contact details and small print.
 
 ### Step 4: Pages (Pages)
 

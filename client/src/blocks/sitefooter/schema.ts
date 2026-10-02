@@ -16,6 +16,12 @@ export const sitefooterProps = z.strictObject({
   address: text(0, 300),
   copyright: text(0, 200),
   note: text(0, 300),
+  /** Colour: dark (default), light or the primary colour. */
+  tone: z.enum(["dark", "light", "primary"]).optional(),
+  /** Social links, one per line: "Label|https://…". */
+  social: text(0, 800).optional(),
+  /** Links in the bottom bar (privacy, terms…), one per line: "Label|/path". */
+  legal: text(0, 800).optional(),
 });
 export type SitefooterProps = z.infer<typeof sitefooterProps>;
 export const sitefooterDefaults: SitefooterProps = {
@@ -31,4 +37,7 @@ export const sitefooterDefaults: SitefooterProps = {
   address: "",
   copyright: "",
   note: "",
+  tone: "dark",
+  social: "",
+  legal: "",
 };

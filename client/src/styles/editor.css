@@ -3068,3 +3068,12 @@ input[type="checkbox"] {
 .wordcount.low {
   color: #ffcf6b;
 }
+
+.field.kind-pick .kind-card {
+  display: grid;
+  gap: 3px;
+}
+.kind-card strong,
+.kind-card small {
+  display: block;
+}

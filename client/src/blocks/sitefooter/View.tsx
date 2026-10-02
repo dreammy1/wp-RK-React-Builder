@@ -21,11 +21,34 @@ function Column({ title, source }: { title: string; source: string }) {
   );
 }
 
+function Social({ source }: { source: string }) {
+  const links = parseLinks(source, 8);
+  if (links.length === 0) return null;
+  return (
+    <ul className="pf-foot-social">
+      {links.map(l => (
+        <li key={l.href + l.label}>
+          <a href={l.href} rel="noopener noreferrer">
+            {l.label}
+          </a>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 export function SitefooterView({ props }: ViewProps<SitefooterProps>) {
   const tel = phoneHref(props.phone);
   const mail = emailHref(props.email);
+  const legal = parseLinks(props.legal ?? "", 6);
   return (
-    <footer className="pf-foot">
+    <footer
+      className={
+        props.tone && props.tone !== "dark"
+          ? `pf-foot tone-${props.tone}`
+          : "pf-foot"
+      }
+    >
       <div className="pf-foot-grid">
         <div className="pf-foot-col">
           {props.logoUrl ? (
@@ -39,6 +62,7 @@ export function SitefooterView({ props }: ViewProps<SitefooterProps>) {
             <strong className="pf-foot-brand">{props.brand}</strong>
           )}
           {props.tagline && <p>{props.tagline}</p>}
+          {props.social && <Social source={props.social} />}
         </div>
         <Column title={props.colATitle} source={props.colALinks} />
         <Column title={props.colBTitle} source={props.colBLinks} />
@@ -68,9 +92,18 @@ export function SitefooterView({ props }: ViewProps<SitefooterProps>) {
           </div>
         )}
       </div>
-      {(props.copyright || props.note) && (
+      {(props.copyright || props.note || legal.length > 0) && (
         <div className="pf-foot-base">
           {props.copyright && <p>{props.copyright}</p>}
+          {legal.length > 0 && (
+            <ul className="pf-foot-legal">
+              {legal.map(l => (
+                <li key={l.href + l.label}>
+                  <a href={l.href}>{l.label}</a>
+                </li>
+              ))}
+            </ul>
+          )}
           {props.note && <p>{props.note}</p>}
         </div>
       )}

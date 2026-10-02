@@ -1,0 +1,55 @@
+{
+  "kind": "layout",
+  "description": "Header with drop-down menus, extra button and appearance options; footer with social links, bottom links and a tone",
+  "document": {
+    "version": 1,
+    "blocks": [
+      {
+        "id": "nav",
+        "type": "navbar",
+        "props": {
+          "brand": "Studio",
+          "logoUrl": "/placeholder.svg",
+          "logoSize": "lg",
+          "links": "Home|/\nServices|/services\n- Hardwood|/services/hardwood\n- Refinishing|/services/refinishing\n- bad|javascript:alert(1)\nAbout|/about\n- Team|/about/team\nContact|/contact",
+          "phone": "(309) 863-5246",
+          "phoneHref": "tel:+13098635246",
+          "overlay": false,
+          "bg": "dark",
+          "size": "tall",
+          "align": "left",
+          "buttons": "outline",
+          "ctaText": "Get a quote",
+          "ctaHref": "/estimate",
+          "shadow": true
+        }
+      },
+      {
+        "id": "h",
+        "type": "heading",
+        "props": { "text": "Body", "level": 2 }
+      },
+      {
+        "id": "foot",
+        "type": "sitefooter",
+        "props": {
+          "brand": "Studio",
+          "tagline": "Family owned",
+          "colATitle": "Explore",
+          "colALinks": "About|/about",
+          "colBTitle": "",
+          "colBLinks": "",
+          "contactTitle": "Contact",
+          "phone": "(309) 863-5246",
+          "email": "hi@example.com",
+          "address": "Peoria, IL",
+          "copyright": "© Studio",
+          "note": "",
+          "tone": "light",
+          "social": "Facebook|https://facebook.com/studio\nInstagram|https://instagram.com/studio\nbad|javascript:x",
+          "legal": "Privacy|/privacy\nTerms|/terms"
+        }
+      }
+    ]
+  }
+}

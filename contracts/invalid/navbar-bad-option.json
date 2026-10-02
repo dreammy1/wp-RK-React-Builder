@@ -1,0 +1,21 @@
+{
+  "kind": "layout",
+  "description": "A navbar option outside its allowed values",
+  "document": {
+    "version": 1,
+    "blocks": [
+      {
+        "id": "nav",
+        "type": "navbar",
+        "props": {
+          "brand": "X",
+          "links": "",
+          "phone": "",
+          "phoneHref": "",
+          "overlay": false,
+          "bg": "neon"
+        }
+      }
+    ]
+  }
+}

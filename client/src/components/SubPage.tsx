@@ -51,7 +51,6 @@ export function SubPage({
     );
   return createPortal(
     <section
-      role="region"
       className={`subpage ${wide ? "wide" : ""}`}
       aria-labelledby="subpage-title"
     >
