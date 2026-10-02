@@ -1,5 +1,10 @@
 import { Plus } from "lucide-react";
-import { PALETTE_ORDER, registry } from "@/blocks/registry";
+import {
+  DYNAMIC_ORDER,
+  PAGE_DYNAMIC,
+  PALETTE_ORDER,
+  registry,
+} from "@/blocks/registry";
 import type { BlockType } from "@/lib/schema/primitives";
 import type { ReusableItem } from "@/lib/schema/api";
 import { Library } from "lucide-react";
@@ -10,48 +15,59 @@ export function Palette({
   full,
   reusables,
   onAddReusable,
+  templateMode = false,
 }: {
   reusables: ReusableItem[];
   onAddReusable: (id: number) => void;
   onAdd: (t: BlockType) => void;
   onDragStart: (t: BlockType | null) => void;
   full: boolean;
+  /** Inside a theme-builder template the dynamic blocks (entry title, fields, gallery...) are offered too. */
+  templateMode?: boolean;
 }) {
+  const dynamic = templateMode ? DYNAMIC_ORDER : PAGE_DYNAMIC;
+  const renderItem = (type: BlockType) => {
+    const def = registry[type];
+    const Icon = def.icon;
+    return (
+      <li key={type}>
+        <button
+          className="palette-item"
+          disabled={full}
+          draggable
+          onDragStart={e => {
+            e.dataTransfer.setData("text/plain", type);
+            onDragStart(type);
+          }}
+          onDragEnd={() => onDragStart(null)}
+          onClick={() => onAdd(type)}
+          aria-label={`Add ${def.label} block`}
+        >
+          <span className="block-symbol">
+            <Icon size={14} aria-hidden="true" />
+          </span>
+          <span>
+            <strong>{def.label}</strong>
+            <small>{def.description}</small>
+          </span>
+          <Plus size={14} aria-hidden="true" />
+        </button>
+      </li>
+    );
+  };
   return (
     <nav className="palette" aria-label="Block palette">
       <div className="rail-head">
         <span className="eyebrow">insert / block</span>
       </div>
       <ul className="palette-list">
-        {PALETTE_ORDER.map(type => {
-          const def = registry[type];
-          const Icon = def.icon;
-          return (
-            <li key={type}>
-              <button
-                className="palette-item"
-                disabled={full}
-                draggable
-                onDragStart={e => {
-                  e.dataTransfer.setData("text/plain", type);
-                  onDragStart(type);
-                }}
-                onDragEnd={() => onDragStart(null)}
-                onClick={() => onAdd(type)}
-                aria-label={`Add ${def.label} block`}
-              >
-                <span className="block-symbol">
-                  <Icon size={14} aria-hidden="true" />
-                </span>
-                <span>
-                  <strong>{def.label}</strong>
-                  <small>{def.description}</small>
-                </span>
-                <Plus size={14} aria-hidden="true" />
-              </button>
-            </li>
-          );
-        })}
+        {PALETTE_ORDER.filter(t => !DYNAMIC_ORDER.includes(t)).map(renderItem)}
+      </ul>
+      <div className="rail-head">
+        <span className="eyebrow">dynamic / content</span>
+      </div>
+      <ul className="palette-list" aria-label="Dynamic blocks">
+        {dynamic.map(renderItem)}
       </ul>
       {reusables.length > 0 && (
         <>

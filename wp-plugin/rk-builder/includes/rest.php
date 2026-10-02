@@ -50,6 +50,15 @@ function rk_builder_get_page( $id ) {
 	return $page;
 }
 
+/** A page, or a theme-builder template: both keep a layout with the same storage, revisions and publish flow. */
+function rk_builder_get_doc( $id ) {
+	$id  = (int) $id;
+	$doc = $id > 0 ? get_post( $id ) : null;
+	if ( ! $doc || ! is_object( $doc ) || ! in_array( $doc->post_type, array( 'page', 'rk_template' ), true ) ) { return null; }
+	if ( in_array( $doc->post_status, array( 'trash', 'auto-draft', 'inherit' ), true ) ) { return null; }
+	return $doc;
+}
+
 /** 413 when the raw body exceeds the cap (null otherwise). */
 function rk_builder_check_payload( $req ) {
 	if ( strlen( (string) $req->get_body() ) > RK_BUILDER_MAX_PAYLOAD ) {
@@ -106,10 +115,11 @@ function rk_builder_authorize_caps( array $caps ) {
 }
 
 /** Logged in, may edit pages in general, and may edit this particular page (+ extra caps on it). */
-function rk_builder_authorize_page( $req, array $page_caps = array( 'edit_post' ) ) {
+function rk_builder_authorize_page( $req, array $page_caps = array( 'edit_post' ), $allow_template = true ) {
 	$gate = rk_builder_authorize_caps( array( 'edit_pages' ) );
 	if ( true !== $gate ) { return $gate; }
-	$page = rk_builder_get_page( isset( $req['id'] ) ? $req['id'] : 0 );
+	$id   = isset( $req['id'] ) ? $req['id'] : 0;
+	$page = $allow_template ? rk_builder_get_doc( $id ) : rk_builder_get_page( $id );
 	if ( ! $page ) { return rk_builder_not_found( 'Page not found.' ); }
 	foreach ( $page_caps as $cap ) {
 		if ( ! current_user_can( $cap, $page->ID ) ) { return rk_builder_forbidden(); }
@@ -119,6 +129,8 @@ function rk_builder_authorize_page( $req, array $page_caps = array( 'edit_post' 
 
 function rk_builder_perm_list_pages( $req ) { return rk_builder_authorize_caps( array( 'edit_pages' ) ); }
 function rk_builder_perm_edit_page( $req ) { return rk_builder_authorize_page( $req, array( 'edit_post' ) ); }
+/** Real pages only (page settings, SEO, trash, front page): never a template. */
+function rk_builder_perm_edit_real_page( $req ) { return rk_builder_authorize_page( $req, array( 'edit_post' ), false ); }
 function rk_builder_perm_publish_page( $req ) { return rk_builder_authorize_page( $req, array( 'edit_post', 'publish_post' ) ); }
 function rk_builder_perm_media( $req ) { return rk_builder_authorize_caps( array( 'upload_files' ) ); }
 function rk_builder_perm_theme_write( $req ) { return rk_builder_authorize_caps( array( 'manage_options' ) ); }
@@ -164,7 +176,7 @@ function rk_builder_register_routes() {
 		'methods' => $POST, 'callback' => 'rk_builder_handle_unpublish', 'permission_callback' => 'rk_builder_perm_publish_page', 'args' => $id,
 	) );
 	register_rest_route( $ns, '/builder/preview-token/(?P<id>\d+)', array(
-		'methods' => $POST, 'callback' => 'rk_builder_handle_preview_token', 'permission_callback' => 'rk_builder_perm_edit_page', 'args' => $id,
+		'methods' => $POST, 'callback' => 'rk_builder_handle_preview_token', 'permission_callback' => 'rk_builder_perm_edit_real_page', 'args' => $id,
 	) );
 	register_rest_route( $ns, '/builder/media', array(
 		array(
@@ -200,6 +212,8 @@ function rk_builder_register_routes() {
 		'methods' => $POST, 'callback' => 'rk_builder_handle_site_import', 'permission_callback' => 'rk_builder_perm_site_transfer',
 	) );
 	rk_builder_register_theme_routes( $ns );
+	rk_builder_register_type_routes( $ns );
+	rk_builder_register_template_routes( $ns );
 	rk_builder_register_dashboard_routes( $ns );
 	rk_builder_register_integration_routes( $ns );
 	register_rest_route( $ns, '/theme-config', array(

@@ -36,6 +36,12 @@ export const BLOCK_TYPES = [
   "brandstrip",
   "reviews",
   "visualizer",
+  "dynfield",
+  "dynimage",
+  "dyngallery",
+  "dynrepeater",
+  "dyninfo",
+  "loopgrid",
   "reusable",
 ] as const;
 export type BlockType = (typeof BLOCK_TYPES)[number];

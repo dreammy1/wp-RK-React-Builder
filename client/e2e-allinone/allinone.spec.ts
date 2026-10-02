@@ -21,9 +21,13 @@ test.skip(
 test.describe.configure({ mode: "serial" });
 
 async function login(page: Page, user: string, pass: string) {
-  await page.goto("/wp-login.php");
+  await page.goto("/wp-login.php", { waitUntil: "load" });
+  // WordPress's own login script focuses and selects the username a moment after load; wait it out so it cannot swallow input.
+  await page.waitForTimeout(600);
   await page.locator("#user_login").fill(user);
+  await expect(page.locator("#user_login")).toHaveValue(user);
   await page.locator("#user_pass").fill(pass);
+  await expect(page.locator("#user_pass")).toHaveValue(pass);
   await page.locator("#wp-submit").click();
   await page.waitForURL(/wp-admin/);
 }
@@ -588,4 +592,262 @@ test("12 · re-importing updates by slug (no duplicates); editors cannot import 
     ).status
   ).toBe(403);
   await ed.ctx.close();
+});
+
+test("13 · theme builder: content type with fields, entries, templates; single, listing and card render on the public site; dashboard screens work", async ({
+  page,
+}) => {
+  await login(page, AIO.admin, AIO.adminPass);
+  await page.goto(builderUrl());
+  await expect(
+    page.getByRole("complementary", { name: "Dashboard" })
+  ).toBeVisible();
+  const j = async (path: string, json?: unknown) => {
+    const r = await wpFetch(
+      page,
+      path,
+      json === undefined ? {} : { method: "POST", json }
+    );
+    expect(r.status, `${path}: ${JSON.stringify(r.json)}`).toBeLessThan(300);
+    return r.json as Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
+  };
+
+  // 1 · a content type with a category group and every kind of field
+  const types = await j("builder/types", {
+    types: [
+      {
+        slug: "listing",
+        singular: "Listing",
+        plural: "Listings",
+        rewrite: "listings",
+        taxonomies: [
+          {
+            slug: "listing_cat",
+            singular: "Category",
+            plural: "Categories",
+            hierarchical: true,
+          },
+        ],
+        fields: [
+          { key: "price", label: "Price", type: "number", min: 0 },
+          {
+            key: "status",
+            label: "Status",
+            type: "select",
+            options: [
+              { value: "sale", label: "For sale" },
+              { value: "sold", label: "Sold" },
+            ],
+          },
+          { key: "featured", label: "Featured", type: "toggle" },
+          { key: "photos", label: "Photos", type: "gallery" },
+          {
+            key: "specs",
+            label: "Specs",
+            type: "repeater",
+            subfields: [
+              { key: "name", label: "Name", type: "text" },
+              { key: "value", label: "Value", type: "text" },
+            ],
+          },
+        ],
+      },
+    ],
+  });
+  expect(types.types.map((t: { slug: string }) => t.slug)).toContain("listing");
+
+  // 2 · entries (the media library has the seeded image from global setup)
+  const media = await j("builder/media");
+  const imageId = (media.items as { id: number }[])[0]!.id;
+  const made: { id: number; link: string }[] = [];
+  for (const [i, [title, cat]] of [
+    ["Maple House", "Houses"],
+    ["Oak Cottage", "Houses"],
+    ["Pine Lot", "Land"],
+    ["Cedar Acres", "Land"],
+    ["Birch Home", "Houses"],
+  ].entries()) {
+    const r = await j("builder/entries/listing", {
+      title,
+      status: "publish",
+      excerpt: `${title} summary`,
+      image: imageId,
+      terms: { listing_cat: [cat] },
+      fields: {
+        price: 100000 + i * 1000,
+        status: "sale",
+        featured: i === 0,
+        photos: [imageId],
+        specs: [
+          { name: "Beds", value: String(2 + i) },
+          { name: "Baths", value: "2" },
+        ],
+      },
+    });
+    made.push(r.entry as { id: number; link: string });
+  }
+
+  // 3 · templates: create from the starter, publish, switch on
+  const mk = async (kind: string) => {
+    const t = (
+      await j("builder/templates", {
+        title: `E2E ${kind}`,
+        kind,
+        postType: "listing",
+      })
+    ).item as { id: number };
+    const lay = await j(`builder/layout/${t.id}`);
+    if (kind === "archive") {
+      // two per page so the pager shows
+      const layout = lay.layout as {
+        blocks: { type: string; props: Record<string, unknown> }[];
+      };
+      for (const b of layout.blocks)
+        if (b.type === "loopgrid") b.props.limit = 2;
+      await j(`builder/layout/${t.id}`, {
+        layout,
+        expectedRevision: lay.revision,
+        status: "draft",
+      });
+    }
+    const rev = (await j(`builder/layout/${t.id}`)).revision;
+    await j(`builder/publish/${t.id}`, { expectedRevision: rev });
+    if (kind !== "loop")
+      await j(`builder/templates/${t.id}/update`, { active: true });
+    return t.id;
+  };
+  const single = await mk("single");
+  const archive = await mk("archive");
+  const loop = await mk("loop");
+
+  // 4 · the public single page is drawn by the template
+  const first = made[0]!;
+  await page.goto(first.link);
+  await expect(page.locator("h1.dyn-field")).toHaveText("Maple House");
+  await expect(
+    page.locator(".dyn-info dt", { hasText: "Price" })
+  ).toBeVisible();
+  await expect(
+    page.locator(".dyn-info dd", { hasText: "For sale" })
+  ).toBeVisible();
+  await expect(page.locator(".dyn-gallery img")).toHaveCount(1);
+  await expect(
+    page.locator(".dyn-repeater li, .dyn-repeater tr").first()
+  ).toBeVisible();
+  // related entries share a category and exclude the page itself
+  await expect(page.locator(".dyn-loop .dyn-item")).toHaveCount(2);
+  await expect(page.locator(".dyn-loop")).not.toContainText("Maple House");
+  await expect(page.locator(".dyn-loop")).toContainText("Oak Cottage");
+  expect(await page.content()).toContain('property="og:title"');
+  expect(await page.title()).toContain("Maple House");
+
+  // 5 · the listing page: filters, search and page numbers
+  const origin = new URL(first.link).origin;
+  await page.goto(`${origin}/?post_type=listing`);
+  await expect(page.locator(".dyn-loop .dyn-item")).toHaveCount(2);
+  await expect(page.locator(".dyn-pager")).toBeVisible();
+  await page.goto(`${origin}/?post_type=listing&rk_term=land`);
+  await expect(page.locator(".dyn-loop .dyn-item")).toHaveCount(2);
+  await expect(page.locator(".dyn-loop")).toContainText("Pine Lot");
+  await page.goto(`${origin}/?post_type=listing&rk_q=maple`);
+  await expect(page.locator(".dyn-loop .dyn-item")).toHaveCount(1);
+  expect(
+    await page.locator("script").evaluateAll(s => s.length)
+  ).toBeGreaterThanOrEqual(0);
+
+  // 6 · switching the template off hands the page back to WordPress
+  await page.goto(builderUrl());
+  await j(`builder/templates/${single}/update`, { active: false });
+  const plain = await page.request.get(first.link);
+  expect(await plain.text()).not.toContain("dyn-info");
+  await j(`builder/templates/${single}/update`, { active: true });
+
+  // 7 · a card template draws the cards of a Loop grid (and cannot be deleted while used)
+  const lay = await j(`builder/layout/${archive}`);
+  const layout = lay.layout as {
+    blocks: { type: string; props: Record<string, unknown> }[];
+  };
+  for (const b of layout.blocks)
+    if (b.type === "loopgrid") b.props.templateId = loop;
+  await j(`builder/layout/${archive}`, {
+    layout,
+    expectedRevision: lay.revision,
+    status: "draft",
+  });
+  const del = await wpFetch(page, `builder/templates/${loop}/delete`, {
+    method: "POST",
+    json: {},
+  });
+  expect(del.status).toBe(409);
+
+  // 7b · the theme engine carries types, templates and entries: save the site as a theme and install it again
+  await j("builder/pages/new", { title: "Theme builder page" }); // a theme needs at least one page
+  const saved = await j("builder/themes", { name: "E2E listings theme" });
+  const slug = (
+    saved.theme as { slug: string; templates: number; types: number }
+  ).slug;
+  expect((saved.theme as { templates: number }).templates).toBe(3);
+  expect((saved.theme as { types: number }).types).toBe(1);
+  const installed = await j("builder/themes/install", {
+    slug,
+    options: { publish: true, theme: true, content: true },
+  });
+  expect(installed.types.applied).toBe(true);
+  expect(installed.templates.update).toBe(3);
+  expect(installed.templates.create).toBe(0);
+  expect(installed.entries.updated).toBe(5);
+  expect(installed.publishedTemplates).toBe(3);
+  await page.goto(first.link);
+  await expect(page.locator("h1.dyn-field")).toHaveText("Maple House");
+  await expect(page.locator(".dyn-loop .dyn-item")).toHaveCount(2);
+
+  // 8 · dashboard: Content, Types & fields and Templates screens
+  await page.goto(`${builderUrl()}&view=content`);
+  await expect(
+    page.getByRole("heading", { name: "Content", exact: true })
+  ).toBeVisible();
+  await page.getByRole("tab", { name: /Listings/ }).click();
+  await expect(page.getByText("Maple House").first()).toBeVisible();
+  await page.getByRole("button", { name: "Edit" }).first().click();
+  await expect(page.getByLabel("Title")).toBeVisible();
+  await expect(page.getByText("Photos", { exact: true }).first()).toBeVisible();
+  await expect(page.getByRole("button", { name: "Add row" })).toBeVisible();
+
+  await page.goto(`${builderUrl()}&view=types`);
+  await expect(
+    page.getByRole("heading", { name: "Types & fields" })
+  ).toBeVisible();
+  await page.getByRole("button", { name: /Listings/ }).click();
+  await expect(page.getByText("Specs", { exact: false }).first()).toBeVisible();
+
+  await page.goto(`${builderUrl()}&view=templates`);
+  await expect(
+    page.getByRole("heading", { name: "Templates", exact: true })
+  ).toBeVisible();
+  await expect(page.getByText("E2E single")).toBeVisible();
+  await expect(page.getByText("in use").first()).toBeVisible();
+
+  // 9 · the editor draws dynamic blocks with the PHP markup, using a real entry
+  await page.goto(builderUrl(single));
+  await expect(page.locator(".dyn-preview h1.dyn-field")).toContainText(
+    /Maple|Birch|Cedar|Oak|Pine/
+  );
+  await page.getByRole("tab", { name: "Blocks" }).click();
+  await expect(
+    page.getByRole("button", { name: "Add Dynamic text block" })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Add Repeater rows block" })
+  ).toBeVisible();
+  // pages get the Loop grid only
+  await page.goto(
+    builderUrl(made.length ? (state().pageId as number) : undefined)
+  );
+  await page.getByRole("tab", { name: "Blocks" }).click();
+  await expect(
+    page.getByRole("button", { name: "Add Loop grid block" })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Add Dynamic text block" })
+  ).toHaveCount(0);
 });

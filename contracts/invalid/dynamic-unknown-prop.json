@@ -1,0 +1,20 @@
+{
+  "kind": "layout",
+  "description": "dynamic blocks are strict: unknown props are refused",
+  "document": {
+    "version": 1,
+    "blocks": [
+      {
+        "id": "b1",
+        "type": "dynimage",
+        "props": {
+          "source": "featured",
+          "ratio": "wide",
+          "link": true,
+          "fallback": "placeholder",
+          "extra": 1
+        }
+      }
+    ]
+  }
+}

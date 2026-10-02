@@ -105,6 +105,8 @@ function rk_builder_purge_all_public_cache() {
 
 function rk_builder_on_layout_changed( $page_id, $reason = '' ) {
 	rk_builder_purge_page_cache( $page_id );
+	// A template decides how many entries look: purge every RK page and the host's caches, not just this post.
+	if ( 'rk_template' === get_post_type( $page_id ) ) { rk_builder_purge_all_public_cache(); }
 }
 
 function rk_builder_on_theme_changed() {

@@ -40,6 +40,19 @@ type FieldVariant =
     }
   | { kind: "group"; label: string }
   | {
+      /** Where a dynamic block reads from: the entry's title, a field, terms... Options come from the template's type. */
+      kind: "dynSource";
+      key: string;
+      label: string;
+      accept: "scalar" | "image" | "gallery" | "repeater";
+      help?: string;
+    }
+  | { kind: "dynSources"; key: string; label: string; help?: string }
+  | { kind: "postType"; key: string; label: string }
+  | { kind: "taxonomy"; key: string; label: string; help?: string }
+  | { kind: "taxonomyTerm"; key: string; label: string }
+  | { kind: "loopTemplate"; key: string; label: string; help?: string }
+  | {
       /** Card-by-card editor for the catalog block: writes `items`, `modals`, `modalLabel` and `modalCta` together. */
       kind: "catalogCards";
       key: "items";

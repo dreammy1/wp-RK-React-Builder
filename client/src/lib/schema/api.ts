@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { LayoutSchema } from "./layout";
+import { BLOCK_TYPES } from "./primitives";
 import { ThemeSchema } from "./theme";
 
 /** Error codes the plugin returns; the client maps them to UI states. */
@@ -83,6 +84,15 @@ export const LoadResponse = z.object({
   capabilities: z
     .object({ manageTheme: z.boolean(), publish: z.boolean() })
     .optional(),
+  /** Present when the document is a theme-builder template rather than a page. */
+  template: z
+    .object({
+      kind: z.enum(["single", "archive", "loop"]),
+      postType: z.string(),
+      taxonomy: z.string(),
+      active: z.boolean(),
+    })
+    .optional(),
 });
 
 export const SaveRequest = z.strictObject({
@@ -147,34 +157,7 @@ export const ReusableItem = z.object({
   id: z.number().int(),
   name: z.string(),
   block: z.object({
-    type: z.enum([
-      "hero",
-      "heading",
-      "text",
-      "image",
-      "cta",
-      "services",
-      "portfolio",
-      "spacer",
-      "divider",
-      "testimonial",
-      "contact",
-      "navbar",
-      "coverhero",
-      "sitefooter",
-      "section",
-      "split",
-      "contactband",
-      "panel",
-      "values",
-      "catalog",
-      "detail",
-      "gallery",
-      "calculator",
-      "brandstrip",
-      "reviews",
-      "visualizer",
-    ]),
+    type: z.enum(BLOCK_TYPES).exclude(["reusable"]),
     props: z.unknown(),
   }),
 });
@@ -231,6 +214,17 @@ export const SiteImportReport = z.object({
     created: z.number(),
     updated: z.number(),
   }),
+  types: z.object({ included: z.number(), applied: z.boolean() }).optional(),
+  templates: z
+    .object({
+      create: z.number(),
+      update: z.number(),
+      skipped: z.array(Skipped),
+    })
+    .optional(),
+  entries: z
+    .object({ included: z.number(), created: z.number(), updated: z.number() })
+    .optional(),
   warnings: z.array(z.string()),
 });
 export type SiteImportReport = z.infer<typeof SiteImportReport>;
@@ -246,6 +240,8 @@ export const ThemeSummary = z.object({
   reusables: z.number(),
   media: z.number(),
   content: z.number(),
+  templates: z.number().optional(),
+  types: z.number().optional(),
   preview: z.string(),
   createdAt: z.string(),
   bytes: z.number(),
@@ -259,6 +255,7 @@ export const ThemeAdded = z.object({
 });
 export const ThemeInstallReport = SiteImportReport.extend({
   published: z.number(),
+  publishedTemplates: z.number().optional(),
   frontPage: z.boolean(),
 });
 export type ThemeInstallReport = z.infer<typeof ThemeInstallReport>;
@@ -485,3 +482,133 @@ export const RedirectRule = z.object({
 });
 export type RedirectRule = z.infer<typeof RedirectRule>;
 export const RedirectList = z.object({ items: z.array(RedirectRule) });
+
+/* ---- content types, entries, templates (theme builder) ---- */
+
+export const FIELD_TYPES = [
+  "text",
+  "textarea",
+  "number",
+  "email",
+  "url",
+  "date",
+  "color",
+  "select",
+  "toggle",
+  "image",
+  "gallery",
+  "repeater",
+] as const;
+export type FieldType = (typeof FIELD_TYPES)[number];
+
+const FieldBase = z.object({
+  key: z.string(),
+  label: z.string(),
+  type: z.enum(FIELD_TYPES),
+  help: z.string(),
+  required: z.boolean(),
+  default: z.string(),
+  options: z.array(z.object({ value: z.string(), label: z.string() })),
+  min: z.number().nullable(),
+  max: z.number().nullable(),
+});
+export const EntryField = FieldBase.extend({ subfields: z.array(FieldBase) });
+export type EntryField = z.infer<typeof EntryField>;
+
+export const ContentType = z.object({
+  slug: z.string(),
+  singular: z.string(),
+  plural: z.string(),
+  icon: z.string(),
+  supports: z.array(z.string()),
+  public: z.boolean(),
+  hasArchive: z.boolean(),
+  rewrite: z.string(),
+  builtin: z.boolean(),
+  taxonomies: z.array(
+    z.object({
+      slug: z.string(),
+      singular: z.string(),
+      plural: z.string(),
+      hierarchical: z.boolean(),
+    })
+  ),
+  fields: z.array(EntryField),
+  count: z.number().int().optional(),
+  taxonomyTerms: z
+    .array(
+      z.object({
+        slug: z.string(),
+        name: z.string(),
+        hierarchical: z.boolean(),
+        terms: z.array(z.object({ slug: z.string(), name: z.string() })),
+      })
+    )
+    .optional(),
+});
+export type ContentType = z.infer<typeof ContentType>;
+export const TypesResponse = z.object({
+  types: z.array(ContentType),
+  fieldTypes: z.array(z.string()),
+});
+
+/** A media item or file attached to an entry field. */
+export const EntryMedia = z
+  .object({ id: z.number().int(), url: z.string() })
+  .passthrough();
+export type EntryMedia = z.infer<typeof EntryMedia>;
+
+export const EntryRow = z.object({
+  id: z.number().int(),
+  title: z.string(),
+  slug: z.string(),
+  status: z.string(),
+  modified: z.string(),
+  link: z.string(),
+  image: z.string().nullable(),
+});
+export type EntryRow = z.infer<typeof EntryRow>;
+export const EntryList = z.object({
+  items: z.array(EntryRow),
+  total: z.number().int(),
+  pages: z.number().int(),
+});
+export const Entry = z.object({
+  id: z.number().int(),
+  type: z.string(),
+  title: z.string(),
+  slug: z.string(),
+  status: z.string(),
+  excerpt: z.string(),
+  content: z.string(),
+  image: EntryMedia.nullable(),
+  menuOrder: z.number().int(),
+  terms: z.record(z.string(), z.array(z.string())),
+  fields: z.record(z.string(), z.unknown()),
+  link: z.string(),
+  modified: z.string(),
+});
+export type Entry = z.infer<typeof Entry>;
+export const EntryResponse = z.object({ entry: Entry });
+
+export const TemplateItem = z.object({
+  id: z.number().int(),
+  title: z.string(),
+  kind: z.enum(["single", "archive", "loop"]),
+  postType: z.string(),
+  taxonomy: z.string(),
+  active: z.boolean(),
+  status: z.string(),
+  modified: z.string(),
+  live: z.boolean(),
+});
+export type TemplateItem = z.infer<typeof TemplateItem>;
+export const TemplateList = z.object({ items: z.array(TemplateItem) });
+export const TemplateResponse = z.object({ item: TemplateItem });
+
+export const DynRender = z.object({
+  html: z.string(),
+  sample: z.boolean(),
+  valid: z.boolean(),
+});
+export type DynRender = z.infer<typeof DynRender>;

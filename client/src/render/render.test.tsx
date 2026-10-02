@@ -34,7 +34,19 @@ const html = (
 };
 
 describe("block views (shared by canvas and public site)", () => {
-  it.each(BLOCK_TYPES.filter(t => t !== "reusable"))(
+  // Dynamic blocks are drawn by the PHP renderer; React only previews them inside the editor (see blocks/dynamic/View.tsx).
+  const DYNAMIC = [
+    "dynfield",
+    "dynimage",
+    "dyngallery",
+    "dynrepeater",
+    "dyninfo",
+    "loopgrid",
+  ];
+  it.each(DYNAMIC)("%s renders nothing in public mode (PHP-only)", type => {
+    expect(html(mk(type as (typeof BLOCK_TYPES)[number]))).toBe("");
+  });
+  it.each(BLOCK_TYPES.filter(t => t !== "reusable" && !DYNAMIC.includes(t)))(
     "%s renders without editor chrome",
     type => {
       const out = html(mk(type));

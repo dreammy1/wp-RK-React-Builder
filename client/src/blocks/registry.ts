@@ -26,6 +26,12 @@ import {
   Star,
   Pilcrow,
   Rocket,
+  Database,
+  ListTree,
+  TextCursorInput,
+  ImagePlay,
+  GalleryHorizontal,
+  Rows3,
   type LucideIcon,
 } from "lucide-react";
 import type { ZodType } from "zod";
@@ -111,6 +117,29 @@ import { brandstripFields } from "./brandstrip/Editor";
 import { calculatorDefaults, calculatorProps } from "./calculator/schema";
 import { CalculatorView } from "./calculator/View";
 import { calculatorFields } from "./calculator/Editor";
+import {
+  dynfieldDefaults,
+  dynfieldProps,
+  dynimageDefaults,
+  dynimageProps,
+  dyngalleryDefaults,
+  dyngalleryProps,
+  dynrepeaterDefaults,
+  dynrepeaterProps,
+  dyninfoDefaults,
+  dyninfoProps,
+  loopgridDefaults,
+  loopgridProps,
+} from "./dynamic/schema";
+import { makeDynView } from "./dynamic/View";
+import {
+  dynfieldFields,
+  dynimageFields,
+  dyngalleryFields,
+  dynrepeaterFields,
+  dyninfoFields,
+  loopgridFields,
+} from "./dynamic/Editor";
 import { reusableDefaults, reusableProps } from "./reusable/schema";
 import { ReusableView } from "./reusable/View";
 import { reusableFields } from "./reusable/Editor";
@@ -397,6 +426,67 @@ export const registry: Registry = {
     View: VisualizerView,
     fields: visualizerFields,
   },
+  loopgrid: {
+    type: "loopgrid",
+    label: "Loop grid",
+    icon: Database,
+    description:
+      "A live grid of entries from any content type, with filters, search and paging",
+    defaults: loopgridDefaults,
+    schema: loopgridProps,
+    View: makeDynView<typeof loopgridDefaults>("loopgrid"),
+    fields: loopgridFields,
+  },
+  dynfield: {
+    type: "dynfield",
+    label: "Dynamic text",
+    icon: TextCursorInput,
+    description: "Title, summary, date, terms or any field of the entry",
+    defaults: dynfieldDefaults,
+    schema: dynfieldProps,
+    View: makeDynView<typeof dynfieldDefaults>("dynfield"),
+    fields: dynfieldFields,
+  },
+  dynimage: {
+    type: "dynimage",
+    label: "Dynamic image",
+    icon: ImagePlay,
+    description: "The entry's featured image or an image field",
+    defaults: dynimageDefaults,
+    schema: dynimageProps,
+    View: makeDynView<typeof dynimageDefaults>("dynimage"),
+    fields: dynimageFields,
+  },
+  dyninfo: {
+    type: "dyninfo",
+    label: "Details list",
+    icon: ListTree,
+    description: "Selected fields as a tidy list of names and values",
+    defaults: dyninfoDefaults,
+    schema: dyninfoProps,
+    View: makeDynView<typeof dyninfoDefaults>("dyninfo"),
+    fields: dyninfoFields,
+  },
+  dyngallery: {
+    type: "dyngallery",
+    label: "Dynamic gallery",
+    icon: GalleryHorizontal,
+    description: "The photos of a gallery field",
+    defaults: dyngalleryDefaults,
+    schema: dyngalleryProps,
+    View: makeDynView<typeof dyngalleryDefaults>("dyngallery"),
+    fields: dyngalleryFields,
+  },
+  dynrepeater: {
+    type: "dynrepeater",
+    label: "Repeater rows",
+    icon: Rows3,
+    description: "Rows of a repeater field as a list, table or cards",
+    defaults: dynrepeaterDefaults,
+    schema: dynrepeaterProps,
+    View: makeDynView<typeof dynrepeaterDefaults>("dynrepeater"),
+    fields: dynrepeaterFields,
+  },
   reusable: {
     type: "reusable",
     label: "Reusable block",
@@ -408,6 +498,18 @@ export const registry: Registry = {
     fields: reusableFields,
   },
 };
+
+/** Blocks that read the entry a template draws; only offered inside templates. */
+export const DYNAMIC_ORDER: BlockType[] = [
+  "loopgrid",
+  "dynfield",
+  "dynimage",
+  "dyninfo",
+  "dyngallery",
+  "dynrepeater",
+];
+/** The Loop grid also works on ordinary pages ("latest listings"). */
+export const PAGE_DYNAMIC: BlockType[] = ["loopgrid"];
 
 export const PALETTE_ORDER: BlockType[] = [
   "hero",

@@ -39,6 +39,11 @@ const BY_CODE: Record<string, ApiErrorKind> = {
   rk_invalid_bundle: "invalid_layout",
   rk_invalid_reusable: "invalid_layout",
   rk_reusable_in_use: "conflict",
+  rk_invalid_types: "invalid_layout",
+  rk_invalid_entry: "invalid_layout",
+  rk_invalid_template: "invalid_layout",
+  rk_invalid_block: "invalid_layout",
+  rk_template_in_use: "conflict",
   // WordPress core codes that can surface before the plugin runs
   rest_cookie_invalid_nonce: "unauthorized",
   rest_not_logged_in: "unauthorized",
@@ -51,6 +56,7 @@ const PLAIN_MESSAGE_CODES = new Set([
   "rk_invalid_reusable",
   "rk_reusable_in_use",
   "rk_payload_too_large",
+  "rk_template_in_use",
 ]);
 
 export function kindFromResponse(status: number, code?: string): ApiErrorKind {
@@ -64,6 +70,16 @@ export function kindFromResponse(status: number, code?: string): ApiErrorKind {
 }
 
 export const isApiError = (e: unknown): e is ApiError => e instanceof ApiError;
+
+/** The server's own list of what is wrong ("fields.price: Enter a number"), when it sent one; else the usual text. */
+export function describeIssues(e: unknown): string {
+  if (isApiError(e) && e.extra.issues && e.extra.issues.length > 0)
+    return e.extra.issues
+      .slice(0, 4)
+      .map(i => (i.path ? `${i.path}: ${i.message}` : i.message))
+      .join(" · ");
+  return describeError(e);
+}
 
 /** Human text for banners. Never includes request bodies, tokens or headers. */
 export function describeError(e: unknown): string {

@@ -25,6 +25,14 @@ import { calculatorProps } from "@/blocks/calculator/schema";
 import { visualizerProps } from "@/blocks/visualizer/schema";
 import { brandstripProps } from "@/blocks/brandstrip/schema";
 import { reviewsProps } from "@/blocks/reviews/schema";
+import {
+  dynfieldProps,
+  dynimageProps,
+  dyngalleryProps,
+  dynrepeaterProps,
+  dyninfoProps,
+  loopgridProps,
+} from "@/blocks/dynamic/schema";
 import { reusableProps } from "@/blocks/reusable/schema";
 import { blockId, LIMITS } from "./primitives";
 
@@ -58,6 +66,12 @@ export const BlockSchema = z.discriminatedUnion("type", [
   b("brandstrip", brandstripProps),
   b("reviews", reviewsProps),
   b("visualizer", visualizerProps),
+  b("dynfield", dynfieldProps),
+  b("dynimage", dynimageProps),
+  b("dyngallery", dyngalleryProps),
+  b("dynrepeater", dynrepeaterProps),
+  b("dyninfo", dyninfoProps),
+  b("loopgrid", loopgridProps),
   b("reusable", reusableProps),
 ]);
 export type Block = z.infer<typeof BlockSchema>;

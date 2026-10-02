@@ -57,6 +57,7 @@ export function useEditorSession(pageId: number, demo: boolean) {
   const [load, setLoad] = useState<LoadState>({ phase: "loading" });
   const [state, dispatch] = useReducer(reducer, EMPTY_STATE);
   const [page, setPage] = useState<PageMeta | null>(null);
+  const [template, setTemplate] = useState<LoadedPage["template"]>(undefined);
   const [serverRev, setServerRev] = useState(0);
   const [publishedRev, setPublishedRev] = useState<number | null>(null);
   const [serverTheme, setServerTheme] = useState(DEFAULT_THEME);
@@ -85,6 +86,7 @@ export function useEditorSession(pageId: number, demo: boolean) {
       slug: p.page.slug,
       status: p.page.status,
     });
+    setTemplate(p.template);
     setServerRev(p.revision);
     setPublishedRev(p.publishedRevision);
     setServerTheme(p.theme);
@@ -407,6 +409,7 @@ export function useEditorSession(pageId: number, demo: boolean) {
     state,
     dirty,
     page,
+    template,
     serverRev,
     publishedRev,
     caps,

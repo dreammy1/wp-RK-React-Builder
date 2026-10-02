@@ -60,8 +60,9 @@ const normalise = (html: string) =>
     .replace(/\s+/g, " ")
     .trim();
 
-const fixtures = readdirSync(path.join(root, "contracts/valid")).filter(f =>
-  f.startsWith("layout-")
+// layout-dynamic.json holds the PHP-only dynamic blocks (they read an entry; React only previews them in the editor).
+const fixtures = readdirSync(path.join(root, "contracts/valid")).filter(
+  f => f.startsWith("layout-") && f !== "layout-dynamic.json"
 );
 
 describe("PHP renderer ↔ React views parity", () => {

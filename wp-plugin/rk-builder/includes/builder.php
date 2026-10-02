@@ -70,15 +70,16 @@ function rk_builder_handle_list_pages( $req ) {
  * ------------------------------------------------------------------ */
 
 function rk_builder_handle_get_layout( $req ) {
-	$page = rk_builder_get_page( $req['id'] );
+	$page = rk_builder_get_doc( $req['id'] );
 	if ( ! $page ) { return rk_builder_not_found( 'Page not found.' ); }
-	return rk_builder_no_store( array(
+	$is_tpl = RK_BUILDER_TEMPLATE_TYPE === $page->post_type;
+	$out    = array(
 		'page'              => array(
 			'id'     => (int) $page->ID,
 			'title'  => rk_builder_plain( get_the_title( $page ) ),
 			'slug'   => (string) $page->post_name,
 			'status' => (string) $page->post_status,
-			'link'   => (string) get_permalink( $page->ID ),
+			'link'   => $is_tpl ? '' : (string) get_permalink( $page->ID ),
 		),
 		'layout'            => rk_builder_get_draft_layout( $page->ID ),
 		'theme'             => rk_builder_theme_for_output( rk_builder_get_theme() ),
@@ -89,11 +90,16 @@ function rk_builder_handle_get_layout( $req ) {
 			'manageTheme' => (bool) current_user_can( 'manage_options' ),
 			'publish'     => (bool) current_user_can( 'publish_post', $page->ID ),
 		),
-	) );
+	);
+	if ( $is_tpl ) {
+		$m = rk_builder_tpl_meta( $page->ID );
+		$out['template'] = array( 'kind' => $m['kind'], 'postType' => $m['postType'], 'taxonomy' => $m['taxonomy'], 'active' => $m['active'] );
+	}
+	return rk_builder_no_store( $out );
 }
 
 function rk_builder_handle_save_layout( $req ) {
-	$page = rk_builder_get_page( $req['id'] );
+	$page = rk_builder_get_doc( $req['id'] );
 	if ( ! $page ) { return rk_builder_not_found( 'Page not found.' ); }
 	$page_id = (int) $page->ID;
 

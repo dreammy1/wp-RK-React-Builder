@@ -94,9 +94,11 @@ function InstallPanel({
         Install <strong>{theme.name}</strong> {theme.version} on this site:{" "}
         {theme.pages} page{theme.pages === 1 ? "" : "s"}, {theme.reusables}{" "}
         reusable block{theme.reusables === 1 ? "" : "s"}, {theme.media} image
-        {theme.media === 1 ? "" : "s"}. Pages with the same address are{" "}
-        <strong>replaced</strong> by the theme&apos;s version; other pages are
-        left alone.
+        {theme.media === 1 ? "" : "s"}
+        {(theme.templates ?? 0) > 0 &&
+          `, ${theme.templates} template${theme.templates === 1 ? "" : "s"}`}
+        . Pages with the same address are <strong>replaced</strong> by the
+        theme&apos;s version; other pages are left alone.
       </p>
       <fieldset className="field" disabled={busy}>
         <legend>What to install</legend>
@@ -285,6 +287,8 @@ export function ThemeEngine({
             <strong>{view.theme.name}</strong> is installed
             {view.report.published > 0 &&
               `: ${view.report.published} page${view.report.published === 1 ? "" : "s"} published`}
+            {(view.report.publishedTemplates ?? 0) > 0 &&
+              `, ${view.report.publishedTemplates} template${view.report.publishedTemplates === 1 ? "" : "s"} live`}
             {view.report.frontPage && ", Home is now the front page"}.
           </p>
           <Summary r={view.report} />
@@ -349,7 +353,9 @@ export function ThemeEngine({
                   {t.description && <p>{t.description}</p>}
                   <span className="muted">
                     {t.pages} pages · {t.reusables} blocks · {t.media} images
-                    {t.content > 0 && ` · ${t.content} services/projects`}
+                    {(t.templates ?? 0) > 0 && ` · ${t.templates} templates`}
+                    {t.content > 0 &&
+                      ` · ${t.content} services/projects/entries`}
                   </span>
                 </div>
                 <div className="theme-actions">

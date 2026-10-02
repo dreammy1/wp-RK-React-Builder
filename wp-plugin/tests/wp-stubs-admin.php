@@ -88,7 +88,6 @@ if ( ! function_exists( 'wp_upload_dir' ) ) {
 	function wp_upload_dir() { return isset( $GLOBALS['RK']['upload'] ) ? $GLOBALS['RK']['upload'] : array( 'basedir' => sys_get_temp_dir(), 'error' => false ); }
 }
 if ( ! function_exists( 'wp_is_writable' ) ) { function wp_is_writable( $p ) { return is_writable( $p ); } }
-if ( ! function_exists( 'post_type_exists' ) ) { function post_type_exists( $t ) { return isset( $GLOBALS['RK']['cpt'][ $t ] ); } }
 if ( ! function_exists( 'wp_insert_post' ) ) {
 	function wp_insert_post( $arr, $err = false ) {
 		$id = $GLOBALS['RK']['next_id']++;

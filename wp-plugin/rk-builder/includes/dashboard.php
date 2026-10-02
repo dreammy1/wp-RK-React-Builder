@@ -388,7 +388,7 @@ function rk_builder_handle_delete_viz_leads( $req ) {
 function rk_builder_register_dashboard_routes( $ns ) {
 	$id    = array( 'id' => array( 'type' => 'integer', 'required' => true ) );
 	$admin = 'rk_builder_perm_theme_write';
-	$edit  = 'rk_builder_perm_edit_page';
+	$edit  = 'rk_builder_perm_edit_real_page';
 	register_rest_route( $ns, '/builder/overview', array( 'methods' => 'GET', 'callback' => 'rk_builder_handle_overview', 'permission_callback' => 'rk_builder_perm_list_pages' ) );
 	register_rest_route( $ns, '/builder/pages/new', array( 'methods' => 'POST', 'callback' => 'rk_builder_handle_create_page', 'permission_callback' => 'rk_builder_perm_list_pages' ) );
 	register_rest_route( $ns, '/builder/pages/(?P<id>\d+)/update', array( 'methods' => 'POST', 'callback' => 'rk_builder_handle_update_page_meta', 'permission_callback' => $edit, 'args' => $id ) );

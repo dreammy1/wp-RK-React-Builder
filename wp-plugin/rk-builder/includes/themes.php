@@ -85,7 +85,9 @@ function rk_builder_theme_summary( $slug, array $bundle, array $meta, $bytes ) {
 		'pages'       => isset( $bundle['pages'] ) && is_array( $bundle['pages'] ) ? count( $bundle['pages'] ) : 0,
 		'reusables'   => isset( $bundle['reusables'] ) && is_array( $bundle['reusables'] ) ? count( $bundle['reusables'] ) : 0,
 		'media'       => isset( $bundle['media'] ) && is_array( $bundle['media'] ) ? count( $bundle['media'] ) : 0,
-		'content'     => isset( $bundle['content'] ) && is_array( $bundle['content'] ) ? count( $bundle['content'] ) : 0,
+		'content'     => ( isset( $bundle['content'] ) && is_array( $bundle['content'] ) ? count( $bundle['content'] ) : 0 ) + ( isset( $bundle['entries'] ) && is_array( $bundle['entries'] ) ? count( $bundle['entries'] ) : 0 ),
+		'templates'   => isset( $bundle['templates'] ) && is_array( $bundle['templates'] ) ? count( $bundle['templates'] ) : 0,
+		'types'       => isset( $bundle['types'] ) && is_array( $bundle['types'] ) ? count( $bundle['types'] ) : 0,
 		'preview'     => rk_builder_theme_preview_url( $bundle ),
 		'createdAt'   => isset( $bundle['themeMeta']['createdAt'] ) && is_string( $bundle['themeMeta']['createdAt'] ) ? $bundle['themeMeta']['createdAt'] : rk_builder_iso( rk_builder_now() ),
 		'bytes'       => (int) $bytes,
@@ -239,6 +241,17 @@ function rk_builder_handle_theme_install( $req ) {
 			$report['published']++;
 			if ( 'home' === $d['slug'] ) { $home_id = (int) $d['id']; }
 		}
+		$report['publishedTemplates'] = 0;
+		foreach ( isset( $report['templates']['done'] ) ? $report['templates']['done'] : array() as $d ) {
+			$pub = rk_builder_handle_publish( rk_builder_internal_request( 'POST', '/rk/v1/builder/publish/' . (int) $d['id'], array( 'id' => (int) $d['id'] ), array( 'expectedRevision' => (int) $d['revision'] ) ) );
+			if ( is_wp_error( $pub ) ) {
+				$report['warnings'][] = 'Could not publish the template "' . $d['slug'] . '": ' . $pub->get_error_message();
+				continue;
+			}
+			$report['publishedTemplates']++;
+			if ( 'loop' !== $d['kind'] && ! empty( $d['active'] ) ) { rk_builder_tpl_set_active( (int) $d['id'], true ); }
+		}
+		if ( $report['publishedTemplates'] > 0 ) { rk_builder_purge_all_public_cache(); }
 		if ( $o['frontPage'] && $home_id > 0 && function_exists( 'current_user_can' ) && current_user_can( 'manage_options' ) ) {
 			update_option( 'show_on_front', 'page' );
 			update_option( 'page_on_front', $home_id );

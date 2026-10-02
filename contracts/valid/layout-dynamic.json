@@ -1,0 +1,91 @@
+{
+  "kind": "layout",
+  "description": "every dynamic block with non-default options",
+  "document": {
+    "version": 1,
+    "blocks": [
+      {
+        "id": "dynfield-1",
+        "type": "dynfield",
+        "props": {
+          "source": "field:price",
+          "tag": "h2",
+          "style": "badge",
+          "align": "center",
+          "label": "Asking",
+          "prefix": "$",
+          "suffix": "",
+          "link": true,
+          "fallback": "On request"
+        }
+      },
+      {
+        "id": "dynimage-1",
+        "type": "dynimage",
+        "props": {
+          "source": "featured",
+          "ratio": "wide",
+          "link": true,
+          "fallback": "placeholder"
+        }
+      },
+      {
+        "id": "dyngallery-1",
+        "type": "dyngallery",
+        "props": {
+          "source": "field:photos",
+          "cols": 4,
+          "ratio": "square",
+          "gap": "sm",
+          "limit": 8
+        }
+      },
+      {
+        "id": "dynrepeater-1",
+        "type": "dynrepeater",
+        "props": {
+          "source": "field:specs",
+          "layout": "table",
+          "cols": 2,
+          "heading": "Specs"
+        }
+      },
+      {
+        "id": "dyninfo-1",
+        "type": "dyninfo",
+        "props": {
+          "heading": "Details",
+          "sources": "field:price,terms:listing_cat,date",
+          "labels": true,
+          "layout": "grid"
+        }
+      },
+      {
+        "id": "loopgrid-1",
+        "type": "loopgrid",
+        "props": {
+          "eyebrow": "More",
+          "heading": "Related listings",
+          "intro": "",
+          "postType": "current",
+          "taxonomy": "listing_cat",
+          "term": "houses",
+          "limit": 3,
+          "orderBy": "menu_order",
+          "order": "asc",
+          "cols": 3,
+          "mobileCols": 2,
+          "gap": "lg",
+          "templateId": 12,
+          "equalHeight": true,
+          "filters": true,
+          "search": true,
+          "pagination": false,
+          "related": true,
+          "emptyText": "Nothing here yet.",
+          "tone": "muted"
+        }
+      }
+    ]
+  }
+}

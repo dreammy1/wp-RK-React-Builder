@@ -103,8 +103,12 @@ class RK_Test_WPDB {
 }
 
 class WP_Query {
-	public $posts = array(); public $found_posts = 0;
-	public function __construct( $args = array() ) { list( $this->posts, $this->found_posts ) = rk_test_query( $args ); }
+	public $posts = array(); public $found_posts = 0; public $max_num_pages = 1;
+	public function __construct( $args = array() ) {
+		list( $this->posts, $this->found_posts ) = rk_test_query( $args );
+		$per = isset( $args['posts_per_page'] ) ? max( 1, (int) $args['posts_per_page'] ) : 10;
+		$this->max_num_pages = (int) max( 1, ceil( $this->found_posts / $per ) );
+	}
 }
 
 /* ---------------- hooks ---------------- */
@@ -162,7 +166,7 @@ function esc_url( $url ) { return esc_html( esc_url_raw( $url ) ); }
 function wp_cache_delete( $k, $g = '' ) { return true; }
 function wp_die( $m = '', $t = '', $a = array() ) { throw new Exception( 'wp_die: ' . $m ); }
 function add_menu_page( $title, $menu, $cap, $slug, $cb, $icon = '', $pos = null ) { $GLOBALS['RK']['menu'][] = compact( 'title', 'menu', 'cap', 'slug', 'cb', 'icon', 'pos' ); }
-function flush_rewrite_rules() {}
+function flush_rewrite_rules() { $GLOBALS['RK']['flushed'] = ( isset( $GLOBALS['RK']['flushed'] ) ? $GLOBALS['RK']['flushed'] : 0 ) + 1; }
 function register_post_type( $t, $a = array() ) { $GLOBALS['RK']['cpt'][ $t ] = $a; }
 function register_taxonomy( $t, $o, $a = array() ) { $GLOBALS['RK']['tax'][ $t ] = array( $o, $a ); }
 function register_rest_field( $t, $n, $a ) { $GLOBALS['RK']['fields'][ $t ][ $n ] = $a; }
@@ -191,7 +195,7 @@ function get_userdata( $id ) {
 function rk_test_role_caps( $role ) {
 	$sub = array( 'read' );
 	$aut = array( 'read', 'edit_posts', 'upload_files', 'publish_posts' );
-	$edi = array( 'read', 'edit_posts', 'upload_files', 'edit_pages', 'edit_others_pages', 'publish_pages', 'edit_others_posts' );
+	$edi = array( 'read', 'edit_posts', 'upload_files', 'edit_pages', 'edit_others_pages', 'publish_pages', 'edit_others_posts', 'publish_posts' );
 	$map = array( 'subscriber' => $sub, 'author' => $aut, 'editor' => $edi, 'administrator' => array_merge( $edi, array( 'manage_options', 'unfiltered_html' ) ) );
 	return $map[ $role ];
 }
@@ -246,8 +250,33 @@ function wp_get_attachment_image_src( $id, $size = 'full' ) {
 }
 function wp_get_attachment_image_url( $id, $size = 'full' ) { $s = wp_get_attachment_image_src( $id, $size ); return $s ? $s[0] : false; }
 function wp_get_attachment_image_srcset( $id, $size = 'full' ) { return isset( $GLOBALS['RK']['attachments'][ $id ]['srcset'] ) ? $GLOBALS['RK']['attachments'][ $id ]['srcset'] : false; }
-function wp_get_object_terms( $id, $tax, $args = array() ) { return isset( $GLOBALS['RK']['terms'][ $id ][ $tax ] ) ? $GLOBALS['RK']['terms'][ $id ][ $tax ] : array(); }
+function wp_get_object_terms( $id, $tax, $args = array() ) {
+	$slugs = isset( $GLOBALS['RK']['terms'][ $id ][ $tax ] ) ? $GLOBALS['RK']['terms'][ $id ][ $tax ] : array();
+	$f = isset( $args['fields'] ) ? $args['fields'] : 'all';
+	if ( 'names' === $f ) { return array_map( function ( $s ) use ( $tax ) { return isset( $GLOBALS['RK']['term_defs'][ $tax ][ $s ] ) ? $GLOBALS['RK']['term_defs'][ $tax ][ $s ] : $s; }, $slugs ); }
+	if ( 'ids' === $f ) { return array_map( 'rk_test_term_id', $slugs ); }
+	return $slugs;
+}
 function wp_create_nonce( $a = -1 ) { return 'nonce-for-user-' . get_current_user_id(); }
+
+/** tax_query evaluator: nested groups with relation, fields slug|term_id. */
+function rk_test_tax_match( $post_id, array $tq ) {
+	$rel = isset( $tq['relation'] ) ? $tq['relation'] : 'AND';
+	$res = 'OR' !== $rel;
+	foreach ( $tq as $k => $q ) {
+		if ( 'relation' === $k || ! is_array( $q ) ) { continue; }
+		if ( isset( $q['taxonomy'] ) ) {
+			$have = isset( $GLOBALS['RK']['terms'][ $post_id ][ $q['taxonomy'] ] ) ? $GLOBALS['RK']['terms'][ $post_id ][ $q['taxonomy'] ] : array();
+			if ( isset( $q['field'] ) && 'term_id' === $q['field'] ) { $have = array_map( 'rk_test_term_id', $have ); }
+			$m = (bool) array_intersect( $q['terms'], $have );
+		} else {
+			$m = rk_test_tax_match( $post_id, $q );
+		}
+		$res = 'OR' === $rel ? ( $res || $m ) : ( $res && $m );
+	}
+	return $res;
+}
+function rk_test_term_id( $slug ) { return crc32( (string) $slug ) % 100000; }
 
 function rk_test_query( $args ) {
 	$all = $GLOBALS['RK']['posts'];
@@ -256,7 +285,8 @@ function rk_test_query( $args ) {
 	}
 	$out = array();
 	foreach ( $all as $p ) {
-		if ( isset( $args['post_type'] ) && $p->post_type !== $args['post_type'] ) { continue; }
+		if ( isset( $args['post_type'] ) && ! in_array( $p->post_type, (array) $args['post_type'], true ) ) { continue; }
+		if ( ! empty( $args['post__not_in'] ) && in_array( (int) $p->ID, $args['post__not_in'], true ) ) { continue; }
 		if ( isset( $args['post_status'] ) && 'any' !== $args['post_status'] && ! in_array( $p->post_status, (array) $args['post_status'], true ) ) { continue; }
 		if ( isset( $args['name'] ) && $p->post_name !== $args['name'] ) { continue; }
 		if ( isset( $args['meta_key'] ) ) {
@@ -276,14 +306,7 @@ function rk_test_query( $args ) {
 		if ( isset( $args['author'] ) && (int) $p->post_author !== (int) $args['author'] ) { continue; }
 		if ( isset( $args['s'] ) && false === stripos( $p->post_title, $args['s'] ) ) { continue; }
 		if ( array_key_exists( 'has_password', $args ) && false === $args['has_password'] && '' !== (string) $p->post_password ) { continue; }
-		if ( ! empty( $args['tax_query'] ) ) {
-			$ok = true;
-			foreach ( $args['tax_query'] as $tq ) {
-				$have = isset( $GLOBALS['RK']['terms'][ $p->ID ][ $tq['taxonomy'] ] ) ? $GLOBALS['RK']['terms'][ $p->ID ][ $tq['taxonomy'] ] : array();
-				if ( ! array_intersect( $tq['terms'], $have ) ) { $ok = false; }
-			}
-			if ( ! $ok ) { continue; }
-		}
+		if ( ! empty( $args['tax_query'] ) && ! rk_test_tax_match( $p->ID, $args['tax_query'] ) ) { continue; }
 		$out[] = $p;
 	}
 	$ob = isset( $args['orderby'] ) ? $args['orderby'] : 'date';
@@ -347,6 +370,7 @@ function rk_test_request( $method, $path, $opts = array() ) {
 }
 
 require __DIR__ . '/wp-stubs-admin.php'; // stubs for the admin/settings/setup/migration tests (all guarded)
+require __DIR__ . '/wp-stubs-dynamic.php'; // taxonomies, terms, query-string helpers (content types / templates tests)
 
 /* ---------------- public rendering / preview / SEO stubs (added for the PHP renderer) ---------------- */
 

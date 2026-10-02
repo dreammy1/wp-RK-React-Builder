@@ -196,6 +196,14 @@ function rk_builder_f_int( $min, $max, $optional = false ) { return array( 't' =
 function rk_builder_f_bool( $optional = false ) { return array( 't' => 'bool', 'opt' => $optional ); }
 function rk_builder_f_enum( array $values, $optional = false ) { return array( 't' => 'enum', 'values' => $values, 'opt' => $optional ); }
 function rk_builder_f_slug() { return array( 't' => 'slug' ); }
+/** A string that must match a regular expression (anchored with \z by the caller). */
+function rk_builder_f_pattern( $re, $optional = false ) { return array( 't' => 'pattern', 're' => $re, 'opt' => $optional ); }
+
+/** Data sources the dynamic blocks accept. Mirrors client/src/blocks/dynamic/schema.ts. */
+function rk_builder_dyn_source_re() { return '/^(title|excerpt|content|date|modified|author|terms:[a-z][a-z0-9_-]{0,31}|field:[a-z][a-z0-9_]{0,31})\z/'; }
+function rk_builder_dyn_image_source_re() { return '/^(featured|field:[a-z][a-z0-9_]{0,31})\z/'; }
+function rk_builder_dyn_field_source_re() { return '/^(field:[a-z][a-z0-9_]{0,31})?\z/'; }
+function rk_builder_dyn_type_re() { return '/^(current|[a-z][a-z0-9_]{0,19})\z/'; }
 
 /** Block prop specs. Mirrors client/src/blocks/<type>/schema.ts. */
 function rk_builder_block_specs() {
@@ -364,6 +372,64 @@ function rk_builder_block_specs() {
 		'calculator' => array( 'heading' => rk_builder_f_text( 0, 120 ), 'types' => rk_builder_f_text( 0, 1200 ), 'amount' => rk_builder_f_int( 1, 100000 ), 'resultLabel' => rk_builder_f_text( 0, 60 ), 'note' => rk_builder_f_text( 0, 400 ), 'ctaLabel' => rk_builder_f_text( 0, 60 ), 'ctaHref' => rk_builder_f_link() ),
 		'visualizer' => array( 'cities' => rk_builder_f_text( 0, 800 ), 'submitLabel' => rk_builder_f_text( 1, 80 ), 'ctaLabel' => rk_builder_f_text( 0, 80 ), 'ctaHref' => rk_builder_f_link() ),
 		'reviews'    => array( 'eyebrow' => rk_builder_f_text( 0, 80 ), 'heading' => rk_builder_f_text( 0, 200 ), 'intro' => rk_builder_f_text( 0, 300 ), 'limit' => rk_builder_f_int( 1, 12 ), 'minRating' => rk_builder_f_int( 1, 5 ), 'cols' => rk_builder_f_int( 2, 3 ), 'showSummary' => rk_builder_f_bool(), 'showLinks' => rk_builder_f_bool(), 'tone' => rk_builder_f_enum( array( 'light', 'muted' ) ) ),
+		'dynfield'   => array(
+			'source'   => rk_builder_f_pattern( rk_builder_dyn_source_re() ),
+			'tag'      => rk_builder_f_enum( array( 'h1', 'h2', 'h3', 'h4', 'p', 'div', 'span' ) ),
+			'style'    => rk_builder_f_enum( array( 'plain', 'eyebrow', 'lead', 'badge' ) ),
+			'align'    => rk_builder_f_enum( array( 'left', 'center', 'right' ) ),
+			'label'    => rk_builder_f_text( 0, 60 ),
+			'prefix'   => rk_builder_f_text( 0, 30 ),
+			'suffix'   => rk_builder_f_text( 0, 30 ),
+			'link'     => rk_builder_f_bool(),
+			'fallback' => rk_builder_f_text( 0, 120 ),
+		),
+		'dynimage'   => array(
+			'source'   => rk_builder_f_pattern( rk_builder_dyn_image_source_re() ),
+			'ratio'    => rk_builder_f_enum( array( 'landscape', 'wide', 'square', 'portrait', 'auto' ) ),
+			'link'     => rk_builder_f_bool(),
+			'fallback' => rk_builder_f_enum( array( 'hide', 'placeholder' ) ),
+		),
+		'dyngallery' => array(
+			'source' => rk_builder_f_pattern( rk_builder_dyn_field_source_re() ),
+			'cols'   => rk_builder_f_int( 1, 6 ),
+			'ratio'  => rk_builder_f_enum( array( 'landscape', 'wide', 'square', 'portrait', 'auto' ) ),
+			'gap'    => rk_builder_f_enum( array( 'sm', 'md', 'lg' ) ),
+			'limit'  => rk_builder_f_int( 0, 60 ),
+		),
+		'dynrepeater' => array(
+			'source'  => rk_builder_f_pattern( rk_builder_dyn_field_source_re() ),
+			'layout'  => rk_builder_f_enum( array( 'list', 'table', 'cards' ) ),
+			'cols'    => rk_builder_f_int( 1, 4 ),
+			'heading' => rk_builder_f_text( 0, 120 ),
+		),
+		'dyninfo'    => array(
+			'heading' => rk_builder_f_text( 0, 120 ),
+			'sources' => rk_builder_f_text( 0, 600 ),
+			'labels'  => rk_builder_f_bool(),
+			'layout'  => rk_builder_f_enum( array( 'rows', 'grid' ) ),
+		),
+		'loopgrid'   => array(
+			'eyebrow'     => rk_builder_f_text( 0, 80 ),
+			'heading'     => rk_builder_f_text( 0, 200 ),
+			'intro'       => rk_builder_f_text( 0, 300 ),
+			'postType'    => rk_builder_f_pattern( rk_builder_dyn_type_re() ),
+			'taxonomy'    => rk_builder_f_pattern( '/^[a-z0-9_-]{0,32}\z/' ),
+			'term'        => rk_builder_f_slug(),
+			'limit'       => rk_builder_f_int( 1, 48 ),
+			'orderBy'     => rk_builder_f_enum( array( 'date', 'title', 'menu_order', 'modified', 'rand' ) ),
+			'order'       => rk_builder_f_enum( array( 'asc', 'desc' ) ),
+			'cols'        => rk_builder_f_int( 1, 4 ),
+			'mobileCols'  => rk_builder_f_int( 1, 2 ),
+			'gap'         => rk_builder_f_enum( array( 'sm', 'md', 'lg' ) ),
+			'templateId'  => rk_builder_f_int( 0, 2147483647 ),
+			'equalHeight' => rk_builder_f_bool(),
+			'filters'     => rk_builder_f_bool(),
+			'search'      => rk_builder_f_bool(),
+			'pagination'  => rk_builder_f_bool(),
+			'related'     => rk_builder_f_bool(),
+			'emptyText'   => rk_builder_f_text( 0, 160 ),
+			'tone'        => rk_builder_f_enum( array( 'light', 'muted' ) ),
+		),
 		'brandstrip' => array( 'label' => rk_builder_f_text( 0, 120 ), 'items' => rk_builder_f_text( 0, 600 ) ),
 		'gallery'   => array( 'items' => rk_builder_f_text( 0, 12000 ), 'filters' => rk_builder_f_bool( true ) ),
 		'sitefooter' => array(
@@ -416,6 +482,9 @@ function rk_builder_check_field( $spec, $v, $image_hosts ) {
 		case 'slug':
 			if ( ! is_string( $v ) ) { return 'Expected string'; }
 			return 1 === preg_match( '/^[a-z0-9-]{0,60}\z/', $v ) ? null : 'Invalid slug';
+		case 'pattern':
+			if ( ! is_string( $v ) ) { return 'Expected string'; }
+			return 1 === preg_match( $spec['re'], $v ) ? null : 'Invalid value';
 		case 'enum':
 			foreach ( $spec['values'] as $allowed ) {
 				if ( is_int( $allowed ) ) {

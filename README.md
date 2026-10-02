@@ -252,3 +252,20 @@ All in the dashboard (WordPress-hosted editor):
 
 - **Card catalog**: the inspector edits one card at a time: photo or color swatch (media picker), title, small label, description, filter tag, checklist, name/value details, link, reordering, duplicating, and an optional pop-up per card with its own image, text and list. Block-wide switches cover filters, joined grid, columns, numbering and background.
 - **Services grid / Portfolio grid**: equal-height cards, image shape (landscape, wide, square, portrait, natural), show or hide image, description and categories, description length, link the title or add a button, card style, spacing, phone columns, background, eyebrow, intro and a "view all" button. All options are optional, so existing pages keep their look.
+
+## Content types, fields and the theme builder
+
+Everything is in the dashboard (no wp-admin needed); the pieces are admin-only except **Content**.
+
+- **Types & fields** — define your own content types (custom post types) with a singular/plural name, web address, archive on/off, category groups (taxonomies) and fields: short/long text, number, email, link, date, colour, choice list, yes/no, image, gallery, and **repeater** (rows of sub-fields). The built-in Post, Services and Portfolio types can get fields too. Values are stored as post meta `rk_f_<key>`.
+- **Content** — list, create, edit, duplicate and trash the entries of any type: title, summary, description, featured image, categories and every field (galleries and repeaters reorderable).
+- **Templates** (the theme builder) — designed in the normal block editor:
+  - _Single page_: how one entry looks (replaces its page);
+  - _Archive / listing_: the type's list page, or one category group's pages;
+  - _Card_: the card each entry gets inside a Loop grid.
+    A template starts from a layout built from the type's own fields. Only a **published and "in use"** template is live (one per target); switch it off to hand the page back to WordPress.
+- **Dynamic blocks** (offered inside templates): _Dynamic text_ (title, summary, description, dates, author, categories or any field, with label, prefix/suffix, link and fallback), _Dynamic image_, _Details list_, _Dynamic gallery_, _Repeater rows_ (list / table / cards) and the **Loop grid** (any type; filters, search, page numbers, related entries, equal-height cards, card design; also usable on ordinary pages).
+- The editor shows these blocks with the **PHP renderer's own markup** (`POST /builder/dyn/render`), so what you edit is what is published. They have no React twin; `contracts/valid/layout-dynamic.json` pins their props for both sides.
+- Visitors' filter / search / paging use `?rk_term=`, `?rk_q=` and `?rk_page=`.
+- Themes (save / install / export / import) now carry the types, the templates (card template ids are re-linked) and the entries of custom types, with their images.
+- Single entries get search/social tags (description, Open Graph) from the entry; the title comes from WordPress.

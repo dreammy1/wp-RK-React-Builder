@@ -1,0 +1,35 @@
+{
+  "kind": "layout",
+  "description": "loop grid post type must be current or a type key",
+  "document": {
+    "version": 1,
+    "blocks": [
+      {
+        "id": "b1",
+        "type": "loopgrid",
+        "props": {
+          "eyebrow": "More",
+          "heading": "Related listings",
+          "intro": "",
+          "postType": "Bad Type",
+          "taxonomy": "listing_cat",
+          "term": "houses",
+          "limit": 3,
+          "orderBy": "menu_order",
+          "order": "asc",
+          "cols": 3,
+          "mobileCols": 2,
+          "gap": "lg",
+          "templateId": 12,
+          "equalHeight": true,
+          "filters": true,
+          "search": true,
+          "pagination": false,
+          "related": true,
+          "emptyText": "Nothing here yet.",
+          "tone": "muted"
+        }
+      }
+    ]
+  }
+}

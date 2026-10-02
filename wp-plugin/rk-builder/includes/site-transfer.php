@@ -213,7 +213,7 @@ function rk_builder_bundle_check_shape( $bundle ) {
 	if ( ! isset( $bundle['version'] ) || 1 !== $bundle['version'] ) {
 		rk_builder_add_issue( $issues, 'version', 'Unsupported bundle version (this site reads version 1)' );
 	}
-	$limits = array( 'pages' => RK_BUILDER_MAX_TRANSFER_PAGES, 'media' => RK_BUILDER_MAX_TRANSFER_MEDIA, 'content' => RK_BUILDER_MAX_TRANSFER_CONTENT, 'reusables' => RK_BUILDER_MAX_REUSABLES );
+	$limits = array( 'pages' => RK_BUILDER_MAX_TRANSFER_PAGES, 'media' => RK_BUILDER_MAX_TRANSFER_MEDIA, 'content' => RK_BUILDER_MAX_TRANSFER_CONTENT, 'reusables' => RK_BUILDER_MAX_REUSABLES, 'templates' => RK_BUILDER_MAX_TEMPLATES, 'types' => RK_BUILDER_MAX_TYPES + 3, 'entries' => RK_BUILDER_MAX_TRANSFER_CONTENT );
 	foreach ( $limits as $key => $max ) {
 		if ( ! isset( $bundle[ $key ] ) ) { continue; }
 		if ( ! is_array( $bundle[ $key ] ) || ( array() !== $bundle[ $key ] && rk_builder_is_object( $bundle[ $key ] ) ) ) {
@@ -321,6 +321,7 @@ function rk_builder_build_site_bundle() {
 			);
 		}
 	}
+	$dyn = rk_builder_dyn_export_bundle( $refs, $media_ids );
 	foreach ( $refs as $r ) { if ( null !== $r['id'] ) { $media_ids[ $r['id'] ] = true; } }
 
 	$media = array();
@@ -340,6 +341,9 @@ function rk_builder_build_site_bundle() {
 		'reusables'  => $reusables,
 		'pages'      => $pages,
 		'content'    => $content,
+		'types'      => $dyn['types'],
+		'templates'  => $dyn['templates'],
+		'entries'    => $dyn['entries'],
 		'seo'        => array( 'organization' => rk_builder_seo_organization() ),
 	);
 }
@@ -522,6 +526,22 @@ function rk_builder_site_import_run( array $bundle, array $opts ) {
 		}
 	}
 
+	/* 4b · theme builder: content types, templates, entries */
+	$types_in = array();
+	$tpl_ok = array();
+	$tpl_skipped = array();
+	$entries_in = array();
+	if ( $opts['theme'] ) {
+		list( $types_in, $tw ) = rk_builder_dyn_import_types_in( $bundle );
+		$warnings = array_merge( $warnings, $tw );
+		list( $tpl_ok, $tpl_skipped ) = rk_builder_dyn_import_templates_in( $bundle, $pre_hosts );
+	}
+	if ( $opts['content'] ) {
+		$known = rk_builder_dyn_all_types();
+		foreach ( $types_in as $t ) { $known[ $t['slug'] ] = $t; }
+		$entries_in = rk_builder_dyn_import_entries_in( $bundle, $known );
+	}
+
 	/* dry run: report what would happen */
 	$existing_pages = 0;
 	foreach ( $ok_pages as $pg ) { if ( rk_builder_find_page_by_slug( $pg['slug'] ) > 0 ) { $existing_pages++; } }
@@ -532,8 +552,12 @@ function rk_builder_site_import_run( array $bundle, array $opts ) {
 		'reusables' => array( 'create' => count( $ok_reusables ) - $re_existing, 'update' => $re_existing, 'skipped' => $re_skipped ),
 		'theme'    => array( 'included' => null !== $theme_in, 'applied' => false ),
 		'content'  => array( 'included' => count( $content_in ), 'created' => 0, 'updated' => 0 ),
+		'types'    => array( 'included' => count( $types_in ), 'applied' => false ),
+		'templates' => array( 'create' => 0, 'update' => 0, 'skipped' => $tpl_skipped, 'done' => array() ),
+		'entries'  => array( 'included' => count( $entries_in ), 'created' => 0, 'updated' => 0 ),
 		'warnings' => $warnings,
 	);
+	foreach ( $tpl_ok as $t ) { $report['templates'][ rk_builder_dyn_find_template_by_slug( $t['slug'] ) > 0 ? 'update' : 'create' ]++; }
 	if ( $opts['dryRun'] ) {
 		$already = 0;
 		foreach ( $entries as $m ) {
@@ -585,11 +609,22 @@ function rk_builder_site_import_run( array $bundle, array $opts ) {
 		$re_map[ $re['oldId'] ] = (int) $rid;
 	}
 
+	/* theme builder: types first (templates and entries need them), then templates */
+	$tpl_map = array();
+	if ( $types_in ) { $report['types']['applied'] = rk_builder_dyn_import_types_apply( $types_in ); }
+	if ( $tpl_ok ) {
+		$report['templates']['create'] = 0;
+		$report['templates']['update'] = 0;
+		$tpl_map = rk_builder_dyn_import_templates_apply( $tpl_ok, $maps, $re_map, $real_hosts, $report );
+		foreach ( $report['templates']['done'] as $d ) { $report['templates'][ 'created' === $d['action'] ? 'create' : 'update' ]++; }
+	}
+
 	/* pages (drafts only) */
 	foreach ( $ok_pages as $pg ) {
 		$layout = rk_builder_bundle_remap_layout( $pg['layout'], $maps );
 		$dropped = 0;
 		$layout  = rk_builder_bundle_remap_reusables( $layout, $re_map, $dropped );
+		$layout  = rk_builder_bundle_remap_templates( $layout, $tpl_map );
 		if ( $dropped > 0 ) { $report['warnings'][] = '"' . $pg['slug'] . '": ' . $dropped . ' reusable block reference(s) were removed because the file does not include that block.'; }
 		$final  = rk_builder_validate_layout( $layout, $real_hosts );
 		if ( $final ) {
@@ -659,6 +694,7 @@ function rk_builder_site_import_run( array $bundle, array $opts ) {
 			if ( null !== $rec ) { set_post_thumbnail( (int) $pid, (int) $rec['id'] ); }
 		}
 	}
+	if ( $entries_in ) { rk_builder_dyn_import_entries_apply( $entries_in, $maps, $opts['contentStatus'], $report ); }
 	if ( $report['pages']['done'] ) { $report['warnings'][] = 'Pages were imported as drafts. Review them, then publish.'; }
 	return rk_builder_no_store( $report );
 }

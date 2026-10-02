@@ -11,10 +11,16 @@ import {
   Star,
   CodeXml,
   Shuffle,
+  Database,
+  Boxes,
+  LayoutTemplate,
 } from "lucide-react";
 import { api } from "@/lib/api/builder";
 import { getBoot } from "@/lib/boot";
 import { CodeSection } from "./CodeSection";
+import { ContentSection } from "./ContentSection";
+import { TemplatesSection } from "./TemplatesSection";
+import { TypesSection } from "./TypesSection";
 import { MediaSection } from "./MediaSection";
 import { MoreSection } from "./MoreSection";
 import { Overview } from "./Overview";
@@ -28,7 +34,10 @@ import { VisualizerSection } from "./VisualizerSection";
 export type DashView =
   | "overview"
   | "pages"
+  | "content"
   | "media"
+  | "templates"
+  | "types"
   | "themes"
   | "site"
   | "reviews"
@@ -41,7 +50,10 @@ type Icon = ComponentType<{ size?: number; "aria-hidden"?: boolean }>;
 const NAV: { id: DashView; label: string; icon: Icon }[] = [
   { id: "overview", label: "Overview", icon: LayoutDashboard },
   { id: "pages", label: "Pages", icon: FileText },
+  { id: "content", label: "Content", icon: Database },
   { id: "media", label: "Media", icon: ImageIcon },
+  { id: "templates", label: "Templates", icon: LayoutTemplate },
+  { id: "types", label: "Types & fields", icon: Boxes },
   { id: "themes", label: "Themes", icon: Package },
   { id: "site", label: "Site & SEO", icon: Settings },
   { id: "reviews", label: "Reviews", icon: Star },
@@ -60,6 +72,8 @@ const TABS: { id: DashView; label: string; icon: Icon }[] = [
 
 /** Sections that need an administrator (the API refuses everyone else). */
 const ADMIN_ONLY = new Set<DashView>([
+  "templates",
+  "types",
   "themes",
   "site",
   "reviews",
@@ -83,11 +97,12 @@ export function Dashboard({ navigate }: { navigate: (to: string) => void }) {
     return !admin && ADMIN_ONLY.has(v) ? "overview" : v;
   });
   const boot = getBoot();
+  const [contentType, setContentType] = useState<string | undefined>();
   const items = NAV.filter(n => admin || !ADMIN_ONLY.has(n.id));
   const tabs = admin
     ? TABS
     : [
-        ...items.slice(0, 3),
+        ...items.slice(0, 4),
         { id: "more" as DashView, label: "More", icon: MoreHorizontal },
       ];
 
@@ -102,7 +117,17 @@ export function Dashboard({ navigate }: { navigate: (to: string) => void }) {
   const body = {
     overview: <Overview go={setView} navigate={navigate} admin={admin} />,
     pages: <PagesSection navigate={navigate} />,
+    content: <ContentSection key={contentType} initialType={contentType} />,
     media: <MediaSection />,
+    templates: <TemplatesSection navigate={navigate} />,
+    types: (
+      <TypesSection
+        openContent={slug => {
+          setContentType(slug);
+          setView("content");
+        }}
+      />
+    ),
     themes: <ThemesSection />,
     site: <SiteSection />,
     reviews: <ReviewsSection />,
@@ -115,7 +140,16 @@ export function Dashboard({ navigate }: { navigate: (to: string) => void }) {
   const nav = (id: DashView) =>
     view === id ||
     (id === "more" &&
-      ["site", "reviews", "code", "redirects", "visualizer"].includes(view));
+      [
+        "templates",
+        "types",
+        "themes",
+        "site",
+        "reviews",
+        "code",
+        "redirects",
+        "visualizer",
+      ].includes(view));
 
   return (
     <div className="dash">

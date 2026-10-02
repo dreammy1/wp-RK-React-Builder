@@ -99,7 +99,7 @@ function rk_builder_reusables_for_layout( $layout ) {
 function rk_builder_reusable_pages_using( $id ) {
 	$needle = '"refId":' . (int) $id . '}';
 	return get_posts( array(
-		'post_type'      => 'page',
+		'post_type'      => array( 'page', 'rk_template' ),
 		'post_status'    => array( 'publish', 'draft', 'pending', 'private', 'future' ),
 		'posts_per_page' => 500,
 		'fields'         => 'ids',

@@ -33,6 +33,7 @@ require_once __DIR__ . '/render/spacer.php';
 require_once __DIR__ . '/render/divider.php';
 require_once __DIR__ . '/render/testimonial.php';
 require_once __DIR__ . '/render/contact.php';
+require_once __DIR__ . '/render/dynamic.php';
 require_once __DIR__ . '/reusable.php';
 
 /* ------------------------------------------------------------------ *
@@ -166,6 +167,12 @@ function rk_builder_block_renderers() {
 		'brandstrip' => 'rk_builder_render_brandstrip',
 		'reviews'    => 'rk_builder_render_reviews',
 		'visualizer' => 'rk_builder_render_visualizer',
+		'dynfield'    => 'rk_builder_render_dynfield',
+		'dynimage'    => 'rk_builder_render_dynimage',
+		'dyngallery'  => 'rk_builder_render_dyngallery',
+		'dynrepeater' => 'rk_builder_render_dynrepeater',
+		'dyninfo'     => 'rk_builder_render_dyninfo',
+		'loopgrid'    => 'rk_builder_render_loopgrid',
 		'reusable'  => 'rk_builder_render_reusable',
 	);
 }

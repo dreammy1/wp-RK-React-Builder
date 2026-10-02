@@ -30,6 +30,13 @@ import {
   type ThemeInstallOptions,
   type ThemeMetaInput,
   PageListResponse,
+  TypesResponse,
+  EntryList,
+  EntryResponse,
+  TemplateList,
+  TemplateResponse,
+  DynRender,
+  type ContentType,
   PreviewTokenResponse,
   PublishResponse,
   RevisionDetailResponse,
@@ -53,6 +60,7 @@ export type LoadedPage = {
   publishedRevision: number | null;
   updatedAt: string;
   capabilities: { manageTheme: boolean; publish: boolean };
+  template?: z.infer<typeof LoadResponse>["template"];
   /** True when stored data was an older shape that the client upgraded in memory. */
   migrated: boolean;
 };
@@ -159,6 +167,7 @@ export const api = {
       publishedRevision: res.publishedRevision ?? null,
       updatedAt: res.updatedAt,
       capabilities: res.capabilities ?? { manageTheme: true, publish: true },
+      template: res.template,
       migrated: layout.migrated || theme.migrated,
     };
   },
@@ -300,6 +309,71 @@ export const api = {
     request("builder/visualizer-admin/leads/delete", VizAdmin, {
       method: "POST",
       body: target,
+    }),
+  getTypes: () => request("builder/types", TypesResponse),
+  saveTypes: (types: Partial<ContentType>[]) =>
+    request("builder/types", TypesResponse, {
+      method: "POST",
+      body: { types },
+    }),
+  listEntries: (
+    type: string,
+    p: { search?: string; status?: string; page?: number } = {}
+  ) => {
+    const qs = new URLSearchParams();
+    if (p.search) qs.set("search", p.search);
+    if (p.status) qs.set("status", p.status);
+    qs.set("per_page", "30");
+    qs.set("page", String(p.page ?? 1));
+    return request(`builder/entries/${type}?${qs}`, EntryList);
+  },
+  getEntry: (id: number) => request(`builder/entry/${id}`, EntryResponse),
+  createEntry: (type: string, body: Record<string, unknown>) =>
+    request(`builder/entries/${type}`, EntryResponse, {
+      method: "POST",
+      body,
+    }),
+  updateEntry: (id: number, body: Record<string, unknown>) =>
+    request(`builder/entry/${id}`, EntryResponse, { method: "POST", body }),
+  duplicateEntry: (id: number) =>
+    request(`builder/entry/${id}/duplicate`, EntryResponse, {
+      method: "POST",
+      body: {},
+    }),
+  trashEntry: (id: number) =>
+    request(`builder/entry/${id}/trash`, Empty, { method: "POST", body: {} }),
+  listTemplates: () => request("builder/templates", TemplateList),
+  createTemplate: (body: {
+    title: string;
+    kind: string;
+    postType: string;
+    taxonomy?: string;
+  }) =>
+    request("builder/templates", TemplateResponse, { method: "POST", body }),
+  updateTemplate: (
+    id: number,
+    body: { title?: string; active?: boolean; taxonomy?: string }
+  ) =>
+    request(`builder/templates/${id}/update`, TemplateResponse, {
+      method: "POST",
+      body,
+    }),
+  deleteTemplate: (id: number) =>
+    request(`builder/templates/${id}/delete`, Empty, {
+      method: "POST",
+      body: {},
+    }),
+  /** The PHP renderer's markup for one dynamic block, shown inside the editor canvas. */
+  renderDyn: (
+    block: { type: string; props: unknown },
+    postType: string,
+    sampleId?: number,
+    signal?: AbortSignal
+  ) =>
+    request("builder/dyn/render", DynRender, {
+      method: "POST",
+      body: { block, postType, sampleId },
+      signal,
     }),
   getCode: () => request("builder/code", CodeResponse),
   setCode: (patch: Partial<CodeSettings>) =>

@@ -1,0 +1,24 @@
+{
+  "kind": "layout",
+  "description": "dynfield source must be title, excerpt, content, date, modified, author, terms:<key> or field:<key>",
+  "document": {
+    "version": 1,
+    "blocks": [
+      {
+        "id": "b1",
+        "type": "dynfield",
+        "props": {
+          "source": "meta:price",
+          "tag": "p",
+          "style": "plain",
+          "align": "left",
+          "label": "",
+          "prefix": "",
+          "suffix": "",
+          "link": false,
+          "fallback": ""
+        }
+      }
+    ]
+  }
+}

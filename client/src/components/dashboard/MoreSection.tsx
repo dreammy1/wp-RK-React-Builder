@@ -1,5 +1,8 @@
 import {
+  Boxes,
   CodeXml,
+  LayoutTemplate,
+  Package,
   ExternalLink,
   Settings,
   Shuffle,
@@ -26,6 +29,15 @@ export function MoreSection({
       <div className="more-list">
         {admin && (
           <>
+            <button className="more-item" onClick={() => go("templates")}>
+              <LayoutTemplate size={16} aria-hidden="true" /> Templates
+            </button>
+            <button className="more-item" onClick={() => go("types")}>
+              <Boxes size={16} aria-hidden="true" /> Types &amp; fields
+            </button>
+            <button className="more-item" onClick={() => go("themes")}>
+              <Package size={16} aria-hidden="true" /> Themes
+            </button>
             <button className="more-item" onClick={() => go("site")}>
               <Settings size={16} aria-hidden="true" /> Site &amp; SEO
             </button>
