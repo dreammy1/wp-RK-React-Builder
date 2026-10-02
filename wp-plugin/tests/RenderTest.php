@@ -334,10 +334,14 @@ rk_test( 'header: drop-down items, appearance classes, extra button; footer: ton
 		'bg' => 'dark', 'size' => 'tall', 'align' => 'left', 'buttons' => 'outline', 'ctaText' => 'Quote', 'ctaHref' => '/estimate', 'shadow' => true, 'logoSize' => 'sm' );
 	$html = rk_builder_render_block( array( 'id' => 'n', 'type' => 'navbar', 'props' => $nav ), array() );
 	t_assert( false !== strpos( $html, 'pf-nav bg-dark size-tall align-left btn-outline shadow' ), 'appearance classes: ' . $html );
-	t_eq( substr_count( $html, 'class="has-sub"' ), 1, 'one item has a drop-down' );
+	t_eq( substr_count( $html, 'class="has-sub"' ), 2, 'one item has a drop-down, in the bar and in the phone menu' );
 	t_assert( false !== strpos( $html, '<ul class="pf-sub"><li><a href="/services/hardwood">Hardwood</a></li><li><a href="/services/refinish">Refinish</a></li></ul>' ), 'two safe children in order' );
 	t_assert( false === strpos( $html, 'javascript' ), 'unsafe sub-links are dropped' );
-	t_assert( false !== strpos( $html, 'aria-label="Services submenu" aria-expanded="false"' ), 'toggle button is labelled' );
+	t_assert( false !== strpos( $html, 'aria-label="Services submenu" aria-haspopup="true" aria-expanded="false"' ), 'toggle button is labelled' );
+	t_assert( false !== strpos( $html, 'class="pf-panel-toggle"' ) && false !== strpos( $html, '<li class="has-sub"><div class="pf-panel-row">' ), 'phone menu has an accordion toggle' );
+	$desc = rk_builder_render_block( array( 'id' => 'n', 'type' => 'navbar', 'props' => array( 'brand' => 'S', 'links' => "Services|/s\n- Hardwood|/s/h|New floors | any species\n- Plain|/s/p", 'phone' => '', 'phoneHref' => '', 'overlay' => false, 'shrink' => true ) ), array() );
+	t_assert( false !== strpos( $desc, '<a href="/s/h">Hardwood<span class="pf-sub-desc">New floors | any species</span></a>' ), 'description after the second bar' );
+	t_assert( false !== strpos( $desc, '<a href="/s/p">Plain</a>' ) && false !== strpos( $desc, 'pf-nav shrink' ), 'no description, shrink class' );
 	t_assert( false !== strpos( $html, '<a class="pf-nav-cta" href="/estimate">Quote</a>' ) && false !== strpos( $html, 'pf-nav-panel-cta' ), 'extra button in bar and menu' );
 	$plain = rk_builder_render_block( array( 'id' => 'n', 'type' => 'navbar', 'props' => array( 'brand' => 'S', 'links' => 'Home|/', 'phone' => '', 'phoneHref' => '', 'overlay' => false ) ), array() );
 	t_assert( 1 === preg_match( '/<header [^>]*class="[^"]*pf-nav[^"]*"/', $plain ) && 1 !== preg_match( '/pf-nav[^"]*(bg-|size-|align-|btn-|shadow)/', $plain ), 'no options: the classic markup' );

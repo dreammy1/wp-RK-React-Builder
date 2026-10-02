@@ -18,6 +18,7 @@ export function navClasses(props: NavbarProps, open = false): string {
     (props.align === "left" ? " align-left" : "") +
     (buttons !== "auto" ? ` btn-${buttons}` : "") +
     (props.shadow ? " shadow" : "") +
+    (props.shrink ? " shrink" : "") +
     (open ? " open" : "")
   );
 }
@@ -50,6 +51,7 @@ export function NavbarView({ props }: ViewProps<NavbarProps>) {
                     type="button"
                     className="pf-sub-toggle"
                     aria-label={`${l.label} submenu`}
+                    aria-haspopup="true"
                     aria-expanded="false"
                   >
                     <span className="pf-chev" aria-hidden="true"></span>
@@ -57,7 +59,12 @@ export function NavbarView({ props }: ViewProps<NavbarProps>) {
                   <ul className="pf-sub">
                     {l.children.map(c => (
                       <li key={c.href + c.label}>
-                        <a href={c.href}>{c.label}</a>
+                        <a href={c.href}>
+                          {c.label}
+                          {c.desc && (
+                            <span className="pf-sub-desc">{c.desc}</span>
+                          )}
+                        </a>
                       </li>
                     ))}
                   </ul>
@@ -98,8 +105,25 @@ export function NavbarView({ props }: ViewProps<NavbarProps>) {
         <div className="pf-nav-panel">
           <ul>
             {menu.map(l => (
-              <li key={"m" + l.href + l.label}>
-                <a href={l.href}>{l.label}</a>
+              <li
+                key={"m" + l.href + l.label}
+                className={l.children.length > 0 ? "has-sub" : undefined}
+              >
+                {l.children.length > 0 ? (
+                  <div className="pf-panel-row">
+                    <a href={l.href}>{l.label}</a>
+                    <button
+                      type="button"
+                      className="pf-panel-toggle"
+                      aria-label={`${l.label} submenu`}
+                      aria-expanded="false"
+                    >
+                      <span className="pf-chev" aria-hidden="true"></span>
+                    </button>
+                  </div>
+                ) : (
+                  <a href={l.href}>{l.label}</a>
+                )}
                 {l.children.length > 0 && (
                   <ul className="pf-panel-sub">
                     {l.children.map(c => (

@@ -23,6 +23,8 @@ export const navbarProps = z.strictObject({
   ctaText: text(0, 40).optional(),
   ctaHref: linkUrl.optional(),
   shadow: z.boolean().optional(),
+  /** Gets slimmer and gains a shadow once the visitor scrolls. */
+  shrink: z.boolean().optional(),
 });
 export type NavbarProps = z.infer<typeof navbarProps>;
 export const navbarDefaults: NavbarProps = {
@@ -39,4 +41,5 @@ export const navbarDefaults: NavbarProps = {
   ctaText: "",
   ctaHref: "",
   shadow: false,
+  shrink: false,
 };

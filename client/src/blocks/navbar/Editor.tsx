@@ -26,7 +26,7 @@ export const navbarFields: FieldDef[] = [
     key: "links",
     label: "Menu links",
     maxLength: 3000,
-    help: "One per line: Label|/path (up to 12). Start a line with “- ” to put it in a drop-down under the line above (up to 8 each), e.g. “- Hardwood|/services/hardwood”.",
+    help: "One per line: Label|/path (up to 12). Start a line with “- ” to put it in a drop-down under the line above (up to 8 each), e.g. “- Hardwood|/services/hardwood”. Add a short description after a second bar to show it under the item: “- Hardwood|/services/hardwood|New floors, any species”.",
   },
   {
     kind: "select",
@@ -95,6 +95,11 @@ export const navbarFields: FieldDef[] = [
     kind: "checkbox",
     key: "shadow",
     label: "Shadow under the bar",
+  },
+  {
+    kind: "checkbox",
+    key: "shrink",
+    label: "Slim down and add a shadow when scrolling",
   },
   {
     kind: "checkbox",

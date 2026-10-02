@@ -18,11 +18,13 @@ export function parseLinks(source: string, max = 12): NavLink[] {
   return out;
 }
 
-export type MenuItem = NavLink & { children: NavLink[] };
+export type MenuChild = NavLink & { desc: string };
+export type MenuItem = NavLink & { children: MenuChild[] };
 
 /**
  * A menu with drop-downs: "Label|/path" per line; a line that starts with "- " is a sub-item of the line above it
- * (one level). Up to `max` top-level items and 8 sub-items each. Mirrored by rk_builder_parse_menu().
+ * (one level), optionally "- Label|/path|Short description". Up to `max` top-level items and 8 sub-items each. Mirrored
+ * by rk_builder_parse_menu().
  */
 export function parseMenu(source: string, max = 12): MenuItem[] {
   const out: MenuItem[] = [];
@@ -33,12 +35,15 @@ export function parseMenu(source: string, max = 12): MenuItem[] {
     const cut = line.indexOf("|");
     if (cut < 1) continue;
     const label = line.slice(0, cut).trim();
-    const href = line.slice(cut + 1).trim();
+    const rest = line.slice(cut + 1);
+    const cut2 = sub ? rest.indexOf("|") : -1;
+    const href = (cut2 < 0 ? rest : rest.slice(0, cut2)).trim();
+    const desc = cut2 < 0 ? "" : rest.slice(cut2 + 1).trim();
     if (label === "" || href === "" || !isSafeLink(href)) continue;
     if (sub) {
       const parent = out[out.length - 1];
       if (parent && parent.children.length < 8)
-        parent.children.push({ label, href });
+        parent.children.push({ label, href, desc });
       continue;
     }
     if (out.length >= max) continue;

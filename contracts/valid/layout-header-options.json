@@ -11,7 +11,7 @@
           "brand": "Studio",
           "logoUrl": "/placeholder.svg",
           "logoSize": "lg",
-          "links": "Home|/\nServices|/services\n- Hardwood|/services/hardwood\n- Refinishing|/services/refinishing\n- bad|javascript:alert(1)\nAbout|/about\n- Team|/about/team\nContact|/contact",
+          "links": "Home|/\nServices|/services\n- Hardwood|/services/hardwood|New floors, any species\n- Refinishing|/services/refinishing|Sand, stain and seal\n- bad|javascript:alert(1)\nAbout|/about\n- Team|/about/team\nContact|/contact",
           "phone": "(309) 863-5246",
           "phoneHref": "tel:+13098635246",
           "overlay": false,
@@ -21,7 +21,8 @@
           "buttons": "outline",
           "ctaText": "Get a quote",
           "ctaHref": "/estimate",
-          "shadow": true
+          "shadow": true,
+          "shrink": true
         }
       },
       {

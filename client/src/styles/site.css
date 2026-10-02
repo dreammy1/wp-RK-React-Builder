@@ -3384,7 +3384,15 @@ body.rk-solid-nav #main {
   transform: translateY(1px) rotate(225deg);
 }
 .pf-nav nav .pf-sub {
-  display: none;
+  display: flex;
+  visibility: hidden;
+  opacity: 0;
+  transform: translateY(8px);
+  pointer-events: none;
+  transition:
+    opacity 0.18s ease-out,
+    transform 0.18s ease-out,
+    visibility 0s linear 0.18s;
   position: absolute;
   top: 100%;
   left: -16px;
@@ -3401,7 +3409,11 @@ body.rk-solid-nav #main {
 .pf-nav nav li.has-sub:hover > .pf-sub,
 .pf-nav nav li.has-sub:focus-within > .pf-sub,
 .pf-nav nav li.has-sub.open > .pf-sub {
-  display: flex;
+  visibility: visible;
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+  transition-delay: 0s;
 }
 .pf-nav nav .pf-sub li {
   display: block;
@@ -3415,8 +3427,30 @@ body.rk-solid-nav #main {
 .pf-nav nav .pf-sub a::after {
   display: none;
 }
-.pf-nav nav .pf-sub a:hover {
+.pf-nav nav .pf-sub a:hover,
+.pf-nav nav .pf-sub a:focus-visible {
   background: #f4f1ea;
+  outline: none;
+}
+.pf-sub-desc {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  line-height: 1.4;
+  opacity: 0.65;
+  white-space: normal;
+}
+.pf-nav nav .pf-sub:has(.pf-sub-desc) {
+  min-width: 290px;
+}
+.pf-nav nav li.has-sub.current-parent > a {
+  opacity: 1;
+}
+.pf-nav nav li.has-sub.current-parent > a::after {
+  width: 100%;
 }
 .pf-panel-sub {
   display: flex;
@@ -3597,5 +3631,79 @@ body.rk-standalone .pf-nav.bg-primary:not(.overlay) {
     font-size: 0;
     gap: 0;
     padding: 12px 14px;
+  }
+}
+
+/* shrink + shadow once scrolled */
+.pf-nav.shrink {
+  transition:
+    padding 0.25s ease-out,
+    box-shadow 0.25s;
+}
+.pf-nav.shrink.scrolled {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.14);
+}
+.pf-nav.shrink.scrolled .pf-brand img {
+  height: 44px;
+  transition: height 0.25s ease-out;
+}
+
+/* phone menu: accordion, slide-in, no page scroll behind it */
+.pf-panel-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.pf-panel-row a {
+  flex: 1 1 auto;
+}
+.pf-nav-panel .pf-panel-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+}
+.pf-nav-panel .pf-panel-toggle .pf-chev {
+  width: 8px;
+  height: 8px;
+}
+.pf-nav-panel li.has-sub.open .pf-chev {
+  transform: translateY(1px) rotate(225deg);
+}
+.pf-nav-panel li.has-sub > .pf-panel-sub {
+  display: none;
+}
+.pf-nav-panel li.has-sub.open > .pf-panel-sub {
+  display: flex;
+}
+@keyframes pf-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.pf-nav.open .pf-nav-panel {
+  animation: pf-panel-in 0.2s ease-out;
+}
+html.rk-menu-open {
+  overflow: hidden;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pf-nav nav .pf-sub,
+  .pf-nav.shrink,
+  .pf-nav.open .pf-nav-panel {
+    transition: none;
+    animation: none;
   }
 }

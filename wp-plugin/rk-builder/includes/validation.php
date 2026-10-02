@@ -290,6 +290,7 @@ function rk_builder_block_specs() {
 			'ctaText'     => rk_builder_f_text( 0, 40, true ),
 			'ctaHref'     => rk_builder_f_link( true ),
 			'shadow'      => rk_builder_f_bool( true ),
+			'shrink'      => rk_builder_f_bool( true ),
 		),
 		'coverhero' => array(
 			'crumb'     => rk_builder_f_text( 0, 400 ),

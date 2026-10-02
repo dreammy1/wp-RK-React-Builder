@@ -32,11 +32,14 @@ function rk_builder_parse_menu( $source, $max = 12 ) {
 		$cut = strpos( $line, '|' );
 		if ( false === $cut || $cut < 1 ) { continue; }
 		$label = trim( substr( $line, 0, $cut ) );
-		$href  = trim( substr( $line, $cut + 1 ) );
+		$rest  = substr( $line, $cut + 1 );
+		$cut2  = $sub ? strpos( $rest, '|' ) : false;
+		$href  = trim( false === $cut2 ? $rest : substr( $rest, 0, $cut2 ) );
+		$desc  = false === $cut2 ? '' : trim( substr( $rest, $cut2 + 1 ) );
 		if ( '' === $label || '' === $href || ! rk_builder_is_safe_link( $href ) ) { continue; }
 		if ( $sub ) {
 			$last = count( $out ) - 1;
-			if ( $last >= 0 && count( $out[ $last ]['children'] ) < 8 ) { $out[ $last ]['children'][] = array( 'label' => $label, 'href' => $href ); }
+			if ( $last >= 0 && count( $out[ $last ]['children'] ) < 8 ) { $out[ $last ]['children'][] = array( 'label' => $label, 'href' => $href, 'desc' => $desc ); }
 			continue;
 		}
 		if ( count( $out ) >= $max ) { continue; }
@@ -78,7 +81,8 @@ function rk_builder_render_navbar( array $p, array $context = array() ) {
 		. ( 'regular' !== $size ? ' size-' . $size : '' )
 		. ( isset( $p['align'] ) && 'left' === $p['align'] ? ' align-left' : '' )
 		. ( 'auto' !== $buttons ? ' btn-' . $buttons : '' )
-		. ( ! empty( $p['shadow'] ) ? ' shadow' : '' );
+		. ( ! empty( $p['shadow'] ) ? ' shadow' : '' )
+		. ( ! empty( $p['shrink'] ) ? ' shrink' : '' );
 	$cta_text = isset( $p['ctaText'] ) ? $p['ctaText'] : '';
 	$cta_href = isset( $p['ctaHref'] ) ? $p['ctaHref'] : '';
 	$has_cta  = '' !== $cta_text && '' !== $cta_href;
@@ -89,9 +93,9 @@ function rk_builder_render_navbar( array $p, array $context = array() ) {
 		foreach ( $menu as $l ) {
 			if ( $l['children'] ) {
 				$html .= '<li class="has-sub"><a href="' . rk_builder_href( $l['href'] ) . '">' . rk_builder_h( $l['label'] ) . '</a>';
-				$html .= '<button type="button" class="pf-sub-toggle" aria-label="' . rk_builder_h( $l['label'] ) . ' submenu" aria-expanded="false"><span class="pf-chev" aria-hidden="true"></span></button>';
+				$html .= '<button type="button" class="pf-sub-toggle" aria-label="' . rk_builder_h( $l['label'] ) . ' submenu" aria-haspopup="true" aria-expanded="false"><span class="pf-chev" aria-hidden="true"></span></button>';
 				$html .= '<ul class="pf-sub">';
-				foreach ( $l['children'] as $c ) { $html .= '<li><a href="' . rk_builder_href( $c['href'] ) . '">' . rk_builder_h( $c['label'] ) . '</a></li>'; }
+				foreach ( $l['children'] as $c ) { $html .= '<li><a href="' . rk_builder_href( $c['href'] ) . '">' . rk_builder_h( $c['label'] ) . ( '' !== $c['desc'] ? '<span class="pf-sub-desc">' . rk_builder_h( $c['desc'] ) . '</span>' : '' ) . '</a></li>'; }
 				$html .= '</ul></li>';
 			} else {
 				$html .= '<li><a href="' . rk_builder_href( $l['href'] ) . '">' . rk_builder_h( $l['label'] ) . '</a></li>';
@@ -107,7 +111,11 @@ function rk_builder_render_navbar( array $p, array $context = array() ) {
 		$html .= '<button type="button" class="pf-nav-toggle" aria-label="Open menu" aria-expanded="false" data-nav-toggle=""><span class="pf-burger" aria-hidden="true"></span></button>';
 		$html .= '<div class="pf-nav-panel"><ul>';
 		foreach ( $menu as $l ) {
-			$html .= '<li><a href="' . rk_builder_href( $l['href'] ) . '">' . rk_builder_h( $l['label'] ) . '</a>';
+			if ( $l['children'] ) {
+				$html .= '<li class="has-sub"><div class="pf-panel-row"><a href="' . rk_builder_href( $l['href'] ) . '">' . rk_builder_h( $l['label'] ) . '</a><button type="button" class="pf-panel-toggle" aria-label="' . rk_builder_h( $l['label'] ) . ' submenu" aria-expanded="false"><span class="pf-chev" aria-hidden="true"></span></button></div>';
+			} else {
+				$html .= '<li><a href="' . rk_builder_href( $l['href'] ) . '">' . rk_builder_h( $l['label'] ) . '</a>';
+			}
 			if ( $l['children'] ) {
 				$html .= '<ul class="pf-panel-sub">';
 				foreach ( $l['children'] as $c ) { $html .= '<li><a href="' . rk_builder_href( $c['href'] ) . '">' . rk_builder_h( $c['label'] ) . '</a></li>'; }
