@@ -10,6 +10,12 @@ import {
   SiteBundle,
   SiteImportReport,
   type SiteImportOptions,
+  ThemeAdded,
+  ThemeInstallReport,
+  ThemeList,
+  ThemeSaved,
+  type ThemeInstallOptions,
+  type ThemeMetaInput,
   PageListResponse,
   PreviewTokenResponse,
   PublishResponse,
@@ -229,6 +235,37 @@ export const api = {
       method: "POST",
       body: { bundle, options },
       timeoutMs: 300_000,
+    }),
+
+  listThemes: () => request("builder/themes", ThemeList),
+  captureTheme: (meta: ThemeMetaInput) =>
+    request("builder/themes", ThemeSaved, {
+      method: "POST",
+      body: meta,
+      timeoutMs: 120_000,
+    }),
+  importTheme: (bundle: unknown) =>
+    request("builder/themes/import", ThemeAdded, {
+      method: "POST",
+      body: { bundle },
+      timeoutMs: 120_000,
+    }),
+  installTheme: (slug: string, options: ThemeInstallOptions) =>
+    request("builder/themes/install", ThemeInstallReport, {
+      method: "POST",
+      body: { slug, options },
+      timeoutMs: 300_000,
+    }),
+  exportTheme: (slug: string) =>
+    request(
+      `builder/themes/export?slug=${encodeURIComponent(slug)}`,
+      SiteBundle,
+      { timeoutMs: 120_000 }
+    ),
+  deleteTheme: (slug: string) =>
+    request("builder/themes/delete", z.object({ deleted: z.string() }), {
+      method: "POST",
+      body: { slug },
     }),
 
   listContent(q: ContentQuery, signal?: AbortSignal) {

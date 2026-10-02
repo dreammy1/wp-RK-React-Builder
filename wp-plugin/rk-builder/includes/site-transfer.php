@@ -258,6 +258,12 @@ function rk_builder_bundle_media_entries( array $bundle, array &$bad ) {
  * ------------------------------------------------------------------ */
 
 function rk_builder_handle_site_export( $req ) {
+	$bundle = rk_builder_build_site_bundle();
+	return is_wp_error( $bundle ) ? $bundle : rk_builder_no_store( $bundle );
+}
+
+/** @return array|WP_Error every builder page (draft layout), the theme, reusables, content and the media they use. */
+function rk_builder_build_site_bundle() {
 	$page_ids = get_posts( array(
 		'post_type'      => 'page',
 		'post_status'    => array( 'publish', 'draft', 'pending', 'private', 'future' ),
@@ -324,7 +330,7 @@ function rk_builder_handle_site_export( $req ) {
 		$media[] = array_intersect_key( $item, array_flip( array( 'id', 'url', 'alt', 'title', 'width', 'height' ) ) );
 	}
 
-	return rk_builder_no_store( array(
+	return array(
 		'format'     => RK_BUILDER_BUNDLE_FORMAT,
 		'version'    => 1,
 		'exportedAt' => rk_builder_iso( rk_builder_now() ),
@@ -335,7 +341,7 @@ function rk_builder_handle_site_export( $req ) {
 		'pages'      => $pages,
 		'content'    => $content,
 		'seo'        => array( 'organization' => rk_builder_seo_organization() ),
-	) );
+	);
 }
 
 /* ------------------------------------------------------------------ *
@@ -436,6 +442,11 @@ function rk_builder_handle_site_import( $req ) {
 	$bundle = $body['bundle'];
 	$shape  = rk_builder_bundle_check_shape( $bundle );
 	if ( $shape ) { return rk_builder_invalid( 'rk_invalid_bundle', $shape, 'This is not a usable RK Builder site export.' ); }
+	return rk_builder_site_import_run( $bundle, $opts );
+}
+
+/** Check (dry run) or apply a validated bundle. Shared by the import route and the theme engine. */
+function rk_builder_site_import_run( array $bundle, array $opts ) {
 	if ( function_exists( 'set_time_limit' ) ) { @set_time_limit( 300 ); } // phpcs:ignore WordPress.PHP.NoSilencedErrors
 
 	$real_hosts = rk_builder_allowed_image_hosts();

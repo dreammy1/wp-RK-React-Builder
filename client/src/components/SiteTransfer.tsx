@@ -52,7 +52,7 @@ type Phase =
   | { kind: "done"; report: SiteImportReport }
   | { kind: "error"; message: string };
 
-function Summary({ r }: { r: SiteImportReport }) {
+export function Summary({ r }: { r: SiteImportReport }) {
   return (
     <div className="import-report">
       <ul>

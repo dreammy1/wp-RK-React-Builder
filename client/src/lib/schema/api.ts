@@ -225,6 +225,47 @@ export const SiteImportReport = z.object({
 });
 export type SiteImportReport = z.infer<typeof SiteImportReport>;
 
+/** Theme engine: packages kept in this site's library. */
+export const ThemeSummary = z.object({
+  slug: z.string(),
+  name: z.string(),
+  description: z.string(),
+  version: z.string(),
+  author: z.string(),
+  pages: z.number(),
+  reusables: z.number(),
+  media: z.number(),
+  content: z.number(),
+  preview: z.string(),
+  createdAt: z.string(),
+  bytes: z.number(),
+});
+export type ThemeSummary = z.infer<typeof ThemeSummary>;
+export const ThemeList = z.object({ items: z.array(ThemeSummary) });
+export const ThemeSaved = z.object({ theme: ThemeSummary });
+export const ThemeAdded = z.object({
+  theme: ThemeSummary,
+  check: SiteImportReport,
+});
+export const ThemeInstallReport = SiteImportReport.extend({
+  published: z.number(),
+  frontPage: z.boolean(),
+});
+export type ThemeInstallReport = z.infer<typeof ThemeInstallReport>;
+export type ThemeInstallOptions = {
+  dryRun: boolean;
+  theme: boolean;
+  content: boolean;
+  publish: boolean;
+  frontPage: boolean;
+};
+export type ThemeMetaInput = {
+  name: string;
+  description: string;
+  version: string;
+  author: string;
+};
+
 export const ContentItem = z.object({
   id: z.number().int(),
   title: z.string(),

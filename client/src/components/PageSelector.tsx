@@ -4,7 +4,8 @@ import { pageHref } from "@/lib/router";
 import { describeError } from "@/lib/api/errors";
 import type { PageSummary } from "@/lib/schema/api";
 import { ExportSiteButton, ImportSiteDialog } from "./SiteTransfer";
-import { Upload } from "lucide-react";
+import { ThemeEngineDialog } from "./ThemeEngine";
+import { Package, Upload } from "lucide-react";
 
 type Props = { navigate: (to: string) => void; onSignOut?: () => void };
 
@@ -18,6 +19,7 @@ export function PageSelector({ navigate, onSignOut }: Props) {
   }>({ phase: "loading", pages: [] });
   const [attempt, setAttempt] = useState(0);
   const [importing, setImporting] = useState(false);
+  const [themes, setThemes] = useState(false);
   const transfer = api.canTransferSite();
 
   useEffect(() => {
@@ -51,6 +53,9 @@ export function PageSelector({ navigate, onSignOut }: Props) {
         <div className="selector-actions">
           {transfer && (
             <>
+              <button className="top-btn" onClick={() => setThemes(true)}>
+                <Package size={14} aria-hidden="true" /> Themes
+              </button>
               <ExportSiteButton />
               <button className="top-btn" onClick={() => setImporting(true)}>
                 <Upload size={14} aria-hidden="true" /> Import site
@@ -64,6 +69,12 @@ export function PageSelector({ navigate, onSignOut }: Props) {
           )}
         </div>
       </header>
+      {themes && (
+        <ThemeEngineDialog
+          onClose={() => setThemes(false)}
+          onInstalled={() => setAttempt(a => a + 1)}
+        />
+      )}
       {importing && (
         <ImportSiteDialog
           onClose={() => setImporting(false)}

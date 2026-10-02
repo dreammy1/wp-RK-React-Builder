@@ -1742,3 +1742,68 @@ select {
 .side-body::-webkit-scrollbar {
   display: none;
 }
+
+/* Theme engine */
+.theme-grid {
+  list-style: none;
+  margin: 10px 0 22px;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+.theme-card {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  padding: 12px;
+  background: #1d242c;
+  border: 1px solid #303a44;
+  border-radius: 10px;
+}
+.theme-thumb {
+  height: 84px;
+  border-radius: 6px;
+  background: #11151b center / cover no-repeat;
+  display: grid;
+  place-items: center;
+  color: #5f6c74;
+}
+.theme-body {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  font-size: 13px;
+}
+.theme-body p {
+  margin: 2px 0;
+  color: #bdc6cb;
+}
+.theme-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.theme-form {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 12px;
+}
+.theme-form .theme-wide {
+  grid-column: 1 / -1;
+}
+@media (max-width: 760px) {
+  .theme-card {
+    grid-template-columns: 84px minmax(0, 1fr);
+  }
+  .theme-thumb {
+    height: 64px;
+  }
+  .theme-actions {
+    grid-column: 1 / -1;
+    flex-wrap: wrap;
+  }
+  .theme-form {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1143,6 +1143,16 @@ const files = {
   "3-catalog.json": bundle(["finishes", "stains", "products"]),
   "4-gallery.json": bundle(["gallery"]),
 };
+// One installable theme package with everything (Theme engine > Import theme file).
+files["peoria-theme.json"] = {
+  ...bundle(Object.keys(pages), { withTheme: true, withContent: true }),
+  themeMeta: {
+    name: site.name,
+    description: `${site.name}: ${Object.keys(pages).length} pages, services, product catalog, gallery, estimate calculator and the AI visualizer.`,
+    version: "1.0.0",
+    author: "RK Builder",
+  },
+};
 mkdirSync(out, { recursive: true });
 for (const [name, b] of Object.entries(files))
   writeFileSync(join(out, name), JSON.stringify(b, null, 2));

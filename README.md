@@ -214,3 +214,13 @@ render; only the interaction is missing.
 ## SEO per page
 
 A site bundle page can carry `seo: { title, description, image, noindex, service, parent }`, and the bundle `seo.organization` (`name`, `telephone`, `email`, `description`, `logo`). The importer stores them as the `_rk_seo_*` post meta keys (so RK SEO reads the same values) and RK Builder prints the title, description, canonical, Open Graph, Twitter tags, `noindex, follow` and a JSON-LD graph (Organization, WebSite, WebPage, Service, BreadcrumbList) on the public page. When another SEO plugin is active, or the RK SEO module outputs its own graph, RK Builder prints nothing extra.
+
+## Theme engine
+
+**Pages → Themes** turns the current site into a reusable theme package and keeps a library of them on the site (up to 12).
+
+- **Save this site as a theme**: packages every builder page, reusable block, image reference, the theme settings (colors, fonts, logo, header, footer), services and projects, and the per-page SEO. Saving again with the same name replaces that package.
+- **Install**: applies a package in one click. Choose what to include, whether to publish the pages right away, and whether its Home page becomes the front page. **Check first** shows what would change. Pages with the same address are replaced; other pages are left alone.
+- **Export / Import theme file**: a package is the normal site export plus a `themeMeta` block, so the file also works with **Import site**. Importing a file adds it to the library without changing the site.
+- REST: `GET/POST /builder/themes`, `POST /builder/themes/import`, `POST /builder/themes/install`, `GET /builder/themes/export?slug=`, `POST /builder/themes/delete` (administrators only).
+- `node scripts/convert-peoria.mjs` also writes `dist/peoria/peoria-theme.json`, the Peoria site as one installable theme.

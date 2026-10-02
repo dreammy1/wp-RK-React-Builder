@@ -198,6 +198,7 @@ function rk_builder_register_routes() {
 	register_rest_route( $ns, '/builder/site-import', array(
 		'methods' => $POST, 'callback' => 'rk_builder_handle_site_import', 'permission_callback' => 'rk_builder_perm_site_transfer',
 	) );
+	rk_builder_register_theme_routes( $ns );
 	register_rest_route( $ns, '/theme-config', array(
 		array( 'methods' => $GET, 'callback' => 'rk_builder_handle_get_theme', 'permission_callback' => '__return_true' ),
 		array( 'methods' => $POST, 'callback' => 'rk_builder_handle_save_theme', 'permission_callback' => 'rk_builder_perm_theme_write' ),
