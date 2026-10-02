@@ -36,6 +36,7 @@ require_once RK_BUILDER_DIR . 'includes/seo.php';
 require_once RK_BUILDER_DIR . 'includes/cache.php';
 require_once RK_BUILDER_DIR . 'includes/migration.php';
 require_once RK_BUILDER_DIR . 'includes/setup.php';
+require_once RK_BUILDER_DIR . 'includes/suite.php';
 
 add_action( 'init', 'rk_builder_register_content_types' );
 add_action( 'rest_api_init', 'rk_builder_register_rest_fields' );

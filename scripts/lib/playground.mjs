@@ -28,6 +28,7 @@ foreach (array('admin'=>$admin->ID,'editor'=>$ed,'subscriber'=>$sub) as $k=>$uid
 }
 $page = wp_insert_post(array('post_type'=>'page','post_status'=>'draft','post_title'=>'Smoke Page','post_name'=>'smoke','post_author'=>$ed));
 $creds['pageId'] = $page;
+if (class_exists('RK_API')) $creds['apiKey'] = RK_API::api_key();
 // a real media attachment with alt text, used as a featured image
 $upload = wp_upload_dir();
 $file = $upload['path'] . '/seed.png';
@@ -55,6 +56,10 @@ file_put_contents('/wordpress/rk-out/creds.json', json_encode($creds));
 
 export async function startPlayground({
   pluginDir: pluginDirOverride = pluginDir,
+  pluginSlug = "rk-builder",
+  pluginMain = "rk-builder/rk-builder.php",
+  /** PHP (no <?php tag) run before activation, e.g. to pre-select RK Suite modules. */
+  beforeActivate = "",
   port = 9411,
   allowedOrigins = "https://editor.example.com",
   revalidate = null,
@@ -74,7 +79,15 @@ export async function startPlayground({
         path: "/wordpress/wp-content/mu-plugins/rk-smoke.php",
         data: `<?php add_filter('wp_is_application_passwords_available','__return_true'); add_filter('wp_is_application_passwords_available_for_user','__return_true'); define('RK_BUILDER_ALLOWED_ORIGINS','${allowedOrigins}'); define('RK_BUILDER_ALLOWED_IMAGE_HOSTS','cms.example.com');${extraDefines}${revalidate ? ` define('RK_BUILDER_REVALIDATE_URL','${revalidate.url}'); define('RK_BUILDER_REVALIDATE_SECRET','${revalidate.secret}');` : ""}`,
       },
-      { step: "activatePlugin", pluginPath: "rk-builder/rk-builder.php" },
+      ...(beforeActivate
+        ? [
+            {
+              step: "runPHP",
+              code: `<?php require '/wordpress/wp-load.php'; ${beforeActivate}`,
+            },
+          ]
+        : []),
+      { step: "activatePlugin", pluginPath: pluginMain },
       { step: "runPHP", code: SEED_PHP },
     ],
   };
@@ -90,7 +103,7 @@ export async function startPlayground({
       "server",
       `--port=${port}`,
       `--blueprint=${bpPath}`,
-      `--mount=${pluginDirOverride}:/wordpress/wp-content/plugins/rk-builder`,
+      `--mount=${pluginDirOverride}:/wordpress/wp-content/plugins/${pluginSlug}`,
       `--mount=${out}:/wordpress/rk-out`,
       "--wp=latest",
       "--php=8.3",
