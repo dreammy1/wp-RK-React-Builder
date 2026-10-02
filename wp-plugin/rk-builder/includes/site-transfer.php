@@ -282,6 +282,7 @@ function rk_builder_handle_site_export( $req ) {
 			'title'        => rk_builder_plain( get_the_title( $post ) ),
 			'wasPublished' => 'publish' === $post->post_status,
 			'layout'       => $layout,
+			'seo'          => rk_builder_seo_read( (int) $pid ),
 		);
 		$refs = array_merge( $refs, rk_builder_bundle_media_refs( $layout ) );
 	}
@@ -333,6 +334,7 @@ function rk_builder_handle_site_export( $req ) {
 		'reusables'  => $reusables,
 		'pages'      => $pages,
 		'content'    => $content,
+		'seo'        => array( 'organization' => rk_builder_seo_organization() ),
 	) );
 }
 
@@ -458,7 +460,7 @@ function rk_builder_handle_site_import( $req ) {
 			$skipped[] = array( 'slug' => $slug, 'issues' => array_map( function ( $p ) { return $p['path'] . ': ' . $p['message']; }, array_slice( $problems, 0, 5 ) ) );
 			continue;
 		}
-		$ok_pages[] = array( 'slug' => $slug, 'title' => sanitize_text_field( $title ), 'layout' => rk_builder_canonicalize_layout( $pg['layout'] ), 'wasPublished' => ! empty( $pg['wasPublished'] ) );
+		$ok_pages[] = array( 'slug' => $slug, 'title' => sanitize_text_field( $title ), 'layout' => rk_builder_canonicalize_layout( $pg['layout'] ), 'wasPublished' => ! empty( $pg['wasPublished'] ), 'seo' => rk_builder_seo_clean( isset( $pg['seo'] ) ? $pg['seo'] : null ) );
 	}
 
 	/* 1b · reusable blocks (a page that uses one needs it imported first) */
@@ -605,8 +607,10 @@ function rk_builder_handle_site_import( $req ) {
 			$report['pages']['skipped'][] = array( 'slug' => $pg['slug'], 'issues' => array( $commit->get_error_message() ) );
 			continue;
 		}
+		rk_builder_seo_write( (int) $id, $pg['seo'] );
 		$report['pages']['done'][] = array( 'slug' => $pg['slug'], 'id' => (int) $id, 'action' => $action, 'revision' => $commit['revision'], 'link' => (string) get_permalink( $id ) );
 	}
+	if ( isset( $bundle['seo']['organization'] ) ) { rk_builder_seo_organization_save( $bundle['seo']['organization'] ); }
 	$report['pages']['create'] = count( array_filter( $report['pages']['done'], function ( $d ) { return 'created' === $d['action']; } ) );
 	$report['pages']['update'] = count( $report['pages']['done'] ) - $report['pages']['create'];
 

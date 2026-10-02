@@ -139,6 +139,8 @@ function wp_json_encode( $d, $flags = 0 ) { return json_encode( $d, $flags ); }
 function wp_slash( $v ) { return is_array( $v ) ? array_map( 'wp_slash', $v ) : ( is_string( $v ) ? addslashes( $v ) : $v ); }
 function wp_unslash( $v ) { return is_array( $v ) ? array_map( 'wp_unslash', $v ) : ( is_string( $v ) ? stripslashes( $v ) : $v ); }
 function wp_parse_url( $u, $c = -1 ) { return parse_url( $u, $c ); }
+function get_locale() { return 'en_US'; }
+if ( ! function_exists( 'is_front_page' ) ) { function is_front_page() { return false; } }
 function home_url( $p = '' ) { return 'https://cms.example.com' . $p; }
 function site_url( $p = '' ) { return 'https://cms.example.com' . $p; }
 function admin_url( $p = '' ) { return 'https://cms.example.com/wp-admin/' . $p; }

@@ -210,3 +210,7 @@ Small behaviours ship as one inline script (no extra file): `calculator` (projec
 last `·` in its blurb, a gallery photo's tag is its category), product pop-ups on `catalog` (`modals`, one line per card:
 `image|Title|Intro|item; item`), the navbar's mobile menu, and the active-page underline. Without JavaScript the pages still
 render; only the interaction is missing.
+
+## SEO per page
+
+A site bundle page can carry `seo: { title, description, image, noindex, service, parent }`, and the bundle `seo.organization` (`name`, `telephone`, `email`, `description`, `logo`). The importer stores them as the `_rk_seo_*` post meta keys (so RK SEO reads the same values) and RK Builder prints the title, description, canonical, Open Graph, Twitter tags, `noindex, follow` and a JSON-LD graph (Organization, WebSite, WebPage, Service, BreadcrumbList) on the public page. When another SEO plugin is active, or the RK SEO module outputs its own graph, RK Builder prints nothing extra.

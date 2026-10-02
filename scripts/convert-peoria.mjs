@@ -398,6 +398,7 @@ class Page {
       slug: this.slug,
       title: this.title,
       wasPublished: true,
+      ...(this.seo ? { seo: this.seo } : {}),
       layout: {
         version: 1,
         blocks: [
@@ -1061,6 +1062,49 @@ const mediaFor = pageList => {
   urls.add(logo.url); // the shared header carries the logo
   return urls;
 };
+// SEO: titles and descriptions come from the source's route metadata; the social image is its default card.
+const seoRoutes = extract("lib/seo/resolver.ts", "SEO_ROUTE_METADATA");
+const seoPolicy = extract("lib/seo/resolver.ts", "INTERACTIVE_ROUTE_POLICY");
+const seoImage = rawUrl("/images/og-default.jpg");
+const SEO_PATHS = {
+  home: "/",
+  about: "/about",
+  services: "/services",
+  finishes: "/finishes",
+  stains: "/stains",
+  products: "/products",
+  gallery: "/gallery",
+  pricing: "/pricing",
+  contact: "/contact",
+  "estimate-calculator": "/estimate-calculator",
+  visualizer: "/visualizer",
+};
+for (const [slug, path] of Object.entries(SEO_PATHS)) {
+  const r = seoRoutes[path];
+  if (!pages[slug] || !r) continue;
+  pages[slug].seo = {
+    title: r.title,
+    description: r.description,
+    image: seoImage,
+    ...(seoPolicy[path]?.indexable === false ? { noindex: true } : {}),
+  };
+}
+for (const sv of services) {
+  if (!pages[sv.slug]) continue;
+  pages[sv.slug].seo = {
+    title: `${sv.title} in Peoria & Central Illinois`,
+    description: `${sv.short} Call ${site.phone} to discuss the project scope.`,
+    image: seoImage,
+    service: sv.short,
+    parent: "Services|/services",
+  };
+}
+const seoOrganization = {
+  name: site.name,
+  telephone: site.phoneHref.replace(/^tel:/, ""),
+  email: site.email,
+  description: site.tagline,
+};
 function bundle(pageSlugs, { withTheme = false, withContent = false } = {}) {
   const list = pageSlugs.map(s => pages[s]);
   const urls = mediaFor(list);
@@ -1078,6 +1122,7 @@ function bundle(pageSlugs, { withTheme = false, withContent = false } = {}) {
     reusables,
     pages: list.map(pg => pg.json()),
     content: withContent ? content : [],
+    seo: { organization: seoOrganization },
   };
 }
 const serviceSlugs = services.map(s => s.slug);
@@ -1159,7 +1204,7 @@ lines.push(
   "- **Visualizer** (`/visualizer`): built as the AI flooring visualizer block. Turn it on and pick the image backend (Hugging Face token, your own API, or test mode) in Settings > RK Visualizer.",
   "- **Estimate calculator**: interactive; replaced by a short contact page.",
   "- **Header, footer and navigation**: RK Builder's theme has colors, logo, social links, sticky header and footer columns only. Navigation comes from your WordPress menu; the footer content is the reusable *Contact details* block.",
-  "- **Gallery filter, product catalog dialog, stain swatches, animations, structured data**: the images and text are converted as plain blocks. SEO metadata is not carried over; set titles and descriptions in RK SEO.",
+  "- **Gallery filter, product catalog dialog, stain swatches, animations, structured data**: the images and text are converted as plain blocks. SEO titles, descriptions, the social image, noindex and the schema graph are carried over per page.",
   "- **Layout**: RK Builder stacks blocks in one column, so multi-column grids become sequences of blocks.",
   ""
 );

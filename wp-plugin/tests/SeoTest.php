@@ -97,3 +97,27 @@ rk_test( 'seo: each known SEO plugin constant is detected and silences our tags 
 		t_eq( $d['title'], array( 'title' => 'T' ), $const . ' -> title untouched' );
 	}
 } );
+
+rk_test( 'seo: per-page title, description, image, noindex and the schema graph', function () {
+	$id = rk_seo_page( array( rk_test_block( 'spacer', array( 'h' => 8 ) ) ), array( 'post_title' => 'Products', 'post_excerpt' => 'Excerpt' ) );
+	rk_builder_seo_write( $id, rk_builder_seo_clean( array( 'title' => 'Hardwood <b>Products</b>', 'description' => 'Custom   description.', 'image' => '/images/og.jpg', 'noindex' => true, 'service' => 'Short service text', 'parent' => 'Services|/services', 'bogus' => 'x' ) ) );
+	rk_builder_seo_organization_save( array( 'name' => 'Acme Floors', 'telephone' => '+1555', 'email' => 'a@b.test', 'logo' => 'javascript:alert(1)' ) );
+	$head = rk_seo_head( $id );
+	t_assert( false !== strpos( $head, '<meta name="description" content="Custom description.">' ), 'description from the SEO field' );
+	t_assert( false !== strpos( $head, '<meta property="og:title" content="Hardwood Products">' ), 'title from the SEO field, tags stripped' );
+	t_assert( false !== strpos( $head, 'og:image" content="' ), 'image from the SEO field' );
+	t_eq( apply_filters( 'document_title_parts', array( 'title' => 'orig' ) ), array( 'title' => 'Hardwood Products' ) );
+	t_eq( apply_filters( 'document_title_separator', '-' ), '|' );
+	$robots = apply_filters( 'wp_robots', array( 'max-image-preview' => 'large' ) );
+	t_eq( ! empty( $robots['noindex'] ) && ! empty( $robots['follow'] ), true, 'noindex, follow' );
+	t_assert( preg_match( '#<script type="application/ld\+json">(.+?)</script>#s', $head, $m ) === 1, 'JSON-LD printed' );
+	$g = json_decode( $m[1], true );
+	$types = array_map( function ( $n ) { return $n['@type']; }, $g['@graph'] );
+	t_eq( $types, array( 'Organization', 'WebSite', 'WebPage', 'Service', 'BreadcrumbList' ) );
+	t_eq( $g['@graph'][0]['name'], 'Acme Floors' );
+	t_eq( isset( $g['@graph'][0]['logo'] ), false, 'unsafe logo dropped' );
+	t_eq( count( $g['@graph'][4]['itemListElement'] ), 3, 'Home > Services > page' );
+	t_eq( rk_builder_seo_read( $id )['noindex'], true );
+	rk_builder_seo_write( $id, array() );
+	t_eq( rk_builder_seo_read( $id ), array(), 'cleared' );
+} );
