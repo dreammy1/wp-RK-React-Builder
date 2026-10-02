@@ -1,10 +1,11 @@
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, ArrowUpRight } from "lucide-react";
 import type { ViewProps } from "@/render/ViewProps";
-import { paragraphs, parseFacts } from "../links";
+import { paragraphs, parseFacts, parseLinks } from "../links";
 import type { SplitProps } from "./schema";
 
 export function SplitView({ props }: ViewProps<SplitProps>) {
   const facts = parseFacts(props.facts);
+  const links = parseLinks(props.links ?? "", 4);
   return (
     <section className={`pf-section pf-split ${props.tone} ${props.side}`}>
       <div className="pf-wrap pf-split-grid">
@@ -40,6 +41,16 @@ export function SplitView({ props }: ViewProps<SplitProps>) {
               {props.cta}
               <ArrowRight size={16} aria-hidden="true" />
             </a>
+          )}
+          {links.length > 0 && (
+            <div className="pf-split-links">
+              {links.map(l => (
+                <a className="pf-more" href={l.href} key={l.href + l.label}>
+                  {l.label}
+                  <ArrowUpRight size={15} aria-hidden="true" />
+                </a>
+              ))}
+            </div>
           )}
         </div>
       </div>

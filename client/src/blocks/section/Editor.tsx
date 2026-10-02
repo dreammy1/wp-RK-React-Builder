@@ -12,6 +12,7 @@ export const sectionFields: FieldDef[] = [
   },
   { kind: "text", key: "linkLabel", label: "Link label", maxLength: 60 },
   { kind: "url", key: "linkHref", label: "Link target", maxLength: 500 },
+  { kind: "text", key: "pill", label: "Tag with map pin", maxLength: 120 },
   { kind: "checkbox", key: "center", label: "Centre the text" },
   {
     kind: "select",

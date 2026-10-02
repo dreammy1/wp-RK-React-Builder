@@ -1,4 +1,4 @@
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, MapPin } from "lucide-react";
 import type { ViewProps } from "@/render/ViewProps";
 import { paragraphs } from "../links";
 import type { SectionProps } from "./schema";
@@ -26,6 +26,12 @@ export function SectionView({ props }: ViewProps<SectionProps>) {
             {p}
           </p>
         ))}
+        {props.pill && (
+          <p className="pf-pill">
+            <MapPin size={14} aria-hidden="true" />
+            {props.pill}
+          </p>
+        )}
       </div>
     </section>
   );

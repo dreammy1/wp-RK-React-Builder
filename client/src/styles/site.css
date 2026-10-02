@@ -2064,3 +2064,43 @@
   text-transform: none;
   letter-spacing: normal;
 }
+
+/* Split text links, section pill */
+.pf-split-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 28px;
+  margin-top: 28px;
+}
+.pf-split-links .pf-more {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.pf-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 40px 0 0;
+  padding: 8px 16px;
+  border: 1px solid color-mix(in srgb, var(--site-ink) 14%, transparent);
+  background: var(--site-bg);
+  font-size: 14px;
+  color: color-mix(in srgb, var(--site-ink) 80%, transparent);
+}
+.pf-pill svg {
+  color: var(--pf-accent, #a97c50);
+}
+
+/* An intro panel with no heading: just a left-ruled note with its links under it */
+.pf-panel.intro .pf-panel-grid:has(> .pf-panel-copy:empty) {
+  grid-template-columns: 1fr;
+}
+.pf-panel.intro .pf-panel-copy:empty {
+  display: none;
+}
+.pf-panel.intro .pf-panel-grid:has(> .pf-panel-copy:empty) .pf-body {
+  max-width: 42rem;
+  padding-left: 20px;
+  border-left: 2px solid var(--pf-accent, #a97c50);
+  font-size: 14px;
+}

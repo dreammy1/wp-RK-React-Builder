@@ -154,7 +154,9 @@ function rk_builder_render_section( array $p, array $context = array() ) {
 	if ( '' !== $p['linkLabel'] && '' !== $p['linkHref'] ) {
 		$html .= '<a class="pf-more" href="' . rk_builder_href( $p['linkHref'] ) . '">' . rk_builder_h( $p['linkLabel'] ) . rk_builder_arrow_icon() . '</a>';
 	}
-	return $html . '</div>' . rk_builder_paragraphs_html( $p['body'] ) . '</div></section>';
+	$html .= '</div>' . rk_builder_paragraphs_html( $p['body'] );
+	if ( ! empty( $p['pill'] ) ) { $html .= '<p class="pf-pill">' . rk_builder_icon( 'map-pin', 14 ) . rk_builder_h( $p['pill'] ) . '</p>'; }
+	return $html . '</div></section>';
 }
 
 function rk_builder_render_split( array $p, array $context = array() ) {
@@ -172,6 +174,12 @@ function rk_builder_render_split( array $p, array $context = array() ) {
 	}
 	if ( '' !== $p['cta'] && '' !== $p['ctaHref'] ) {
 		$html .= '<a class="pf-btn dark" href="' . rk_builder_href( $p['ctaHref'] ) . '">' . rk_builder_h( $p['cta'] ) . rk_builder_arrow_right_icon() . '</a>';
+	}
+	$links = rk_builder_parse_links( isset( $p['links'] ) ? $p['links'] : '', 4 );
+	if ( $links ) {
+		$html .= '<div class="pf-split-links">';
+		foreach ( $links as $l ) { $html .= '<a class="pf-more" href="' . rk_builder_href( $l['href'] ) . '">' . rk_builder_h( $l['label'] ) . rk_builder_arrow_icon() . '</a>'; }
+		$html .= '</div>';
 	}
 	return $html . '</div></div></section>';
 }

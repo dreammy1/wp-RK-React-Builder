@@ -14,6 +14,8 @@ export const splitProps = z.strictObject({
   imageAlt: text(0, 300),
   side: z.enum(["left", "right"]),
   tone: z.enum(["light", "muted"]),
+  /** Text links under the copy, one per line: "Label|/path". */
+  links: text(0, 600).optional(),
 });
 export type SplitProps = z.infer<typeof splitProps>;
 export const splitDefaults: SplitProps = {
@@ -26,4 +28,5 @@ export const splitDefaults: SplitProps = {
   imageAlt: "",
   side: "left",
   tone: "light",
+  links: "",
 };

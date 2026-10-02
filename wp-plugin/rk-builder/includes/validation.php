@@ -279,6 +279,7 @@ function rk_builder_block_specs() {
 			'linkHref'  => rk_builder_f_link(),
 			'tone'      => rk_builder_f_enum( array( 'light', 'muted' ) ),
 			'center'    => rk_builder_f_bool( true ),
+			'pill'      => rk_builder_f_text( 0, 120, true ),
 		),
 		'split'     => array(
 			'eyebrow'      => rk_builder_f_text( 0, 80 ),
@@ -292,6 +293,7 @@ function rk_builder_block_specs() {
 			'imageAlt'     => rk_builder_f_text( 0, 300 ),
 			'side'         => rk_builder_f_enum( array( 'left', 'right' ) ),
 			'tone'         => rk_builder_f_enum( array( 'light', 'muted' ) ),
+			'links'        => rk_builder_f_text( 0, 600, true ),
 		),
 		'contactband' => array( 'heading' => rk_builder_f_text( 1, 160 ), 'sub' => rk_builder_f_text( 0, 400 ), 'phone' => rk_builder_f_text( 0, 40 ), 'email' => rk_builder_f_text( 0, 120 ) ),
 		'values'    => array( 'eyebrow' => rk_builder_f_text( 0, 80 ), 'heading' => rk_builder_f_text( 1, 200 ), 'items' => rk_builder_f_text( 0, 3000 ), 'cols' => rk_builder_f_int( 2, 4 ), 'tone' => rk_builder_f_enum( array( 'light', 'muted' ) ) ),

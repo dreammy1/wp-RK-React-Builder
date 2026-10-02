@@ -88,7 +88,6 @@ function extract(file, name) {
 }
 
 const site = extract("lib/site.ts", "site");
-const serviceAreas = extract("lib/site.ts", "serviceAreas");
 const services = extract("lib/site.ts", "services");
 const finishes = extract("lib/site.ts", "finishes");
 const stains = extract("lib/site.ts", "stains");
@@ -207,6 +206,7 @@ class Page {
     alt = "",
     side = "left",
     tone = "light",
+    links = "",
   }) {
     const props = {
       eyebrow,
@@ -219,6 +219,7 @@ class Page {
       side,
       tone,
     };
+    if (links) props.links = links;
     const image = img ? useImage(img, alt) : null;
     if (image) props.imageUrl = image.url;
     return this.add("split", props);
@@ -522,12 +523,13 @@ const reusables = [
         eyebrow: "Where we work",
         heading: "Serving Peoria & Central Illinois",
         body: clip(
-          `We travel to homes and businesses ${site.serviceRadius}. If you're nearby and not listed, give us a call — chances are we cover your town.\n\nTowns we serve: ${serviceAreas.join(", ")}.`,
+          `We travel to homes and businesses ${site.serviceRadius}. If you're nearby and not listed, give us a call — chances are we cover your town.`,
           3000
         ),
         linkLabel: "",
         linkHref: "",
         tone: "muted",
+        pill: "Peoria and nearby Central Illinois communities",
       },
     },
   },
@@ -575,6 +577,7 @@ const add = p => (pages[p.slug] = p);
       "Wood|Focused specialty\n75 mi|Service radius from Peoria\nFamily|Owned & operated",
     img: "/images/about-craft.png",
     alt: "Craftsman hand-finishing a hardwood floor",
+    links: "More about us|/about\nTalk through your project|/contact",
   });
   p.section({
     eyebrow: "What we do",
@@ -585,12 +588,17 @@ const add = p => (pages[p.slug] = p);
   });
   p.grid("", 6);
   p.ref("area");
-  p.h("Clear guidance for your flooring project");
-  p.bullets([
-    "01 — Assess the space and existing floor",
-    "02 — Compare materials, stains, and finishes",
-    "03 — Plan the right next step for the project",
-  ]);
+  p.values({
+    eyebrow: "A thoughtful process",
+    heading: "Clear guidance for your flooring project",
+    items: [
+      ["01", "Assess the space and existing floor"],
+      ["02", "Compare materials, stains, and finishes"],
+      ["03", "Plan the right next step for the project"],
+    ],
+    cols: 3,
+    tone: "light",
+  });
   p.ref("products");
   p.ref("cta");
   add(p);
@@ -602,6 +610,15 @@ const add = p => (pages[p.slug] = p);
     heading: "Rooted in Peoria, built on trust.",
     sub: "A family-owned hardwood flooring company that treats your home and business like our own.",
     bg: "/images/about-craft.png",
+  });
+  p.add("section", {
+    eyebrow: "Focused on wood",
+    heading: "",
+    body: "Installation, sanding, refinishing, stains, and finishes for homes and businesses across Peoria and Central Illinois.",
+    linkLabel: "",
+    linkHref: "",
+    tone: "light",
+    center: true,
   });
   p.split({
     eyebrow: "Who we are",
@@ -645,21 +662,20 @@ const add = p => (pages[p.slug] = p);
     sub: "Phone and email are the fastest way to reach the team. Share a few details and we will help you figure out the right next step.",
     bg: "/images/hero-kitchen.png",
   });
-  // Same rates as the source's EstimateCalculatorClient.tsx
-  p.add("calculator", {
-    heading: "Project details",
-    types: [
-      "Sand & refinish|5.5|Approximate square feet",
-      "New installation|8|Approximate square feet",
-      "Sandless refresh|3.5|Approximate square feet",
-      "Deck refinishing|4.5|Approximate square feet",
-      "Cabinet refinishing|85|Number of doors / drawers",
-    ].join("\n"),
-    amount: 800,
-    resultLabel: "Planning range",
-    note: "This is a rough planning number, not a quote. It does not include unusual prep, repairs, stairs, furniture moving, or material upgrades.",
-    ctaLabel: "Talk through your project",
-    ctaHref: "/contact",
+  p.panel({
+    mode: "rows",
+    flip: true,
+    box: true,
+    itemStyle: "contact",
+    kicker: "Reach us directly",
+    items: rows([
+      ["Call or text", site.phone, tel],
+      ["Email us", site.email, `mailto:${site.email}`],
+    ]),
+    actions: "Review our services|/services",
+    eyebrow: "Where we work",
+    heading: "Peoria and Central Illinois.",
+    body: "We serve Peoria and surrounding communities within roughly 75 miles. If you are nearby and unsure whether we cover your project, call — we are happy to talk it through.",
   });
   add(p);
 }
@@ -793,10 +809,7 @@ for (const s of services) {
     eyebrow: "Who it's for",
     heading: s.title,
     body: s.who,
-    note:
-      s.slug === "hardwood-floor-refinishing-peoria-il"
-        ? "Full refinishing sands the existing finish and prepares the wood for a new stain or finish. If the wear is limited to the existing surface, compare it with sandless refinishing before choosing a scope."
-        : "",
+    note: "",
     stepsTitle: "How the process works",
     steps: s.process.join("\n"),
     factorsTitle: "What affects your price",
@@ -883,11 +896,12 @@ for (const s of services) {
       blurb: `${st.brand} · ${st.tone}`,
     })),
   });
-  p.section({
-    heading: "Directional only.",
+  p.panel({
+    mode: "intro",
+    heading: "",
     body: "Stain chips are directional only. Final color varies with wood species, age, preparation, application, and lighting. We recommend choosing from samples made for your floor.",
-    linkLabel: "Request a sample conversation",
-    linkHref: "/contact",
+    actions:
+      "Compare finish options|/finishes\nDiscuss refinishing|/hardwood-floor-refinishing-peoria-il\n!Request a sample conversation|/contact",
   });
   add(p);
 }
@@ -896,7 +910,7 @@ for (const s of services) {
   const p = new Page("products", "Products");
   p.hero({
     heading: "A floor that feels like it belongs there.",
-    sub: "A wide variety of wood flooring options, from classic unfinished oak to custom patterns, reclaimed boards, and specialty materials sourced for your project.",
+    sub: "Peoria Hardwood Floors offers a wide variety of wood flooring options, from classic unfinished oak to custom patterns, reclaimed boards, and specialty materials sourced for your project.",
     bg: "/images/new-images/IMG_1778.JPG",
   });
   p.section({
@@ -934,18 +948,17 @@ for (const s of services) {
   const p = new Page("gallery", "Gallery");
   p.hero({
     heading: "Floors with a story to tell.",
-    sub: "A look at installations, refinishing, stains, and custom detail from our recent projects.",
+    sub: "A look at installations, refinishing, stains, and detail work across Peoria and Central Illinois.",
     bg: "/images/new-images/IMG_0214.jpg",
   });
-  p.section({
+  p.panel({
+    mode: "intro",
     eyebrow: "Visual context",
     heading: "Explore the kinds of work we discuss.",
-    body: "Browse installation, refinishing, finish, deck, cabinet, commercial, and detail-work examples. The images are visual direction; project scope and final selections depend on the space.",
-    linkLabel: "Review services",
-    linkHref: "/services",
+    body: "Use the filters to browse installation, refinishing, finish, deck, cabinet, commercial, and detail-work examples. The images are visual direction; project scope and final selections depend on the space.",
+    actions: "Review services|/services\nTalk through a project|/contact",
   });
   p.gallery(galleryImages);
-  p.ref("cta");
   add(p);
 }
 

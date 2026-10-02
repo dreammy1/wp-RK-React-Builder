@@ -11,6 +11,8 @@ export const sectionProps = z.strictObject({
   tone: z.enum(["light", "muted"]),
   /** Centre the label and copy (a quiet strip between sections). */
   center: z.boolean().optional(),
+  /** A small outlined tag with a map pin under the copy. */
+  pill: text(0, 120).optional(),
 });
 export type SectionProps = z.infer<typeof sectionProps>;
 export const sectionDefaults: SectionProps = {
@@ -21,4 +23,5 @@ export const sectionDefaults: SectionProps = {
   linkHref: "",
   tone: "light",
   center: false,
+  pill: "",
 };

@@ -43,6 +43,13 @@ export const splitFields: FieldDef[] = [
     ],
   },
   {
+    kind: "textarea",
+    key: "links",
+    label: "Text links",
+    maxLength: 600,
+    help: "One per line: Label|/path",
+  },
+  {
     kind: "select",
     key: "tone",
     label: "Background",
