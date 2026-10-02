@@ -110,7 +110,8 @@ test("2 · open RK Builder from wp-admin, select a page, load, edit, reorder (mo
   await page.getByRole("button", { name: "Move Text up" }).focus();
   await page.keyboard.press("Enter");
   expect(await names(page)).toEqual(["hero", "text", "divider"]);
-  // mouse drag reorder: drag divider to the top
+  // mouse drag reorder: drag divider to the top (tall viewport so the drag never needs to scroll)
+  await page.setViewportSize({ width: 1280, height: 1100 });
   const handle = page.getByTestId("block-divider").locator(".block-handle");
   const firstZone = page.locator(".drop-zone").first();
   await handle.dragTo(firstZone);
