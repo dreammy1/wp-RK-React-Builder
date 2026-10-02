@@ -181,6 +181,10 @@ finish, sheen, city) and a preview, backed by REST endpoints under `/wp-json/rk/
 - **Hugging Face (FLUX Kontext)**: the same model the source site uses, through the Hugging Face router. Needs an access
   token: paste it in the field, set `RK_BUILDER_VIZ_HF_TOKEN` in `wp-config.php`, or set the `HF_TOKEN` environment variable.
   Asynchronous: the browser polls `status`, so no PHP request waits on the model.
+- **Google Gemini (image editing)**: sends the photo and the instruction to a Gemini image model (default
+  `gemini-2.5-flash-image`, changeable in Settings) and keeps the image it returns. Needs an API key from Google AI Studio:
+  paste it in the field, set `RK_BUILDER_VIZ_GEMINI_KEY` in `wp-config.php`, or set `GEMINI_API_KEY` in the environment.
+  The key travels in the `x-goog-api-key` header, never in a URL. One synchronous call, bounded by the "give up after" setting.
 - **My own backend API**: the plugin POSTs JSON `{prompt, image (data URI), mimeType, options}` to your URL, with your key in
   the header you choose, and expects `{imageUrl}`, `{image: base64 or data URI}` or `{statusUrl}` (polled until it returns one
   of those). Use this to put your own model, queue or serverless function behind the page.

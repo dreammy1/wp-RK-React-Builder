@@ -2497,3 +2497,105 @@
 .site-root .pf-viz-field textarea {
   box-shadow: none;
 }
+
+/* Buttons keep this site's colours in every state; no theme accent (pink) bleeds through */
+.site-root .pf-open,
+.site-root .pf-open:focus,
+.site-root .pf-open:active {
+  background: transparent;
+  border-color: color-mix(in srgb, var(--site-ink) 20%, transparent);
+  color: inherit;
+  outline: none;
+}
+.site-root .pf-open:hover,
+.site-root .pf-open:focus-visible {
+  background: var(--site-ink);
+  border-color: var(--site-ink);
+  color: var(--site-bg);
+}
+.site-root .pf-open:focus-visible {
+  outline: 2px solid var(--pf-accent, #a97c50);
+  outline-offset: 2px;
+}
+.site-root .pf-modal-x,
+.site-root .pf-modal-x:focus,
+.site-root .pf-modal-x:active {
+  background: rgba(255, 255, 255, 0.92);
+  border: 0;
+  color: #131313;
+  outline: none;
+}
+.site-root .pf-modal-x:hover,
+.site-root .pf-modal-x:focus-visible {
+  background: #131313;
+  color: #fff;
+}
+.site-root .pf-modal-x:focus-visible {
+  outline: 2px solid var(--pf-accent, #a97c50);
+  outline-offset: 2px;
+}
+.site-root .pf-filters button:focus,
+.site-root .pf-filters button:active {
+  background: color-mix(in srgb, var(--site-ink) 6%, var(--site-bg));
+  color: var(--site-ink);
+  outline: none;
+}
+.site-root .pf-filters button.on:focus,
+.site-root .pf-filters button.on:active,
+.site-root .pf-filters button.on:hover {
+  background: var(--site-ink);
+  color: var(--site-bg);
+}
+.site-root .pf-filters button:focus-visible {
+  outline: 2px solid var(--pf-accent, #a97c50);
+  outline-offset: 2px;
+}
+.site-root button.pf-btn.dark,
+.site-root button.pf-btn.dark:focus,
+.site-root button.pf-btn.dark:active {
+  border: 1px solid var(--pf-ink, #131313);
+  background: var(--pf-ink, #131313);
+  color: #fff;
+  outline: none;
+}
+.site-root button.pf-btn.dark:hover {
+  background: var(--pf-ink, #131313);
+  border-color: var(--pf-ink, #131313);
+  color: #fff;
+}
+.site-root button.pf-btn.dark:focus-visible {
+  outline: 2px solid var(--pf-accent, #a97c50);
+  outline-offset: 2px;
+}
+.site-root button.pf-btn.dark[disabled] {
+  opacity: 0.5;
+}
+
+/* Product cards: equal height, the pop-up button sits at the bottom of every card */
+.pf-cards .pf-card {
+  display: flex;
+  flex-direction: column;
+}
+.pf-cards .pf-card-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+.pf-cards .pf-card-body > ul {
+  margin-bottom: 24px;
+}
+.pf-cards .pf-card-body > .pf-open {
+  align-self: flex-start;
+  margin-top: auto;
+}
+.pf-modal-grid {
+  align-items: stretch;
+}
+.pf-modal-body {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.pf-modal-body .pf-btn {
+  align-self: flex-start;
+}

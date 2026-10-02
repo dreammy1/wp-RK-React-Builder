@@ -9,6 +9,7 @@
  *
  * The image comes from a provider chosen in Settings > Visualizer:
  *   huggingface  FLUX Kontext through the Hugging Face router (what the source site uses). Asynchronous.
+ *   gemini       Google Gemini image editing (generateContent with the photo inline). One synchronous call.
  *   custom       your own backend API: the plugin POSTs {prompt, image, mimeType, options} and expects an image back.
  *   mock         echoes the uploaded photo, to test the page without any provider or cost.
  *
@@ -33,6 +34,8 @@ function rk_builder_viz_defaults() {
 		'enabled'       => false,
 		'provider'      => 'huggingface',
 		'hf_token'      => '',
+		'gemini_key'    => '',
+		'gemini_model'  => 'gemini-2.5-flash-image',
 		'custom_url'    => '',
 		'custom_key'    => '',
 		'custom_header' => 'Authorization',
@@ -48,6 +51,7 @@ function rk_builder_viz_defaults() {
 function rk_builder_viz_providers() {
 	return array(
 		'huggingface' => 'Hugging Face (FLUX Kontext)',
+		'gemini'      => 'Google Gemini (image editing)',
 		'custom'      => 'My own backend API',
 		'mock'        => 'Test mode (echo the uploaded photo)',
 	);
@@ -66,10 +70,21 @@ function rk_builder_viz_hf_token( array $s ) {
 	return (string) $s['hf_token'];
 }
 
+/** The Gemini API key: a constant, then the GEMINI_API_KEY / GOOGLE_API_KEY environment variables, then the saved setting. */
+function rk_builder_viz_gemini_key( array $s ) {
+	if ( defined( 'RK_BUILDER_VIZ_GEMINI_KEY' ) && '' !== (string) RK_BUILDER_VIZ_GEMINI_KEY ) { return (string) RK_BUILDER_VIZ_GEMINI_KEY; }
+	foreach ( array( 'GEMINI_API_KEY', 'GOOGLE_API_KEY' ) as $name ) {
+		$env = getenv( $name );
+		if ( is_string( $env ) && '' !== $env ) { return $env; }
+	}
+	return (string) $s['gemini_key'];
+}
+
 /** Whether the chosen provider has what it needs. */
 function rk_builder_viz_ready( array $s ) {
 	if ( empty( $s['enabled'] ) ) { return false; }
 	if ( 'mock' === $s['provider'] ) { return true; }
+	if ( 'gemini' === $s['provider'] ) { return '' !== rk_builder_viz_gemini_key( $s ); }
 	if ( 'custom' === $s['provider'] ) { return '' !== $s['custom_url'] && 1 === preg_match( '#^https?://#i', $s['custom_url'] ); }
 	return '' !== rk_builder_viz_hf_token( $s );
 }
@@ -86,11 +101,13 @@ function rk_builder_viz_sanitize( $in ) {
 	$out = array_merge( rk_builder_viz_defaults(), array() );
 	$out['enabled']  = ! empty( $in['enabled'] );
 	$out['provider'] = isset( $in['provider'], rk_builder_viz_providers()[ $in['provider'] ] ) ? $in['provider'] : 'huggingface';
-	foreach ( array( 'hf_token', 'custom_key' ) as $secret ) {
+	foreach ( array( 'hf_token', 'custom_key', 'gemini_key' ) as $secret ) {
 		$v = isset( $in[ $secret ] ) ? trim( (string) $in[ $secret ] ) : '';
 		$out[ $secret ] = '' !== $v ? $v : $old[ $secret ];
 		if ( ! empty( $in[ 'clear_' . $secret ] ) ) { $out[ $secret ] = ''; }
 	}
+	$model = isset( $in['gemini_model'] ) ? trim( (string) $in['gemini_model'] ) : '';
+	$out['gemini_model'] = 1 === preg_match( '/^[A-Za-z0-9._-]{1,80}$/', $model ) ? $model : 'gemini-2.5-flash-image';
 	$url = isset( $in['custom_url'] ) ? trim( (string) $in['custom_url'] ) : '';
 	$out['custom_url'] = 1 === preg_match( '#^https?://[^\s]+$#i', $url ) ? $url : '';
 	$hdr = isset( $in['custom_header'] ) ? trim( (string) $in['custom_header'] ) : 'Authorization';
@@ -348,6 +365,31 @@ function rk_builder_viz_start( array $s, array $upload, array $options ) {
 		return '' === $url ? $fail( 'mock: could not store the image' ) : array( 'status' => 'success', 'imageUrl' => $url );
 	}
 	$uri = rk_builder_viz_data_uri( $upload['path'], $upload['mime'] );
+	if ( 'gemini' === $s['provider'] ) {
+		// generateContent with the photo inline: the model answers with an edited image in one (synchronous) call.
+		$url = 'https://generativelanguage.googleapis.com/v1beta/models/' . rawurlencode( $s['gemini_model'] ) . ':generateContent';
+		$res = rk_builder_viz_http( 'POST', $url, array(
+			'headers' => array( 'Content-Type' => 'application/json', 'x-goog-api-key' => rk_builder_viz_gemini_key( $s ) ),
+			'timeout' => (int) $s['timeout'],
+			'body'    => wp_json_encode( array(
+				'contents'         => array( array( 'parts' => array( array( 'text' => $prompt ), array( 'inline_data' => array( 'mime_type' => $upload['mime'], 'data' => base64_encode( (string) file_get_contents( $upload['path'] ) ) ) ) ) ) ),
+				'generationConfig' => array( 'responseModalities' => array( 'TEXT', 'IMAGE' ) ),
+			) ),
+		) );
+		if ( is_wp_error( $res ) ) { return $fail( 'gemini: ' . $res->get_error_message() ); }
+		$j = json_decode( $res['body'], true );
+		if ( $res['code'] < 200 || $res['code'] >= 300 || ! is_array( $j ) ) {
+			$msg = is_array( $j ) && isset( $j['error']['message'] ) ? (string) $j['error']['message'] : substr( $res['body'], 0, 200 );
+			return $fail( 'gemini: HTTP ' . $res['code'] . ' ' . $msg );
+		}
+		$data = rk_builder_viz_gemini_image( $j );
+		if ( '' === $data ) {
+			$why = isset( $j['promptFeedback']['blockReason'] ) ? 'blocked: ' . $j['promptFeedback']['blockReason'] : ( isset( $j['candidates'][0]['finishReason'] ) ? 'finish: ' . $j['candidates'][0]['finishReason'] : 'no image part' );
+			return $fail( 'gemini: no image in the response (' . $why . ')' );
+		}
+		$url = rk_builder_viz_store_image( $data );
+		return '' === $url ? $fail( 'gemini: could not store the image' ) : array( 'status' => 'success', 'imageUrl' => $url );
+	}
 	if ( 'custom' === $s['provider'] ) {
 		$headers = array( 'Content-Type' => 'application/json', 'Accept' => 'application/json' );
 		if ( '' !== $s['custom_key'] ) { $headers[ $s['custom_header'] ] = 'Authorization' === $s['custom_header'] ? 'Bearer ' . $s['custom_key'] : $s['custom_key']; }
@@ -379,6 +421,19 @@ function rk_builder_viz_start( array $s, array $upload, array $options ) {
 	$rs = rk_builder_viz_router_url( (string) $j['response_url'] );
 	if ( '' === $st || '' === $rs ) { return $fail( 'huggingface: unexpected queue URLs' ); }
 	return array( 'status' => 'pending', 'job' => array( 'provider' => 'huggingface', 'status_url' => $st, 'response_url' => $rs ) );
+}
+
+/** The first inline image (base64) in a Gemini generateContent response, or ''. Accepts both inlineData and inline_data. */
+function rk_builder_viz_gemini_image( array $j ) {
+	if ( empty( $j['candidates'] ) || ! is_array( $j['candidates'] ) ) { return ''; }
+	foreach ( $j['candidates'] as $c ) {
+		if ( empty( $c['content']['parts'] ) || ! is_array( $c['content']['parts'] ) ) { continue; }
+		foreach ( $c['content']['parts'] as $part ) {
+			$inline = isset( $part['inlineData'] ) ? $part['inlineData'] : ( isset( $part['inline_data'] ) ? $part['inline_data'] : null );
+			if ( is_array( $inline ) && isset( $inline['data'] ) && is_string( $inline['data'] ) && '' !== $inline['data'] ) { return $inline['data']; }
+		}
+	}
+	return '';
 }
 
 /** An image URL out of a custom backend's JSON: a string, '' for "finished but no image", null for "not finished". */
@@ -459,6 +514,24 @@ function rk_builder_viz_store_lead( array $lead ) {
 	array_unshift( $all, array_merge( $lead, array( 'at' => gmdate( 'c' ), 'ip' => rk_builder_viz_ip() ) ) );
 	update_option( 'rk_builder_viz_leads', array_slice( array_values( $all ), 0, RK_BUILDER_VIZ_MAX_LEADS ), false );
 	return $new;
+}
+
+/** Remove one lead (by email) or all of them. Returns how many were removed. */
+function rk_builder_viz_delete_leads( $email, $all = false ) {
+	$leads = rk_builder_viz_leads();
+	$keep  = $all ? array() : array_values( array_filter( $leads, function ( $row ) use ( $email ) { return ! isset( $row['email'] ) || $row['email'] !== strtolower( trim( (string) $email ) ); } ) );
+	update_option( 'rk_builder_viz_leads', $keep, false );
+	return count( $leads ) - count( $keep );
+}
+
+function rk_builder_viz_handle_delete_lead() {
+	if ( ! current_user_can( 'manage_options' ) ) { wp_die( esc_html__( 'You are not allowed to do that.', 'rk-builder' ), '', array( 'response' => 403 ) ); }
+	check_admin_referer( 'rk_builder_viz_delete_lead' );
+	$all   = ! empty( $_POST['all'] ); // phpcs:ignore WordPress.Security.NonceVerification
+	$email = isset( $_POST['email'] ) ? (string) wp_unslash( $_POST['email'] ) : ''; // phpcs:ignore WordPress.Security.NonceVerification
+	$n     = rk_builder_viz_delete_leads( $email, $all );
+	wp_safe_redirect( add_query_arg( 'rk_leads_deleted', (int) $n, admin_url( 'options-general.php?page=rk-builder-visualizer' ) ) );
+	exit;
 }
 
 /* ------------------------------------------------------------------ *
@@ -664,9 +737,12 @@ function rk_builder_viz_render_admin() {
 	$rows  = rk_builder_viz_field_row( 'Visualizer', '<label><input type="checkbox" name="' . $n . '[enabled]" value="1"' . ( $s['enabled'] ? ' checked' : '' ) . '> ' . esc_html__( 'Turn the visualizer on', 'rk-builder' ) . '</label>' );
 	$opts  = '';
 	foreach ( rk_builder_viz_providers() as $k => $label ) { $opts .= '<option value="' . esc_attr( $k ) . '"' . ( $s['provider'] === $k ? ' selected' : '' ) . '>' . esc_html( $label ) . '</option>'; }
-	$rows .= rk_builder_viz_field_row( 'Image backend', '<select name="' . $n . '[provider]">' . $opts . '</select>', 'Hugging Face needs an access token. "My own backend API" posts the photo to a URL you control. Test mode costs nothing and returns the uploaded photo.' );
+	$rows .= rk_builder_viz_field_row( 'Image backend', '<select name="' . $n . '[provider]">' . $opts . '</select>', 'Hugging Face and Gemini each need their own key. "My own backend API" posts the photo to a URL you control. Test mode costs nothing and returns the uploaded photo.' );
 	$has_hf = '' !== rk_builder_viz_hf_token( $s );
 	$rows .= rk_builder_viz_field_row( 'Hugging Face token', '<input type="password" class="regular-text" autocomplete="new-password" name="' . $n . '[hf_token]" placeholder="' . ( $has_hf ? '•••••••• (saved)' : '' ) . '"> <label><input type="checkbox" name="' . $n . '[clear_hf_token]" value="1"> ' . esc_html__( 'Remove the saved token', 'rk-builder' ) . '</label>', 'Or define RK_BUILDER_VIZ_HF_TOKEN in wp-config.php, or set the HF_TOKEN environment variable. Those win over this field.' );
+	$has_gem = '' !== rk_builder_viz_gemini_key( $s );
+	$rows .= rk_builder_viz_field_row( 'Gemini API key', '<input type="password" class="regular-text" autocomplete="new-password" name="' . $n . '[gemini_key]" placeholder="' . ( $has_gem ? '•••••••• (saved)' : '' ) . '"> <label><input type="checkbox" name="' . $n . '[clear_gemini_key]" value="1"> ' . esc_html__( 'Remove the saved key', 'rk-builder' ) . '</label>', 'From Google AI Studio. Or define RK_BUILDER_VIZ_GEMINI_KEY in wp-config.php, or set GEMINI_API_KEY in the environment; those win over this field.' );
+	$rows .= rk_builder_viz_field_row( 'Gemini model', '<input type="text" class="regular-text" name="' . $n . '[gemini_model]" value="' . esc_attr( $s['gemini_model'] ) . '">', 'An image-editing model that accepts a photo and returns an image, for example gemini-2.5-flash-image.' );
 	$rows .= rk_builder_viz_field_row( 'Backend API URL', '<input type="url" class="regular-text" name="' . $n . '[custom_url]" value="' . esc_attr( $s['custom_url'] ) . '" placeholder="https://api.example.com/visualize">', 'Receives JSON {prompt, image (data URI), mimeType, options}. Reply with {imageUrl}, {image: base64 or data URI}, or {statusUrl} to be polled until it returns one of those.' );
 	$rows .= rk_builder_viz_field_row( 'Backend API key', '<input type="password" class="regular-text" autocomplete="new-password" name="' . $n . '[custom_key]" placeholder="' . ( '' !== $s['custom_key'] ? '•••••••• (saved)' : '' ) . '"> <label><input type="checkbox" name="' . $n . '[clear_custom_key]" value="1"> ' . esc_html__( 'Remove the saved key', 'rk-builder' ) . '</label>' );
 	$rows .= rk_builder_viz_field_row( 'Key header', '<input type="text" class="regular-text" name="' . $n . '[custom_header]" value="' . esc_attr( $s['custom_header'] ) . '">', 'Authorization sends "Bearer <key>"; any other header name sends the key as is (for example X-API-Key).' );
@@ -680,15 +756,29 @@ function rk_builder_viz_render_admin() {
 	submit_button();
 	echo '</form>';
 	echo '<h2>' . esc_html__( 'Leads', 'rk-builder' ) . '</h2>';
-	$leads = array_slice( rk_builder_viz_leads(), 0, 50 );
-	if ( ! $leads ) { echo '<p>' . esc_html__( 'No leads yet.', 'rk-builder' ) . '</p></div>'; return; }
-	echo '<table class="widefat striped"><thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>When (UTC)</th></tr></thead><tbody>';
-	foreach ( $leads as $l ) {
-		echo '<tr><td>' . esc_html( $l['name'] ) . '</td><td>' . esc_html( $l['email'] ) . '</td><td>' . esc_html( $l['phone'] ) . '</td><td>' . esc_html( isset( $l['at'] ) ? $l['at'] : '' ) . '</td></tr>';
+	if ( isset( $_GET['rk_leads_deleted'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification
+		$n = (int) $_GET['rk_leads_deleted']; // phpcs:ignore WordPress.Security.NonceVerification
+		echo '<div class="notice notice-success is-dismissible"><p>' . esc_html( sprintf( _n( '%d lead deleted.', '%d leads deleted.', $n, 'rk-builder' ), $n ) ) . '</p></div>';
 	}
-	echo '</tbody></table></div>';
+	$all_leads = rk_builder_viz_leads();
+	$leads     = array_slice( $all_leads, 0, 50 );
+	if ( ! $leads ) { echo '<p>' . esc_html__( 'No leads yet.', 'rk-builder' ) . '</p></div>'; return; }
+	$action = esc_url( admin_url( 'admin-post.php' ) );
+	echo '<table class="widefat striped"><thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>When (UTC)</th><th></th></tr></thead><tbody>';
+	foreach ( $leads as $l ) {
+		echo '<tr><td>' . esc_html( $l['name'] ) . '</td><td>' . esc_html( $l['email'] ) . '</td><td>' . esc_html( $l['phone'] ) . '</td><td>' . esc_html( isset( $l['at'] ) ? $l['at'] : '' ) . '</td><td>';
+		echo '<form method="post" action="' . $action . '" style="margin:0"><input type="hidden" name="action" value="rk_builder_viz_delete_lead"><input type="hidden" name="email" value="' . esc_attr( $l['email'] ) . '">'; // phpcs:ignore WordPress.Security.EscapeOutput
+		wp_nonce_field( 'rk_builder_viz_delete_lead' );
+		echo '<button type="submit" class="button button-link-delete" onclick="return confirm(\'Delete this lead?\')">' . esc_html__( 'Delete', 'rk-builder' ) . '</button></form></td></tr>';
+	}
+	echo '</tbody></table>';
+	if ( count( $all_leads ) > count( $leads ) ) { echo '<p class="description">' . esc_html( sprintf( 'Showing the newest %d of %d.', count( $leads ), count( $all_leads ) ) ) . '</p>'; }
+	echo '<form method="post" action="' . $action . '" style="margin-top:12px"><input type="hidden" name="action" value="rk_builder_viz_delete_lead"><input type="hidden" name="all" value="1">'; // phpcs:ignore WordPress.Security.EscapeOutput
+	wp_nonce_field( 'rk_builder_viz_delete_lead' );
+	echo '<button type="submit" class="button" onclick="return confirm(\'Delete ALL leads? This cannot be undone.\')">' . esc_html__( 'Delete all leads', 'rk-builder' ) . '</button></form></div>';
 }
 
 add_action( 'rest_api_init', 'rk_builder_viz_register_routes' );
 add_action( 'admin_menu', 'rk_builder_viz_register_admin' );
 add_action( 'admin_init', 'rk_builder_viz_register_setting' );
+add_action( 'admin_post_rk_builder_viz_delete_lead', 'rk_builder_viz_handle_delete_lead' );

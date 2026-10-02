@@ -152,6 +152,16 @@ rk_test( 'visualizer lead: validated, stored once per email, unlocks a bonus, th
 	unlink( $f );
 } );
 
+rk_test( 'visualizer leads: delete one by email, or all', function () {
+	rk_builder_viz_store_lead( array( 'name' => 'A', 'email' => 'a@example.com', 'phone' => '' ) );
+	rk_builder_viz_store_lead( array( 'name' => 'B', 'email' => 'b@example.com', 'phone' => '' ) );
+	t_eq( rk_builder_viz_delete_leads( ' A@Example.com ' ), 1 );
+	t_eq( count( rk_builder_viz_leads() ), 1 ); t_eq( rk_builder_viz_leads()[0]['email'], 'b@example.com' );
+	t_eq( rk_builder_viz_delete_leads( 'nobody@example.com' ), 0 );
+	t_eq( rk_builder_viz_delete_leads( '', true ), 1 );
+	t_eq( rk_builder_viz_leads(), array() );
+} );
+
 rk_test( 'visualizer huggingface: submit, poll and fetch through the router, token only in the Authorization header', function () {
 	rk_viz_setup( 'huggingface', array( 'hf_token' => 'hf_test_token_123' ) );
 	$GLOBALS['RK_SECRETS'][] = 'hf_test_token_123';
@@ -203,6 +213,51 @@ rk_test( 'visualizer huggingface: a failed submit or a failed job gives the gene
 rk_test( 'visualizer huggingface: queue URLs that are not fal.run are refused', function () {
 	t_eq( rk_builder_viz_router_url( 'https://evil.example.com/a/b' ), '' );
 	t_eq( rk_builder_viz_router_url( 'https://queue.fal.run/a/b' ), 'https://router.huggingface.co/fal-ai/a/b?_subdomain=queue' );
+} );
+
+rk_test( 'visualizer gemini: inline photo in, edited image out; key only in the header; failures refund', function () {
+	rk_viz_setup( 'gemini', array( 'gemini_key' => 'AIza_test_gemini_key_77', 'gemini_model' => 'gemini-2.5-flash-image' ) );
+	$GLOBALS['RK_SECRETS'][] = 'AIza_test_gemini_key_77';
+	$f = rk_viz_png(); $png = file_get_contents( $f );
+	$calls = array();
+	rk_viz_http_stub( array( array( 'code' => 200, 'body' => json_encode( array( 'candidates' => array( array( 'content' => array( 'parts' => array(
+		array( 'text' => 'Here is your room.' ), array( 'inlineData' => array( 'mimeType' => 'image/png', 'data' => base64_encode( $png ) ) ),
+	) ) ) ) ) ) ) ), $calls );
+	$d = rk_builder_viz_handle_generate( rk_viz_request( $f ) )->get_data();
+	t_eq( $d['status'], 'success' );
+	t_assert( 0 === strpos( $d['imageUrl'], 'https://cms.example.com/wp-content/uploads/rk-visualizer/' ), 'result is stored' );
+	t_eq( $calls[0][1], 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent', 'model is in the path, key is not in the URL' );
+	t_eq( $calls[0][2]['headers']['x-goog-api-key'], 'AIza_test_gemini_key_77' );
+	$sent = json_decode( $calls[0][2]['body'], true );
+	$parts = $sent['contents'][0]['parts'];
+	t_assert( false !== strpos( $parts[0]['text'], 'photorealistic' ) && 'image/png' === $parts[1]['inline_data']['mime_type'] && base64_decode( $parts[1]['inline_data']['data'] ) === $png, 'prompt and photo sent inline' );
+
+	rk_test_reset_http(); $calls = array();
+	rk_viz_http_stub( array( array( 'code' => 200, 'body' => json_encode( array( 'candidates' => array( array( 'content' => array( 'parts' => array( array( 'inline_data' => array( 'mime_type' => 'image/png', 'data' => base64_encode( $png ) ) ) ) ) ) ) ) ) ) ), $calls );
+	$_COOKIE['rk_viz'] = str_repeat( 'b', 32 );
+	t_eq( rk_builder_viz_handle_generate( rk_viz_request( $f ) )->get_data()['status'], 'success', 'snake_case inline_data is accepted too' );
+
+	rk_test_reset_http(); $calls = array();
+	rk_viz_http_stub( array( array( 'code' => 400, 'body' => json_encode( array( 'error' => array( 'message' => 'API key not valid' ) ) ) ) ), $calls );
+	$_COOKIE['rk_viz'] = str_repeat( 'c', 32 );
+	t_err( rk_builder_viz_handle_generate( rk_viz_request( $f ) ), 'rk_viz_provider', 502 );
+	t_eq( rk_builder_viz_state( str_repeat( 'c', 32 ) )['used'], 0, 'refunded' );
+
+	rk_test_reset_http(); $calls = array();
+	rk_viz_http_stub( array( array( 'code' => 200, 'body' => json_encode( array( 'promptFeedback' => array( 'blockReason' => 'SAFETY' ) ) ) ) ), $calls );
+	$_COOKIE['rk_viz'] = str_repeat( 'd', 32 );
+	t_err( rk_builder_viz_handle_generate( rk_viz_request( $f ) ), 'rk_viz_provider', 502, 'no image part' );
+	unlink( $f );
+} );
+
+rk_test( 'visualizer gemini: needs a key, keeps it when the field is blank, falls back to the default model', function () {
+	update_option( 'rk_builder_visualizer', array( 'enabled' => true, 'provider' => 'gemini', 'gemini_key' => '' ) );
+	t_assert( ! rk_builder_viz_ready( rk_builder_viz_settings() ), 'no key, not ready' );
+	update_option( 'rk_builder_visualizer', array( 'enabled' => true, 'provider' => 'gemini', 'gemini_key' => 'k' ) );
+	t_assert( rk_builder_viz_ready( rk_builder_viz_settings() ) );
+	$out = rk_builder_viz_sanitize( array( 'provider' => 'gemini', 'gemini_key' => '', 'gemini_model' => 'bad model/../x' ) );
+	t_eq( $out['gemini_key'], 'k' ); t_eq( $out['gemini_model'], 'gemini-2.5-flash-image' ); t_eq( $out['provider'], 'gemini' );
+	t_eq( rk_builder_viz_sanitize( array( 'gemini_model' => 'gemini-3-pro-image-preview' ) )['gemini_model'], 'gemini-3-pro-image-preview' );
 } );
 
 rk_test( 'visualizer custom backend: image URL, base64 and polled responses; key header is configurable', function () {
