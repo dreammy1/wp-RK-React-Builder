@@ -787,6 +787,22 @@ test("13 · theme builder: content type with fields, entries, templates; single,
     await page.locator("script").evaluateAll(s => s.length)
   ).toBeGreaterThanOrEqual(0);
 
+  // 5b · sitemap: entries and the listing page are listed; a noindex entry is not; lastmod is present
+  const sm = async (q: string) =>
+    (await page.request.get(`${origin}/?sitemap=${q}`)).text();
+  const index = await sm("index");
+  expect(index).toContain("listing");
+  const posts = await sm("posts&sitemap-subtype=listing&paged=1");
+  expect(posts).toContain(first.link);
+  expect(posts).toContain("<lastmod>");
+  expect(posts).toContain(`<loc>${origin}/listings/</loc>`); // the listing page itself
+  await page.goto(builderUrl());
+  await j(`builder/entry/${first.id}`, { seo: { noindex: true } });
+  expect(await sm("posts&sitemap-subtype=listing&paged=1")).not.toContain(
+    first.link
+  );
+  await j(`builder/entry/${first.id}`, { seo: { noindex: false } });
+
   // 6 · switching the template off hands the page back to WordPress
   await page.goto(builderUrl());
   await j(`builder/templates/${single}/update`, { active: false });

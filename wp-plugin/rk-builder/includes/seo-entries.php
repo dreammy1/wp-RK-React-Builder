@@ -153,3 +153,60 @@ add_action( 'wp_head', 'rk_builder_dyn_seo_print_schema', 20 );
 add_filter( 'document_title_parts', 'rk_builder_dyn_seo_title_parts', 20 );
 add_filter( 'document_title_separator', 'rk_builder_dyn_seo_separator', 20 );
 add_filter( 'wp_robots', 'rk_builder_dyn_seo_robots', 20 );
+
+/* ------------------------------------------------------------------ *
+ * Sitemap (WordPress's own wp-sitemap.xml already lists every public post type, so custom types appear by themselves)
+ *   - entries and pages marked noindex are left out
+ *   - every URL gets a lastmod date
+ *   - a type's listing page is added to its first sitemap when a live listing template draws it
+ * Nothing changes when an SEO plugin owns the output (it has its own sitemap) or the site discourages search engines.
+ * ------------------------------------------------------------------ */
+
+function rk_builder_dyn_sitemap_query_args( $args, $post_type = '' ) {
+	if ( ! is_array( $args ) || ! rk_builder_seo_owns_output() ) { return $args; }
+	$mq   = isset( $args['meta_query'] ) && is_array( $args['meta_query'] ) ? $args['meta_query'] : array();
+	$mq[] = array(
+		'relation' => 'OR',
+		array( 'key' => '_rk_seo_noindex', 'compare' => 'NOT EXISTS' ),
+		array( 'key' => '_rk_seo_noindex', 'value' => '1', 'compare' => '!=' ),
+	);
+	$args['meta_query'] = $mq;
+	return $args;
+}
+
+function rk_builder_dyn_sitemap_entry( $entry, $post = null ) {
+	if ( ! is_array( $entry ) || ! is_object( $post ) || ! rk_builder_seo_owns_output() ) { return $entry; }
+	if ( empty( $entry['lastmod'] ) && ! empty( $post->post_modified_gmt ) && 0 !== strpos( (string) $post->post_modified_gmt, '0000' ) ) {
+		$ts = strtotime( $post->post_modified_gmt . ' UTC' );
+		if ( false !== $ts ) { $entry['lastmod'] = gmdate( 'c', $ts ); }
+	}
+	return $entry;
+}
+
+/** The listing URL of a content type that has a live archive template, or ''. */
+function rk_builder_dyn_sitemap_archive_url( $post_type ) {
+	$def = rk_builder_dyn_type( (string) $post_type );
+	if ( ! $def || $def['builtin'] || ! $def['public'] || ! $def['hasArchive'] || null === rk_builder_tpl_find( 'archive', $def['slug'] ) ) { return ''; }
+	$u = get_post_type_archive_link( $def['slug'] );
+	return is_string( $u ) ? $u : '';
+}
+
+/** Adds the listing page to page 1 of the type's sitemap (the type's own entries are produced by core). */
+function rk_builder_dyn_sitemap_pre_url_list( $list, $post_type, $page_num ) {
+	static $busy = false;
+	if ( null !== $list || $busy || 1 !== (int) $page_num || ! rk_builder_seo_owns_output() || ! class_exists( 'WP_Sitemaps_Posts' ) ) { return $list; }
+	$url = rk_builder_dyn_sitemap_archive_url( $post_type );
+	if ( '' === $url ) { return $list; }
+	$busy = true;
+	try {
+		$core = ( new WP_Sitemaps_Posts() )->get_url_list( 1, $post_type );
+	} finally {
+		$busy = false;
+	}
+	array_unshift( $core, array( 'loc' => $url ) );
+	return $core;
+}
+
+add_filter( 'wp_sitemaps_posts_query_args', 'rk_builder_dyn_sitemap_query_args', 20, 2 );
+add_filter( 'wp_sitemaps_posts_entry', 'rk_builder_dyn_sitemap_entry', 20, 2 );
+add_filter( 'wp_sitemaps_posts_pre_url_list', 'rk_builder_dyn_sitemap_pre_url_list', 20, 3 );

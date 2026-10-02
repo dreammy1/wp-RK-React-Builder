@@ -678,3 +678,22 @@ rk_test( 'entries of a type with no fields send fields and terms as JSON objects
 	t_eq( json_encode( $entry['fields'] ), '{}' );
 	t_eq( json_encode( $entry['terms'] ), '{"service_cat":[]}', 'a taxonomy with no terms is still a key' );
 } );
+
+rk_test( 'sitemap: noindex is excluded, lastmod added, listing URL only for a live listing template', function () {
+	rk_dyn_types();
+	$a = rk_builder_dyn_sitemap_query_args( array( 'post_type' => 'listing' ), 'listing' );
+	t_eq( $a['meta_query'][0]['relation'], 'OR' );
+	t_eq( $a['meta_query'][0][1]['compare'], '!=' );
+	$keep = rk_builder_dyn_sitemap_query_args( array( 'meta_query' => array( array( 'key' => 'x', 'value' => '1' ) ) ) );
+	t_eq( count( $keep['meta_query'] ), 2, 'existing conditions are kept' );
+	$post = (object) array( 'post_modified_gmt' => '2026-03-04 05:06:07' );
+	t_eq( rk_builder_dyn_sitemap_entry( array( 'loc' => 'https://x/y/' ), $post )['lastmod'], '2026-03-04T05:06:07+00:00' );
+	t_eq( rk_builder_dyn_sitemap_entry( array( 'loc' => 'x', 'lastmod' => 'keep' ), $post )['lastmod'], 'keep' );
+	t_eq( rk_builder_dyn_sitemap_archive_url( 'listing' ), '', 'no listing template yet' );
+	$t = rk_dyn_template( 'archive' );
+	rk_dyn_publish_template( $t['id'] );
+	t_eq( rk_builder_dyn_sitemap_archive_url( 'listing' ), '', 'published but not in use' );
+	t_ok( rk_post( '/rk/v1/builder/templates/' . $t['id'] . '/update', array( 'active' => true ) ) );
+	t_eq( rk_builder_dyn_sitemap_archive_url( 'listing' ), 'https://cms.example.com/listings/' );
+	t_eq( rk_builder_dyn_sitemap_archive_url( 'service' ), '', 'built-in types keep WordPress\'s own handling' );
+} );
