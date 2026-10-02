@@ -45,8 +45,10 @@ const GRID_ITEMS: ContentItem[] = [
   },
 ];
 
+// React 19 hoists a preload hint for plain <img>; PHP expresses priority via fetchpriority only.
 const normalise = (html: string) =>
   html
+    .replace(/<link rel="preload" as="image"[^>]*\/>/g, "")
     .replace(/ data-rk-block="[a-z]+"/g, "")
     .replace(/ rk-block rk-block-[a-z]+/g, "")
     .replace(/class="rk-block rk-block-[a-z]+ /g, 'class="')

@@ -191,6 +191,7 @@ function rk_builder_check_social_url( $v ) {
 function rk_builder_f_text( $min, $max, $optional = false ) { return array( 't' => 'text', 'min' => $min, 'max' => $max, 'opt' => $optional ); }
 function rk_builder_f_link() { return array( 't' => 'link' ); }
 function rk_builder_f_image() { return array( 't' => 'image' ); }
+function rk_builder_f_image_opt() { return array( 't' => 'image', 'opt' => true ); }
 function rk_builder_f_int( $min, $max, $optional = false ) { return array( 't' => 'int', 'min' => $min, 'max' => $max, 'opt' => $optional ); }
 function rk_builder_f_bool( $optional = false ) { return array( 't' => 'bool', 'opt' => $optional ); }
 function rk_builder_f_enum( array $values ) { return array( 't' => 'enum', 'values' => $values ); }
@@ -219,6 +220,8 @@ function rk_builder_block_specs() {
 			'sub'     => rk_builder_f_text( 0, 400 ),
 			'cta'     => rk_builder_f_text( 0, 60 ),
 			'ctaHref' => rk_builder_f_link(),
+			'bgMediaId' => rk_builder_f_int( 0, 2147483647, true ),
+			'bgUrl'     => rk_builder_f_image_opt(),
 		),
 		'heading'   => array(
 			'text'  => rk_builder_f_text( 1, 200 ),
@@ -245,6 +248,19 @@ function rk_builder_block_specs() {
 		'portfolio' => $collection( 'portfolio' ),
 		'spacer'    => array( 'h' => rk_builder_f_int( 8, 240 ) ),
 		'divider'   => array( 'style' => rk_builder_f_enum( array( 'solid', 'dashed' ) ) ),
+		'testimonial' => array(
+			'quote'  => rk_builder_f_text( 1, 600 ),
+			'author' => rk_builder_f_text( 1, 80 ),
+			'role'   => rk_builder_f_text( 0, 120 ),
+		),
+		'contact'   => array(
+			'heading' => rk_builder_f_text( 1, 160 ),
+			'intro'   => rk_builder_f_text( 0, 400 ),
+			'phone'   => rk_builder_f_text( 0, 40 ),
+			'email'   => rk_builder_f_text( 0, 120 ),
+			'address' => rk_builder_f_text( 0, 200 ),
+			'hours'   => rk_builder_f_text( 0, 200 ),
+		),
 	);
 	return $specs;
 }

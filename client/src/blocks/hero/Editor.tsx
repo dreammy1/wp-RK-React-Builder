@@ -11,4 +11,11 @@ export const heroFields: FieldDef[] = [
     maxLength: 500,
     help: "Relative path, https://, mailto: or tel:",
   },
+  {
+    kind: "media",
+    key: "bgUrl",
+    idKey: "bgMediaId",
+    label: "Background image",
+    optional: true,
+  },
 ];

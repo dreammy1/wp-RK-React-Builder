@@ -1,0 +1,58 @@
+{
+  "kind": "layout",
+  "description": "Hero with background image, testimonials and contact details",
+  "document": {
+    "version": 1,
+    "blocks": [
+      {
+        "id": "hero-bg",
+        "type": "hero",
+        "props": {
+          "heading": "Hardwood floors, done right in Peoria",
+          "sub": "Install, sand & refinish <fast>.",
+          "cta": "Get a free estimate",
+          "ctaHref": "#contact",
+          "bgUrl": "https://cms.example.com/floor.jpg"
+        }
+      },
+      {
+        "id": "quote-1",
+        "type": "testimonial",
+        "props": {
+          "quote": "Finished in four days & looks \"incredible\".",
+          "author": "Dana R.",
+          "role": "Peoria homeowner"
+        }
+      },
+      {
+        "id": "quote-2",
+        "type": "testimonial",
+        "props": { "quote": "Great crew.", "author": "Sam", "role": "" }
+      },
+      {
+        "id": "contact-1",
+        "type": "contact",
+        "props": {
+          "heading": "Get in touch",
+          "intro": "Free in-home estimates.",
+          "phone": "(309) 555-0142",
+          "email": "info@example.com",
+          "address": "123 Main St, Peoria, IL",
+          "hours": "Mon–Fri 8–5"
+        }
+      },
+      {
+        "id": "contact-2",
+        "type": "contact",
+        "props": {
+          "heading": "Bad values",
+          "intro": "",
+          "phone": "12",
+          "email": "not an email<script>",
+          "address": "",
+          "hours": ""
+        }
+      }
+    ]
+  }
+}

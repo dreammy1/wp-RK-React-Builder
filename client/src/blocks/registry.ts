@@ -7,6 +7,8 @@ import {
   LayoutGrid,
   Minus,
   MoveVertical,
+  MapPin,
+  MessageSquareQuote,
   Pilcrow,
   Rocket,
   type LucideIcon,
@@ -43,6 +45,12 @@ import { spacerFields } from "./spacer/Editor";
 import { dividerDefaults, dividerProps } from "./divider/schema";
 import { DividerView } from "./divider/View";
 import { dividerFields } from "./divider/Editor";
+import { testimonialDefaults, testimonialProps } from "./testimonial/schema";
+import { TestimonialView } from "./testimonial/View";
+import { testimonialFields } from "./testimonial/Editor";
+import { contactDefaults, contactProps } from "./contact/schema";
+import { ContactView } from "./contact/View";
+import { contactFields } from "./contact/Editor";
 
 export type PropsOf<T extends BlockType> = Extract<Block, { type: T }>["props"];
 
@@ -155,6 +163,26 @@ export const registry: Registry = {
     View: DividerView,
     fields: dividerFields,
   },
+  testimonial: {
+    type: "testimonial",
+    label: "Testimonial",
+    icon: MessageSquareQuote,
+    description: "A customer quote",
+    defaults: testimonialDefaults,
+    schema: testimonialProps,
+    View: TestimonialView,
+    fields: testimonialFields,
+  },
+  contact: {
+    type: "contact",
+    label: "Contact details",
+    icon: MapPin,
+    description: "Phone, email, address, hours",
+    defaults: contactDefaults,
+    schema: contactProps,
+    View: ContactView,
+    fields: contactFields,
+  },
 };
 
 export const PALETTE_ORDER: BlockType[] = [
@@ -167,4 +195,6 @@ export const PALETTE_ORDER: BlockType[] = [
   "portfolio",
   "spacer",
   "divider",
+  "testimonial",
+  "contact",
 ];

@@ -160,11 +160,30 @@ export function FieldsForm({ fields, values, errors, onChange }: Props) {
                 >
                   Choose from media library
                 </button>
+                {f.optional && typeof value === "string" && value && (
+                  <button
+                    type="button"
+                    className="top-btn"
+                    onClick={() =>
+                      onChange({
+                        [f.key]: undefined,
+                        ...(f.idKey ? { [f.idKey]: undefined } : {}),
+                      })
+                    }
+                  >
+                    Remove image
+                  </button>
+                )}
                 {error}
                 {picking && (
                   <MediaPicker
                     onClose={() => setPicking(false)}
                     onSelect={(m: MediaItem) => {
+                      if (f.idKey) {
+                        onChange({ [f.idKey]: m.id, [f.key]: m.url });
+                        setPicking(false);
+                        return;
+                      }
                       const patch: Record<string, unknown> = {
                         mediaId: m.id,
                         url: m.url,

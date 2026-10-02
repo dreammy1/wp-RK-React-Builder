@@ -28,6 +28,8 @@ require_once __DIR__ . '/render/services.php';
 require_once __DIR__ . '/render/portfolio.php';
 require_once __DIR__ . '/render/spacer.php';
 require_once __DIR__ . '/render/divider.php';
+require_once __DIR__ . '/render/testimonial.php';
+require_once __DIR__ . '/render/contact.php';
 
 /* ------------------------------------------------------------------ *
  * Logging (error_log only; never secrets, tokens or layout bodies)
@@ -143,6 +145,8 @@ function rk_builder_block_renderers() {
 		'portfolio' => 'rk_builder_render_portfolio',
 		'spacer'    => 'rk_builder_render_spacer',
 		'divider'   => 'rk_builder_render_divider',
+		'testimonial' => 'rk_builder_render_testimonial',
+		'contact'   => 'rk_builder_render_contact',
 	);
 }
 

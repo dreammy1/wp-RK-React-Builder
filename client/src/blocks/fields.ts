@@ -23,4 +23,11 @@ export type FieldDef =
       numeric?: boolean;
     }
   | { kind: "checkbox"; key: string; label: string; help?: string }
-  | { kind: "media"; key: string; label: string };
+  | {
+      kind: "media";
+      key: string;
+      label: string;
+      /** Decorative single-image mode: writes only `key` (url) and `idKey` (attachment id). */
+      idKey?: string;
+      optional?: boolean;
+    };
