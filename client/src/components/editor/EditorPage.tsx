@@ -53,6 +53,7 @@ const TEMPLATE_KIND = {
   single: "Single entry template",
   archive: "Archive / listing template",
   loop: "Card template",
+  notfound: "404 page template",
 } as const;
 
 type Dialog = null | "export" | "revisions" | "publish";
@@ -437,7 +438,9 @@ export function EditorPage({
                   <div className="side-body">
                     {tab === "insert" && (
                       <BlockPalette
-                        templateMode={Boolean(template)}
+                        templateMode={
+                          Boolean(template) && template?.kind !== "notfound"
+                        }
                         reusables={library.items}
                         onAddReusable={id => {
                           const i = state.layout.blocks.findIndex(

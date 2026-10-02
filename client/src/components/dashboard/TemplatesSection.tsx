@@ -23,6 +23,11 @@ const KINDS = [
     name: "Card",
     help: "The card drawn for each entry inside a Loop grid block, on listings, pages or related-entries rows.",
   },
+  {
+    id: "notfound",
+    name: "404 page",
+    help: "What visitors see when a page does not exist. Not tied to a content type.",
+  },
 ] as const;
 type Kind = (typeof KINDS)[number]["id"];
 
@@ -51,7 +56,9 @@ function NewTemplate({
   const [title, setTitle] = useState("");
   const [touched, setTouched] = useState(false);
   const auto =
-    `${type?.singular ?? ""} ${KINDS.find(k => k.id === kind)!.name.toLowerCase()}`.trim();
+    kind === "notfound"
+      ? "404 page"
+      : `${type?.singular ?? ""} ${KINDS.find(k => k.id === kind)!.name.toLowerCase()}`.trim();
   return (
     <Modal title="New template" onClose={onClose}>
       <fieldset className="field kind-pick">
@@ -75,25 +82,27 @@ function NewTemplate({
           </label>
         ))}
       </fieldset>
-      <div className="field">
-        <label htmlFor="tpl-type">
-          <span>For which content type?</span>
-        </label>
-        <select
-          id="tpl-type"
-          value={postType}
-          onChange={e => {
-            setPostType(e.target.value);
-            setTaxonomy("");
-          }}
-        >
-          {types.map(t => (
-            <option key={t.slug} value={t.slug}>
-              {t.plural}
-            </option>
-          ))}
-        </select>
-      </div>
+      {kind !== "notfound" && (
+        <div className="field">
+          <label htmlFor="tpl-type">
+            <span>For which content type?</span>
+          </label>
+          <select
+            id="tpl-type"
+            value={postType}
+            onChange={e => {
+              setPostType(e.target.value);
+              setTaxonomy("");
+            }}
+          >
+            {types.map(t => (
+              <option key={t.slug} value={t.slug}>
+                {t.plural}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
       {kind === "archive" && (type?.taxonomyTerms?.length ?? 0) > 0 && (
         <div className="field">
           <label htmlFor="tpl-tax">
@@ -141,12 +150,12 @@ function NewTemplate({
         </button>
         <button
           className="save-btn"
-          disabled={busy || !postType}
+          disabled={busy || (kind !== "notfound" && !postType)}
           onClick={() =>
             onCreate({
               title: touched ? title : auto,
               kind,
-              postType,
+              postType: kind === "notfound" ? "" : postType,
               taxonomy,
             })
           }
@@ -260,7 +269,9 @@ export function TemplatesSection({
                       </button>
                       <div className="dash-page-meta">
                         <span>
-                          {typeName(t.postType)}
+                          {k.id === "notfound"
+                            ? "Whole site"
+                            : typeName(t.postType)}
                           {t.taxonomy ? ` · by ${t.taxonomy}` : ""}
                         </span>
                         <span

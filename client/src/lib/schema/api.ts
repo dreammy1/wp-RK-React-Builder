@@ -87,7 +87,7 @@ export const LoadResponse = z.object({
   /** Present when the document is a theme-builder template rather than a page. */
   template: z
     .object({
-      kind: z.enum(["single", "archive", "loop"]),
+      kind: z.enum(["single", "archive", "loop", "notfound"]),
       postType: z.string(),
       taxonomy: z.string(),
       active: z.boolean(),
@@ -605,7 +605,7 @@ export const EntryResponse = z.object({ entry: Entry });
 export const TemplateItem = z.object({
   id: z.number().int(),
   title: z.string(),
-  kind: z.enum(["single", "archive", "loop"]),
+  kind: z.enum(["single", "archive", "loop", "notfound"]),
   postType: z.string(),
   taxonomy: z.string(),
   active: z.boolean(),

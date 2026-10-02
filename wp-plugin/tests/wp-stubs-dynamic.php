@@ -87,6 +87,7 @@ if ( ! function_exists( 'post_type_exists' ) ) {
 		$q[ $k ] = $v;
 		return $parts[0] . '?' . http_build_query( $q );
 	}
+	if ( ! function_exists( 'is_404' ) ) { function is_404() { return ! empty( $GLOBALS['RK']['q']['notfound'] ); } }
 	function is_tax() { return ! empty( $GLOBALS['RK']['q']['tax'] ); }
 	function is_category() { return false; }
 	function is_tag() { return false; }

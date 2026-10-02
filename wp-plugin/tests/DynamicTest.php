@@ -383,6 +383,31 @@ rk_test( 'templates: a request for an entry or archive picks the live template',
 	t_eq( rk_builder_dyn_resolve_request(), null, 'a draft entry is never templated' );
 } );
 
+rk_test( 'templates: a 404 page template is site-wide and replaces the missing-page screen', function () {
+	rk_dyn_types();
+	rk_test_login( 'admin' );
+	$GLOBALS['RK']['q'] = array( 'singular' => false, 'main' => true, 'loop' => false, 'id' => 0, 'admin' => false, 'notfound' => true );
+	t_eq( rk_builder_dyn_resolve_request(), null, 'no 404 template yet: the theme draws it' );
+	$t = t_ok( rk_post( '/rk/v1/builder/templates', array( 'title' => 'Missing', 'kind' => 'notfound' ) ) )['item'];
+	t_eq( $t['postType'], '' );
+	t_eq( $t['kind'], 'notfound' );
+	$layout = t_ok( rk_get( '/rk/v1/builder/layout/' . $t['id'] ) )['layout'];
+	$types = array_map( function ( $b ) { return $b['type']; }, $layout['blocks'] );
+	t_assert( in_array( 'heading', $types, true ) && in_array( 'cta', $types, true ), 'starter has a heading and a button home' );
+	rk_dyn_publish_template( $t['id'] );
+	t_ok( rk_post( '/rk/v1/builder/templates/' . $t['id'] . '/update', array( 'active' => true ) ) );
+	$req = rk_builder_dyn_resolve_request();
+	t_eq( $req['kind'], 'notfound' );
+	$html = rk_builder_render_layout( $req['tpl']['layout'], array( 'type' => '', 'post' => null ) );
+	t_assert( false !== strpos( $html, 'Page not found' ), 'renders the starter text' );
+	$t2 = t_ok( rk_post( '/rk/v1/builder/templates', array( 'title' => 'Second', 'kind' => 'notfound' ) ) )['item'];
+	rk_dyn_publish_template( $t2['id'] );
+	t_ok( rk_post( '/rk/v1/builder/templates/' . $t2['id'] . '/update', array( 'active' => true ) ) );
+	t_eq( rk_builder_dyn_resolve_request()['tpl']['id'], $t2['id'], 'one 404 template at a time' );
+	rk_test_set_query( array( 'singular' => false, 'main' => true ) );
+	t_eq( rk_builder_dyn_resolve_request(), null, 'other requests are unaffected' );
+} );
+
 /* ---------------- loop grid ---------------- */
 
 rk_test( 'loop grid: lists entries with the card template, filters, search, pagination and related', function () {

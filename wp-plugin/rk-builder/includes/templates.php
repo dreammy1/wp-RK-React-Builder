@@ -3,7 +3,7 @@
  * Theme builder: templates built in the normal block editor that decide how content types look on the public site.
  *
  *   - A template is a private post of type `rk_template` carrying a layout (draft and published, same storage and
- *     publish flow as a page) plus meta: `_rk_tpl_kind` (single | archive | loop), `_rk_tpl_type` (the post type it is
+ *     publish flow as a page) plus meta: `_rk_tpl_kind` (single | archive | loop | notfound), `_rk_tpl_type` (the post type it is
  *     for), `_rk_tpl_tax` (an archive for one taxonomy only), `_rk_tpl_per_page`, `_rk_tpl_active`.
  *   - single   : replaces the page of one entry (a service, a listing, ...).
  *   - archive  : replaces the list page of a type or of one of its taxonomies (the "listing" template).
@@ -35,7 +35,7 @@ function rk_builder_register_template_type() {
 	) );
 }
 
-function rk_builder_tpl_kinds() { return array( 'single', 'archive', 'loop' ); }
+function rk_builder_tpl_kinds() { return array( 'single', 'archive', 'loop', 'notfound' ); }
 
 /* ------------------------------------------------------------------ *
  * Read
@@ -103,6 +103,7 @@ function rk_builder_tpl_loop_layout( $id ) {
 
 function rk_builder_dyn_block_defaults( $type ) {
 	$all = array(
+		'spacer'      => array(),
 		'dynfield'    => array( 'source' => 'title', 'tag' => 'p', 'style' => 'plain', 'align' => 'left', 'label' => '', 'prefix' => '', 'suffix' => '', 'link' => false, 'fallback' => '' ),
 		'dynimage'    => array( 'source' => 'featured', 'ratio' => 'landscape', 'link' => false, 'fallback' => 'hide' ),
 		'dyngallery'  => array( 'source' => '', 'cols' => 3, 'ratio' => 'square', 'gap' => 'md', 'limit' => 0 ),
@@ -135,7 +136,7 @@ function rk_builder_tpl_chrome( $kind, &$n ) {
 function rk_builder_tpl_starter( $kind, array $def, $taxonomy = '' ) {
 	$n      = 0;
 	$blocks = array();
-	$fields = $def['fields'];
+	$fields = isset( $def['fields'] ) ? $def['fields'] : array();
 	if ( 'loop' === $kind ) {
 		$blocks[] = rk_builder_tpl_block( 'dynimage', array( 'source' => 'featured', 'ratio' => 'landscape', 'link' => true, 'fallback' => 'placeholder' ), $n );
 		$tax = rk_builder_dyn_taxonomies( $def['slug'] );
@@ -146,7 +147,12 @@ function rk_builder_tpl_starter( $kind, array $def, $taxonomy = '' ) {
 	}
 	$h = rk_builder_tpl_chrome( 'navbar', $n );
 	if ( $h ) { $blocks[] = $h; }
-	if ( 'archive' === $kind ) {
+	if ( 'notfound' === $kind ) {
+		$blocks[] = rk_builder_tpl_block( 'spacer', array( 'h' => 64 ), $n );
+		$blocks[] = array( 'id' => 'heading-' . ( ++$n ), 'type' => 'heading', 'props' => array( 'text' => 'Page not found', 'level' => 2 ) );
+		$blocks[] = array( 'id' => 'text-' . ( ++$n ), 'type' => 'text', 'props' => array( 'text' => 'The page you are looking for may have moved or no longer exists.' ) );
+		$blocks[] = array( 'id' => 'cta-' . ( ++$n ), 'type' => 'cta', 'props' => array( 'heading' => 'Let us get you back on track', 'cta' => 'Back to the home page', 'ctaHref' => '/' ) );
+	} elseif ( 'archive' === $kind ) {
 		$title = '' !== $taxonomy ? $def['plural'] . ' by category' : $def['plural'];
 		$blocks[] = array( 'id' => 'heading-' . ( ++$n ), 'type' => 'heading', 'props' => array( 'text' => $title, 'level' => 2 ) );
 		$blocks[] = rk_builder_tpl_block( 'loopgrid', array( 'postType' => 'current', 'filters' => (bool) rk_builder_dyn_taxonomies( $def['slug'] ), 'search' => true, 'pagination' => true, 'limit' => 12 ), $n );
@@ -189,7 +195,10 @@ function rk_builder_tpl_target( array $body, array $current = array() ) {
 	$kind   = array_key_exists( 'kind', $body ) ? $body['kind'] : ( isset( $current['kind'] ) ? $current['kind'] : null );
 	$type   = array_key_exists( 'postType', $body ) ? $body['postType'] : ( isset( $current['postType'] ) ? $current['postType'] : null );
 	$tax    = array_key_exists( 'taxonomy', $body ) ? $body['taxonomy'] : ( isset( $current['taxonomy'] ) ? $current['taxonomy'] : '' );
-	if ( ! is_string( $kind ) || ! in_array( $kind, rk_builder_tpl_kinds(), true ) ) { rk_builder_add_issue( $issues, 'kind', 'Choose single, archive or loop' ); }
+	if ( ! is_string( $kind ) || ! in_array( $kind, rk_builder_tpl_kinds(), true ) ) { rk_builder_add_issue( $issues, 'kind', 'Choose single, archive, card or 404 page' ); }
+	if ( 'notfound' === $kind ) {
+		return array( array( 'kind' => $kind, 'postType' => '', 'taxonomy' => '', 'def' => array( 'slug' => '', 'singular' => '', 'plural' => '', 'fields' => array() ) ), $issues );
+	}
 	$def = is_string( $type ) ? rk_builder_dyn_type( $type ) : null;
 	if ( ! $def ) { rk_builder_add_issue( $issues, 'postType', 'Choose a content type' ); }
 	$tax = is_string( $tax ) ? $tax : '';
@@ -313,7 +322,7 @@ function rk_builder_handle_template_starter( $req ) {
 	$post = rk_builder_tpl_post( $req['id'] );
 	if ( ! $post ) { return rk_builder_not_found( 'Template not found.' ); }
 	$m   = rk_builder_tpl_meta( $post->ID );
-	$def = rk_builder_dyn_type( $m['postType'] );
+	$def = 'notfound' === $m['kind'] ? array( 'slug' => '', 'singular' => '', 'plural' => '', 'fields' => array() ) : rk_builder_dyn_type( $m['postType'] );
 	if ( ! $def ) { return rk_builder_not_found( 'The content type of this template no longer exists.' ); }
 	return rk_builder_no_store( array( 'layout' => rk_builder_tpl_starter( $m['kind'], $def, $m['taxonomy'] ) ) );
 }
@@ -352,6 +361,10 @@ function rk_builder_dyn_resolve_request() {
 		if ( null === rk_builder_dyn_type( $post->post_type ) ) { return null; }
 		$tpl = rk_builder_tpl_find( 'single', $post->post_type );
 		return $tpl ? array( 'kind' => 'single', 'tpl' => $tpl, 'post' => $post, 'type' => $post->post_type ) : null;
+	}
+	if ( function_exists( 'is_404' ) && is_404() ) {
+		$tpl = rk_builder_tpl_find( 'notfound', '' );
+		return $tpl ? array( 'kind' => 'notfound', 'tpl' => $tpl, 'post' => null, 'type' => '' ) : null;
 	}
 	$type = '';
 	$tax  = '';
