@@ -6,6 +6,7 @@ import {
   resetBackend,
   saveDraft,
   signIn,
+  addBlock,
 } from "./helpers";
 
 test.beforeEach(async ({ request }) => resetBackend(request));
@@ -63,7 +64,7 @@ test.describe("authentication", () => {
     context,
   }) => {
     await openEditor(page, 43);
-    await page.getByRole("button", { name: "Add Hero block" }).click();
+    await addBlock(page, "Hero");
     await context.clearCookies();
     await page.getByRole("button", { name: "Save draft" }).click();
     await expect(
@@ -133,11 +134,11 @@ test.describe("editing round trip", () => {
     await openEditor(page, 43);
     await expect(page.getByText("This page has no blocks yet")).toBeVisible();
 
-    await page.getByRole("button", { name: "Add Hero block" }).click();
+    await addBlock(page, "Hero");
     await page.getByLabel("Headline").fill("Round trip headline");
     await page.getByLabel("Button link").fill("/quote");
-    await page.getByRole("button", { name: "Add Divider block" }).click();
-    await page.getByRole("button", { name: "Add Text block" }).click();
+    await addBlock(page, "Divider");
+    await addBlock(page, "Text");
     await page
       .getByLabel("Body copy")
       .fill("First paragraph.\n\nSecond paragraph.");
@@ -212,7 +213,7 @@ test.describe("editing round trip", () => {
     page,
   }) => {
     await openEditor(page, 43);
-    await page.getByRole("button", { name: "Add Hero block" }).click();
+    await addBlock(page, "Hero");
     await page.getByLabel("Headline").fill("");
     await expect(
       page
@@ -257,7 +258,7 @@ test.describe("recovery and concurrency", () => {
     request,
   }) => {
     await openEditor(page, 43);
-    await page.getByRole("button", { name: "Add Hero block" }).click();
+    await addBlock(page, "Hero");
     await page.getByLabel("Headline").fill("Mine");
     await bumpRevisionElsewhere(request, 43);
     await page.getByRole("button", { name: "Save draft" }).click();
@@ -277,7 +278,7 @@ test.describe("recovery and concurrency", () => {
     request,
   }) => {
     await openEditor(page, 43);
-    await page.getByRole("button", { name: "Add Hero block" }).click();
+    await addBlock(page, "Hero");
     await bumpRevisionElsewhere(request, 43);
     await page.getByRole("button", { name: "Save draft" }).click();
     await page.getByRole("button", { name: /Load the server version/ }).click();
@@ -288,7 +289,7 @@ test.describe("recovery and concurrency", () => {
     page,
   }) => {
     await openEditor(page, 43);
-    await page.getByRole("button", { name: "Add Hero block" }).click();
+    await addBlock(page, "Hero");
     await page.getByLabel("Headline").fill("Recover me");
     await page.waitForTimeout(1200); // local autosave debounce
     await page.reload({ waitUntil: "load" }).catch(() => undefined);
@@ -311,7 +312,7 @@ test.describe("recovery and concurrency", () => {
     context,
   }) => {
     await openEditor(page, 43);
-    await page.getByRole("button", { name: "Add Hero block" }).click();
+    await addBlock(page, "Hero");
     await page.getByLabel("Headline").fill("Offline work");
     await page.waitForTimeout(1200);
     await context.route("**/api/wp/**", route =>
@@ -333,7 +334,7 @@ test.describe("recovery and concurrency", () => {
     context,
   }) => {
     await openEditor(page, 43);
-    await page.getByRole("button", { name: "Add Hero block" }).click();
+    await addBlock(page, "Hero");
     await context.route("**/api/wp/rk/v1/builder/layout/43", route =>
       route.request().method() === "POST"
         ? route.abort("connectionrefused")
@@ -348,7 +349,7 @@ test.describe("recovery and concurrency", () => {
     page,
   }) => {
     await openEditor(page, 43);
-    await page.getByRole("button", { name: "Add Hero block" }).click();
+    await addBlock(page, "Hero");
     await page.getByLabel("Headline").fill("Version A");
     await saveDraft(page);
     await page.getByLabel("Headline").fill("Version B");

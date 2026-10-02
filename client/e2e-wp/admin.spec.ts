@@ -1,7 +1,13 @@
 import { readFileSync } from "node:fs";
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { WPE2E } from "../../playwright.wp.config";
 import { STATE_FILE } from "./global-setup";
+
+/** Add a block from the side panel (opens the Blocks tab first). */
+async function addBlock(page: Page, label: string) {
+  await page.getByRole("tab", { name: "Blocks" }).click();
+  await page.getByRole("button", { name: `Add ${label} block` }).click();
+}
 
 const state = () =>
   JSON.parse(readFileSync(STATE_FILE, "utf8")) as { pageId: number };
@@ -56,7 +62,7 @@ test("logged-in editor uses the cookie + nonce flow end to end", async ({
   await expect(page).toHaveURL(new RegExp(`page_id=${state().pageId}$`));
   await expect(page.getByTestId("save-status")).toBeVisible();
 
-  await page.getByRole("button", { name: "Add Hero block" }).click();
+  await addBlock(page, "Hero");
   await page.getByLabel("Headline").fill("Edited inside wp-admin");
   await page.getByRole("button", { name: "Save draft" }).click();
   await expect(page.getByTestId("save-status")).toHaveText(

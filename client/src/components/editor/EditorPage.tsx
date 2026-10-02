@@ -7,12 +7,16 @@ import {
   Eye,
   History,
   Layers3,
+  MoreHorizontal,
   Palette,
+  Plus,
   Redo2,
   RotateCcw,
   Save,
   Send,
+  SlidersHorizontal,
   Undo2,
+  X,
 } from "lucide-react";
 import { registry } from "@/blocks/registry";
 import { api } from "@/lib/api/builder";
@@ -44,6 +48,7 @@ import { Palette as BlockPalette } from "./Palette";
 import { ThemePanel } from "./ThemePanel";
 
 type Dialog = null | "export" | "revisions" | "publish";
+type Tab = "insert" | "block" | "theme" | "more";
 
 export function EditorPage({
   pageId,
@@ -57,7 +62,9 @@ export function EditorPage({
   const s = useEditorSession(pageId, demo);
   const library = useReusables();
   const [mode, setMode] = useState<"edit" | "preview">("edit");
-  const [tab, setTab] = useState<"block" | "theme">("block");
+  const [tab, setTab] = useState<Tab>("insert");
+  // Small screens show the side panel as a bottom sheet over the canvas.
+  const [sheet, setSheet] = useState(false);
   const [dialog, setDialog] = useState<Dialog>(null);
   const [dragType, setDragType] = useState<BlockType | null>(null);
   const [toast, setToast] = useState<{
@@ -101,6 +108,16 @@ export function EditorPage({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   });
+
+  const openPanel = (t: Tab) => {
+    if (mode === "preview") setMode("edit");
+    if (sheet && tab === t && mode === "edit") {
+      setSheet(false);
+      return;
+    }
+    setTab(t);
+    setSheet(true);
+  };
 
   const guardedBack = () => {
     if (
@@ -192,7 +209,7 @@ export function EditorPage({
   const isPublished = s.page?.status === "publish";
 
   return (
-    <div className="app-shell">
+    <div className="app-shell editor-shell">
       <header className="topbar">
         <button
           className="icon-btn"
@@ -344,25 +361,170 @@ export function EditorPage({
             </main>
           ) : (
             <div className="workspace">
-              <BlockPalette
-                reusables={library.items}
-                onAddReusable={id => {
-                  const i = state.layout.blocks.findIndex(
-                    b => b.id === state.selectedId
-                  );
-                  actions.add("reusable", i >= 0 ? i + 1 : undefined, {
-                    refId: id,
-                  });
-                }}
-                full={full}
-                onDragStart={setDragType}
-                onAdd={t => {
-                  const i = state.layout.blocks.findIndex(
-                    b => b.id === state.selectedId
-                  );
-                  actions.add(t, i >= 0 ? i + 1 : undefined);
-                }}
-              />
+              <aside
+                className={`side-panel${sheet ? " open" : ""}`}
+                aria-label="Editor panel"
+              >
+                <div className="sheet-grip" aria-hidden="true" />
+                <div className="side-tabs inspector-tabs" role="tablist">
+                  <button
+                    role="tab"
+                    aria-selected={tab === "insert"}
+                    className={tab === "insert" ? "active" : ""}
+                    onClick={() => setTab("insert")}
+                  >
+                    <Plus size={14} aria-hidden="true" /> Blocks
+                  </button>
+                  <button
+                    role="tab"
+                    aria-selected={tab === "block"}
+                    className={tab === "block" ? "active" : ""}
+                    onClick={() => setTab("block")}
+                  >
+                    <SlidersHorizontal size={14} aria-hidden="true" /> Inspector
+                  </button>
+                  <button
+                    role="tab"
+                    aria-selected={tab === "theme"}
+                    className={tab === "theme" ? "active" : ""}
+                    onClick={() => setTab("theme")}
+                  >
+                    <Palette size={14} aria-hidden="true" /> Theme
+                  </button>
+                </div>
+                <div className="sheet-head">
+                  <strong>{SHEET_TITLE[tab]}</strong>
+                  <button
+                    className="icon-btn"
+                    onClick={() => setSheet(false)}
+                    aria-label="Close panel"
+                  >
+                    <X size={15} aria-hidden="true" />
+                  </button>
+                </div>
+                <div className="side-body">
+                  {tab === "insert" && (
+                    <BlockPalette
+                      reusables={library.items}
+                      onAddReusable={id => {
+                        const i = state.layout.blocks.findIndex(
+                          b => b.id === state.selectedId
+                        );
+                        actions.add("reusable", i >= 0 ? i + 1 : undefined, {
+                          refId: id,
+                        });
+                        setSheet(false);
+                        setTab("block");
+                      }}
+                      full={full}
+                      onDragStart={setDragType}
+                      onAdd={t => {
+                        const i = state.layout.blocks.findIndex(
+                          b => b.id === state.selectedId
+                        );
+                        actions.add(t, i >= 0 ? i + 1 : undefined);
+                        setSheet(false);
+                        setTab("block");
+                      }}
+                    />
+                  )}
+                  {tab === "block" && (
+                    <Inspector
+                      block={selected}
+                      errors={
+                        (selected && s.blockErrors.get(selected.id)) || {}
+                      }
+                      onPatch={p =>
+                        selected && actions.patchProps(selected.id, p)
+                      }
+                      onDelete={() => selected && remove(selected.id)}
+                      library={library}
+                      onSaveAsReusable={async (block, name) => {
+                        if (block.type === "reusable") return;
+                        const item = await library.create(name, {
+                          type: block.type,
+                          props: block.props,
+                        });
+                        actions.convert(block.id, "reusable", {
+                          refId: item.id,
+                        });
+                        setToast({
+                          text: `Saved "${item.name}" to the library.`,
+                        });
+                      }}
+                      onDetach={block => {
+                        if (block.type !== "reusable") return;
+                        const record = library.source.get(block.props.refId);
+                        if (!record) return;
+                        actions.convert(
+                          block.id,
+                          record.block.type,
+                          structuredClone(record.block.props) as Record<
+                            string,
+                            unknown
+                          >
+                        );
+                        setToast({
+                          text: "Detached: this page now has its own copy.",
+                        });
+                      }}
+                    />
+                  )}
+                  {tab === "theme" && (
+                    <ThemePanel
+                      theme={state.theme}
+                      canEdit={s.caps.manageTheme}
+                      onPatch={actions.patchTheme}
+                    />
+                  )}
+                  {tab === "more" && (
+                    <div className="more-list">
+                      <button
+                        className="more-item"
+                        onClick={() => {
+                          setSheet(false);
+                          setDialog("revisions");
+                        }}
+                      >
+                        <History size={16} aria-hidden="true" /> History
+                      </button>
+                      <button
+                        className="more-item"
+                        onClick={() => {
+                          setSheet(false);
+                          setDialog("export");
+                        }}
+                      >
+                        <Download size={16} aria-hidden="true" /> Export
+                      </button>
+                      <button
+                        className="more-item"
+                        disabled={s.offline}
+                        onClick={() => {
+                          setSheet(false);
+                          void openDraftPreview();
+                        }}
+                      >
+                        <ExternalLink size={16} aria-hidden="true" /> Preview
+                        link
+                      </button>
+                      <button
+                        className="more-item publish"
+                        disabled={
+                          !s.caps.publish || s.offline || invalidCount > 0
+                        }
+                        onClick={() => {
+                          setSheet(false);
+                          setDialog("publish");
+                        }}
+                      >
+                        <Send size={16} aria-hidden="true" />{" "}
+                        {isPublished ? "Update live page" : "Publish"}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </aside>
               <main
                 className="canvas-area"
                 aria-label="Page canvas"
@@ -407,74 +569,64 @@ export function EditorPage({
                   <span>Drag blocks, or use the arrow buttons to reorder</span>
                 </div>
               </main>
-              <aside className="inspector" aria-label="Inspector">
-                <div className="inspector-tabs" role="tablist">
-                  <button
-                    role="tab"
-                    aria-selected={tab === "block"}
-                    className={tab === "block" ? "active" : ""}
-                    onClick={() => setTab("block")}
-                  >
-                    Inspector
-                  </button>
-                  <button
-                    role="tab"
-                    aria-selected={tab === "theme"}
-                    className={tab === "theme" ? "active" : ""}
-                    onClick={() => setTab("theme")}
-                  >
-                    <Palette size={14} aria-hidden="true" /> Theme
-                  </button>
-                </div>
-                {tab === "block" ? (
-                  <Inspector
-                    block={selected}
-                    errors={(selected && s.blockErrors.get(selected.id)) || {}}
-                    onPatch={p =>
-                      selected && actions.patchProps(selected.id, p)
-                    }
-                    onDelete={() => selected && remove(selected.id)}
-                    library={library}
-                    onSaveAsReusable={async (block, name) => {
-                      if (block.type === "reusable") return;
-                      const item = await library.create(name, {
-                        type: block.type,
-                        props: block.props,
-                      });
-                      actions.convert(block.id, "reusable", { refId: item.id });
-                      setToast({
-                        text: `Saved "${item.name}" to the library.`,
-                      });
-                    }}
-                    onDetach={block => {
-                      if (block.type !== "reusable") return;
-                      const record = library.source.get(block.props.refId);
-                      if (!record) return;
-                      actions.convert(
-                        block.id,
-                        record.block.type,
-                        structuredClone(record.block.props) as Record<
-                          string,
-                          unknown
-                        >
-                      );
-                      setToast({
-                        text: "Detached: this page now has its own copy.",
-                      });
-                    }}
-                  />
-                ) : (
-                  <ThemePanel
-                    theme={state.theme}
-                    canEdit={s.caps.manageTheme}
-                    onPatch={actions.patchTheme}
-                  />
-                )}
-              </aside>
             </div>
           )}
         </ContentProvider>
       </ReusableContext.Provider>
+
+      <nav className="bottom-nav" aria-label="Editor tools">
+        <button
+          className={mode === "edit" && sheet && tab === "insert" ? "on" : ""}
+          onClick={() => openPanel("insert")}
+        >
+          <Plus size={20} aria-hidden="true" />
+          <span>Blocks</span>
+        </button>
+        <button
+          className={mode === "edit" && sheet && tab === "block" ? "on" : ""}
+          onClick={() => openPanel("block")}
+        >
+          <SlidersHorizontal size={20} aria-hidden="true" />
+          <span>Edit</span>
+          {selected && <i className="dot" aria-hidden="true" />}
+        </button>
+        <button
+          className={mode === "edit" && sheet && tab === "theme" ? "on" : ""}
+          onClick={() => openPanel("theme")}
+        >
+          <Palette size={20} aria-hidden="true" />
+          <span>Theme</span>
+        </button>
+        <button
+          className={mode === "preview" ? "on" : ""}
+          onClick={() => {
+            setSheet(false);
+            if (mode === "preview") {
+              setMode("edit");
+            } else {
+              setMode("preview");
+              actions.select(null);
+            }
+          }}
+        >
+          <Eye size={20} aria-hidden="true" />
+          <span>{mode === "preview" ? "Editor" : "Preview"}</span>
+        </button>
+        <button
+          className={mode === "edit" && sheet && tab === "more" ? "on" : ""}
+          onClick={() => openPanel("more")}
+        >
+          <MoreHorizontal size={20} aria-hidden="true" />
+          <span>More</span>
+        </button>
+      </nav>
+      {sheet && mode === "edit" && (
+        <button
+          className="sheet-scrim"
+          aria-label="Close panel"
+          onClick={() => setSheet(false)}
+        />
+      )}
 
       {toast && (
         <div className="toast" role="status">
@@ -559,6 +711,13 @@ export function EditorPage({
     </div>
   );
 }
+
+const SHEET_TITLE: Record<Tab, string> = {
+  insert: "Add a block",
+  block: "Edit block",
+  theme: "Theme",
+  more: "More",
+};
 
 const isTextTarget = (t: EventTarget | null) =>
   t instanceof HTMLElement &&

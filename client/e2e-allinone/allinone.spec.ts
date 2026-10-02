@@ -6,6 +6,12 @@ import { expect, test, type Browser, type Page } from "@playwright/test";
 import { AIO } from "../../playwright.allinone.config";
 import { STATE_FILE } from "./global-setup";
 
+/** Add a block from the side panel (opens the Blocks tab first). */
+async function addBlock(page: Page, label: string) {
+  await page.getByRole("tab", { name: "Blocks" }).click();
+  await page.getByRole("button", { name: `Add ${label} block` }).click();
+}
+
 const state = () =>
   JSON.parse(readFileSync(STATE_FILE, "utf8")) as { pageId: number };
 test.skip(
@@ -103,10 +109,10 @@ test("2 · open RK Builder from wp-admin, select a page, load, edit, reorder (mo
   await expect(page).toHaveURL(new RegExp(`page_id=${state().pageId}$`));
   await expect(page.getByText("This page has no blocks yet")).toBeVisible();
 
-  await page.getByRole("button", { name: "Add Hero block" }).click();
+  await addBlock(page, "Hero");
   await page.getByLabel("Headline").fill("All-in-one headline");
-  await page.getByRole("button", { name: "Add Divider block" }).click();
-  await page.getByRole("button", { name: "Add Text block" }).click();
+  await addBlock(page, "Divider");
+  await addBlock(page, "Text");
   await page.getByLabel("Body copy").fill("Alpha <b>not bold</b>\n\nBeta");
   // keyboard reorder: text above divider
   await page.getByRole("button", { name: "Move Text up" }).focus();
@@ -150,7 +156,7 @@ test("4 · media picker selects from the real media library and stores the attac
 }) => {
   await login(page, AIO.admin, AIO.adminPass);
   await page.goto(builderUrl(state().pageId));
-  await page.getByRole("button", { name: "Add Image block" }).click();
+  await addBlock(page, "Image");
   await page.getByRole("button", { name: "Choose from media library" }).click();
   const dialog = page.getByRole("dialog", { name: "Choose an image" });
   await dialog.getByRole("button", { name: /Select Seed image/ }).click();
@@ -278,14 +284,14 @@ test("8 · revisions: preview and restore create a new revision; conflicts are d
   // a second editor session saves first → the first session's save is a conflict
   const other = await asRole(browser, AIO.editor, AIO.editorPass);
   await other.page.goto(builderUrl(state().pageId));
-  await other.page.getByRole("button", { name: "Add Spacer block" }).click();
+  await addBlock(other.page, "Spacer");
   await other.page.getByRole("button", { name: "Save draft" }).click();
   await expect(other.page.getByTestId("save-status")).toHaveText(
     "Draft saved to WordPress"
   );
   await other.ctx.close();
 
-  await page.getByRole("button", { name: "Add Divider block" }).click();
+  await addBlock(page, "Divider");
   await page.getByRole("button", { name: "Save draft" }).click();
   await expect(
     page.getByRole("dialog", { name: "This page changed on the server" })
@@ -359,7 +365,7 @@ test("10 · media upload: add an image from the editor; non-images and SVG are r
 }) => {
   await login(page, AIO.admin, AIO.adminPass);
   await page.goto(builderUrl(state().pageId));
-  await page.getByRole("button", { name: "Add Image block" }).click();
+  await addBlock(page, "Image");
   await page.getByRole("button", { name: "Choose from media library" }).click();
   await page.getByLabel("Alt text for a new upload").fill("A tiny upload");
   await page.locator('.media-upload input[type="file"]').setInputFiles({

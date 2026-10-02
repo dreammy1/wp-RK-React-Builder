@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { E2E } from "../../playwright.config";
-import { openEditor, resetBackend, saveDraft } from "./helpers";
+import { openEditor, resetBackend, saveDraft, addBlock } from "./helpers";
 
 test.beforeEach(async ({ request }) => resetBackend(request));
 
@@ -16,12 +16,13 @@ test("reusable blocks: save once, reuse on another page, edit everywhere, detach
 }) => {
   // 1 · build a CTA on About and move it into the library
   await openEditor(page, 43);
-  await page.getByRole("button", { name: "Add CTA banner block" }).click();
+  await addBlock(page, "CTA banner");
   await page.getByLabel("Heading", { exact: true }).fill("Ready for floors?");
   await page.getByRole("button", { name: "Save as reusable block" }).click();
   await page.getByLabel("Name in the library").fill("Footer CTA");
   await page.getByRole("button", { name: "Save to library" }).click();
   await expect(page.getByText("Reusable · Footer CTA")).toBeVisible();
+  await page.getByRole("tab", { name: "Blocks" }).click();
   await expect(
     page.getByRole("button", { name: "Add reusable Footer CTA" })
   ).toBeVisible();
@@ -30,6 +31,7 @@ test("reusable blocks: save once, reuse on another page, edit everywhere, detach
   // 2 · reuse it on Contact (a different page)
   await page.goto("/builder?page=44");
   await expect(page.getByTestId("save-status")).toBeVisible();
+  await page.getByRole("tab", { name: "Blocks" }).click();
   await page.getByRole("button", { name: "Add reusable Footer CTA" }).click();
   await expect(page.getByText("Ready for floors?").first()).toBeVisible();
   await saveDraft(page);

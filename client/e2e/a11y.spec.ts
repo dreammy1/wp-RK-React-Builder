@@ -1,7 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 import { E2E } from "../../playwright.config";
-import { openEditor, resetBackend, signIn } from "./helpers";
+import { openEditor, resetBackend, signIn, addBlock } from "./helpers";
 
 test.beforeEach(async ({ request }) => resetBackend(request));
 
@@ -66,7 +66,7 @@ test("dialogs trap focus, label themselves, close on Escape and restore focus", 
 });
 test("media picker is searchable and keyboard-operable", async ({ page }) => {
   await openEditor(page, 43);
-  await page.getByRole("button", { name: "Add Image block" }).click();
+  await addBlock(page, "Image");
   await page.getByRole("button", { name: "Choose from media library" }).click();
   const dialog = page.getByRole("dialog", { name: "Choose an image" });
   await scan(page, "media picker");

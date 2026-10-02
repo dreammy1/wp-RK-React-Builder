@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { E2E } from "../../playwright.config";
-import { openEditor, resetBackend, saveDraft } from "./helpers";
+import { openEditor, resetBackend, saveDraft, addBlock } from "./helpers";
 
 test.beforeEach(async ({ request }) => resetBackend(request));
 
@@ -11,7 +11,7 @@ test("draft → save does not publish; publish makes the server-rendered page li
   expect((await request.get(`${E2E.app}/about`)).status()).toBe(404);
 
   await openEditor(page, 43);
-  await page.getByRole("button", { name: "Add Hero block" }).click();
+  await addBlock(page, "Hero");
   await page.getByLabel("Headline").fill("Fresh from the builder");
   await saveDraft(page);
   expect(
@@ -105,7 +105,7 @@ test("draft preview link: short-lived token, noindex, shows unpublished edits", 
   request,
 }) => {
   await openEditor(page, 43);
-  await page.getByRole("button", { name: "Add Hero block" }).click();
+  await addBlock(page, "Hero");
   await page.getByLabel("Headline").fill("Only in the draft");
   const popup = context.waitForEvent("page");
   await page.getByRole("button", { name: "Preview link" }).click();

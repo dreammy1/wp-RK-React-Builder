@@ -64,3 +64,9 @@ export async function bumpRevisionElsewhere(
   );
   expect(res.ok()).toBe(true);
 }
+
+/** Add a block from the side panel (opens the Blocks tab first). */
+export async function addBlock(page: Page, label: string) {
+  await page.getByRole("tab", { name: "Blocks" }).click();
+  await page.getByRole("button", { name: `Add ${label} block` }).click();
+}

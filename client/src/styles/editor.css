@@ -1354,3 +1354,314 @@ select {
 .reusable-panel .dialog-actions {
   margin-top: 14px;
 }
+
+/* ---- One sticky side panel (Blocks / Inspector / Theme); a bottom sheet + tab bar on phones ---- */
+.editor-shell {
+  height: 100vh;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.editor-shell > * {
+  flex: none;
+}
+.editor-shell > .workspace,
+.editor-shell > .preview-stage {
+  flex: 1 1 0;
+  min-height: 0;
+}
+.editor-shell > .preview-stage {
+  overflow: auto;
+}
+.editor-shell .workspace {
+  grid-template-columns: 340px minmax(0, 1fr);
+  min-height: 0;
+  overflow: hidden;
+}
+.editor-shell .canvas-area {
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.side-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: #171c23;
+  border-right: 1px solid #2c333c;
+  overflow: hidden;
+}
+.side-tabs {
+  grid-template-columns: repeat(3, 1fr);
+  flex: none;
+}
+.side-tabs button {
+  padding: 15px 6px;
+}
+.side-body {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.editor-shell .palette {
+  display: flex;
+  border-right: 0;
+  padding: 18px 16px 24px;
+  min-height: 100%;
+}
+.editor-shell .palette-list {
+  margin-top: 14px;
+}
+.sheet-grip,
+.sheet-head,
+.bottom-nav,
+.sheet-scrim {
+  display: none;
+}
+.more-list {
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+}
+.more-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  min-height: 48px;
+  color: #dfe5e8;
+  background: #1d242c;
+  border: 1px solid #303a44;
+  border-radius: 10px;
+  font-size: 15px;
+  text-align: left;
+}
+.more-item.publish {
+  background: #c7f36b;
+  color: #15200f;
+  border-color: #c7f36b;
+  font-weight: 700;
+}
+.more-item:disabled {
+  opacity: 0.45;
+}
+@media (max-width: 980px) {
+  .editor-shell .workspace {
+    grid-template-columns: 280px minmax(0, 1fr);
+  }
+  .editor-shell .canvas-area {
+    padding: 22px 16px;
+  }
+}
+@media (max-width: 760px) {
+  :root {
+    --nav-h: calc(62px + env(safe-area-inset-bottom, 0px));
+  }
+  .editor-shell .topbar {
+    min-height: 56px;
+    padding: 8px 12px;
+    gap: 8px;
+    flex-wrap: nowrap;
+    position: relative;
+    z-index: 20;
+  }
+  .editor-shell .doc-meta {
+    display: flex;
+    flex: 1 1 auto;
+    min-width: 0;
+    flex-wrap: nowrap;
+  }
+  .editor-shell .doc-meta > :not(.doc-title) {
+    display: none;
+  }
+  .editor-shell .doc-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 17px;
+  }
+  .editor-shell .top-actions {
+    margin-left: 0;
+    flex-wrap: nowrap;
+    gap: 6px;
+  }
+  .editor-shell .mode-switch,
+  .editor-shell .top-btn {
+    display: none;
+  }
+  .editor-shell .icon-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+  }
+  .editor-shell .save-btn {
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    justify-content: center;
+    border-radius: 10px;
+    font-size: 0;
+  }
+  .editor-shell .save-btn svg {
+    width: 18px;
+    height: 18px;
+  }
+  .editor-shell .workspace {
+    grid-template-columns: 1fr;
+  }
+  .editor-shell .canvas-area {
+    padding: 16px 10px calc(var(--nav-h) + 20px);
+  }
+  .editor-shell .preview-stage {
+    padding: 14px 10px calc(var(--nav-h) + 20px);
+  }
+  .editor-shell .canvas-topline {
+    margin-bottom: 14px;
+  }
+  .editor-shell .canvas-caption {
+    display: none;
+  }
+  .bottom-nav {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 50;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    height: var(--nav-h);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    background: #171c23;
+    border-top: 1px solid #2c333c;
+  }
+  .bottom-nav button {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    padding: 6px 2px;
+    color: #a3aeb4;
+    background: transparent;
+    border: 0;
+    font-size: 11px;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .bottom-nav button.on {
+    color: #c7f36b;
+  }
+  .bottom-nav button:active {
+    transform: scale(0.94);
+  }
+  .bottom-nav .dot {
+    position: absolute;
+    top: 8px;
+    left: calc(50% + 8px);
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #c7f36b;
+  }
+  .sheet-scrim {
+    display: block;
+    position: fixed;
+    inset: 0 0 var(--nav-h) 0;
+    z-index: 44;
+    border: 0;
+    background: rgb(5 8 12 / 55%);
+  }
+  .side-panel {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: var(--nav-h);
+    z-index: 46;
+    max-height: min(66dvh, calc(100dvh - var(--nav-h) - 70px));
+    border: 0;
+    border-top: 1px solid #2c333c;
+    border-radius: 18px 18px 0 0;
+    box-shadow: 0 -18px 40px rgb(0 0 0 / 45%);
+    transform: translateY(calc(100% + var(--nav-h)));
+    visibility: hidden;
+    transition:
+      transform 0.24s ease-out,
+      visibility 0s linear 0.24s;
+  }
+  .side-panel.open {
+    transform: none;
+    visibility: visible;
+    transition:
+      transform 0.24s ease-out,
+      visibility 0s;
+  }
+  .side-tabs {
+    display: none;
+  }
+  .side-body {
+    flex: 0 1 auto;
+  }
+  .editor-shell .palette {
+    min-height: 0;
+  }
+  .sheet-grip {
+    display: block;
+    flex: none;
+    width: 38px;
+    height: 4px;
+    margin: 9px auto 0;
+    border-radius: 2px;
+    background: #3b4650;
+  }
+  .sheet-head {
+    display: flex;
+    flex: none;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px 8px 18px;
+    border-bottom: 1px solid #2c333c;
+    color: #edf0e8;
+    font-size: 15px;
+  }
+  .editor-shell .palette {
+    padding: 14px 14px 20px;
+  }
+  .editor-shell .palette .rail-head,
+  .editor-shell .rail-note {
+    display: none;
+  }
+  .editor-shell .palette-list {
+    grid-template-columns: 1fr 1fr;
+    margin-top: 0;
+  }
+  .editor-shell .palette .rail-head + .palette-list,
+  .editor-shell .palette-list + .rail-head {
+    margin-top: 0;
+  }
+  .editor-shell .palette-item {
+    grid-template-columns: 29px 1fr;
+    min-height: 52px;
+    border-radius: 10px;
+    padding: 9px;
+  }
+  .editor-shell .palette-item > svg {
+    display: none;
+  }
+  .editor-shell .palette-item small {
+    display: none;
+  }
+  .editor-shell .palette-item:hover {
+    transform: none;
+  }
+  .side-panel input,
+  .side-panel textarea,
+  .side-panel select {
+    font-size: 16px;
+  }
+  .editor-shell .toast {
+    bottom: calc(var(--nav-h) + 12px);
+    max-width: calc(100vw - 24px);
+  }
+}
