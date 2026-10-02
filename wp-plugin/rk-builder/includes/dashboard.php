@@ -86,6 +86,7 @@ function rk_builder_handle_overview( $req ) {
 			'missingDescription' => array_slice( $no_desc, 0, 8 ),
 		),
 		'media'      => $media,
+		'setup'      => rk_builder_dash_setup(),
 		'content'    => array( 'services' => rk_builder_dash_count_posts( 'service' ), 'projects' => rk_builder_dash_count_posts( 'portfolio' ) ),
 		'themes'     => count( rk_builder_themes_index() ),
 		'visualizer' => array(
@@ -106,6 +107,22 @@ function rk_builder_handle_overview( $req ) {
 			'plugin'        => RK_BUILDER_VERSION,
 		),
 	) );
+}
+
+/** What is already configured (drives the overview checklist). */
+function rk_builder_dash_setup() {
+	$code = rk_builder_code_settings();
+	$org  = rk_builder_seo_organization();
+	$rev  = rk_builder_reviews_store();
+	return array(
+		'searchConsole' => '' !== $code['gsc'],
+		'analytics'     => '' !== $code['ga4'] || '' !== $code['gtm'],
+		'businessProfile' => isset( $org['profiles']['googleBusiness'] ),
+		'localBusiness' => isset( $org['city'] ) || isset( $org['street'] ),
+		'socialImage'   => isset( $org['defaultImage'] ),
+		'reviews'       => count( array_filter( $rev['items'], function ( $r ) { return empty( $r['hidden'] ); } ) ),
+		'redirects'     => count( rk_builder_redirects_list() ),
+	);
 }
 
 /* ------------------------------------------------------------------ *
@@ -261,6 +278,15 @@ function rk_builder_handle_set_page_seo( $req ) {
  * Site settings
  * ------------------------------------------------------------------ */
 
+/** Business details with every field present (strings; profiles as an object). */
+function rk_builder_org_payload( array $org ) {
+	$out = array();
+	foreach ( array( 'name', 'telephone', 'email', 'description', 'logo', 'defaultImage', 'businessType', 'street', 'city', 'region', 'postal', 'country', 'hours', 'areaServed', 'priceRange' ) as $f ) { $out[ $f ] = isset( $org[ $f ] ) ? (string) $org[ $f ] : ''; }
+	$out['profiles'] = array();
+	foreach ( rk_builder_profile_keys() as $k ) { $out['profiles'][ $k ] = isset( $org['profiles'][ $k ] ) ? (string) $org['profiles'][ $k ] : ''; }
+	return $out;
+}
+
 function rk_builder_site_settings() {
 	$org   = rk_builder_seo_organization();
 	$front = 'page' === get_option( 'show_on_front' ) ? (int) get_option( 'page_on_front' ) : 0;
@@ -269,13 +295,7 @@ function rk_builder_site_settings() {
 		'tagline'       => (string) get_bloginfo( 'description' ),
 		'searchVisible' => '0' !== (string) get_option( 'blog_public', '1' ),
 		'frontPageId'   => $front,
-		'organization'  => array(
-			'name'        => isset( $org['name'] ) ? $org['name'] : '',
-			'telephone'   => isset( $org['telephone'] ) ? $org['telephone'] : '',
-			'email'       => isset( $org['email'] ) ? $org['email'] : '',
-			'description' => isset( $org['description'] ) ? $org['description'] : '',
-			'logo'        => isset( $org['logo'] ) ? $org['logo'] : '',
-		),
+		'organization'  => rk_builder_org_payload( $org ),
 	);
 }
 

@@ -34,6 +34,7 @@ export const BLOCK_TYPES = [
   "gallery",
   "calculator",
   "brandstrip",
+  "reviews",
   "visualizer",
   "reusable",
 ] as const;

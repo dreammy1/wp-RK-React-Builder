@@ -8,18 +8,33 @@ import {
   Package,
   Settings,
   Sparkles,
+  Star,
+  CodeXml,
+  Shuffle,
 } from "lucide-react";
 import { getBoot } from "@/lib/boot";
+import { CodeSection } from "./CodeSection";
 import { MediaSection } from "./MediaSection";
 import { MoreSection } from "./MoreSection";
 import { Overview } from "./Overview";
 import { PagesSection } from "./PagesSection";
+import { RedirectsSection } from "./RedirectsSection";
+import { ReviewsSection } from "./ReviewsSection";
 import { SiteSection } from "./SiteSection";
 import { ThemesSection } from "./ThemesSection";
 import { VisualizerSection } from "./VisualizerSection";
 
 export type DashView =
-  "overview" | "pages" | "media" | "themes" | "site" | "visualizer" | "more";
+  | "overview"
+  | "pages"
+  | "media"
+  | "themes"
+  | "site"
+  | "reviews"
+  | "code"
+  | "redirects"
+  | "visualizer"
+  | "more";
 
 type Icon = ComponentType<{ size?: number; "aria-hidden"?: boolean }>;
 const NAV: { id: DashView; label: string; icon: Icon }[] = [
@@ -28,6 +43,9 @@ const NAV: { id: DashView; label: string; icon: Icon }[] = [
   { id: "media", label: "Media", icon: ImageIcon },
   { id: "themes", label: "Themes", icon: Package },
   { id: "site", label: "Site & SEO", icon: Settings },
+  { id: "reviews", label: "Reviews", icon: Star },
+  { id: "code", label: "Code & tracking", icon: CodeXml },
+  { id: "redirects", label: "Redirects", icon: Shuffle },
   { id: "visualizer", label: "Visualizer", icon: Sparkles },
 ];
 /** The phone tab bar has room for five: the rest live under More. */
@@ -65,13 +83,17 @@ export function Dashboard({ navigate }: { navigate: (to: string) => void }) {
     media: <MediaSection />,
     themes: <ThemesSection />,
     site: <SiteSection />,
+    reviews: <ReviewsSection />,
+    code: <CodeSection />,
+    redirects: <RedirectsSection />,
     visualizer: <VisualizerSection />,
     more: <MoreSection go={setView} />,
   }[view];
 
   const nav = (id: DashView) =>
     view === id ||
-    (id === "more" && (view === "site" || view === "visualizer"));
+    (id === "more" &&
+      ["site", "reviews", "code", "redirects", "visualizer"].includes(view));
 
   return (
     <div className="dash">

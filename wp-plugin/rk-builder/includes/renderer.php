@@ -164,6 +164,7 @@ function rk_builder_block_renderers() {
 		'gallery' => 'rk_builder_render_gallery',
 		'calculator' => 'rk_builder_render_calculator',
 		'brandstrip' => 'rk_builder_render_brandstrip',
+		'reviews'    => 'rk_builder_render_reviews',
 		'visualizer' => 'rk_builder_render_visualizer',
 		'reusable'  => 'rk_builder_render_reusable',
 	);

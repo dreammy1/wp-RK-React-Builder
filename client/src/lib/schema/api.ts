@@ -172,6 +172,7 @@ export const ReusableItem = z.object({
       "gallery",
       "calculator",
       "brandstrip",
+      "reviews",
       "visualizer",
     ]),
     props: z.unknown(),
@@ -328,6 +329,15 @@ export const Overview = z.object({
     missingDescription: z.array(PageRow),
   }),
   media: z.number(),
+  setup: z.object({
+    searchConsole: z.boolean(),
+    analytics: z.boolean(),
+    businessProfile: z.boolean(),
+    localBusiness: z.boolean(),
+    socialImage: z.boolean(),
+    reviews: z.number(),
+    redirects: z.number(),
+  }),
   content: z.object({ services: z.number(), projects: z.number() }),
   themes: z.number(),
   visualizer: z.object({
@@ -372,6 +382,17 @@ export const SiteSettings = z.object({
     email: z.string(),
     description: z.string(),
     logo: z.string(),
+    defaultImage: z.string(),
+    businessType: z.string(),
+    street: z.string(),
+    city: z.string(),
+    region: z.string(),
+    postal: z.string(),
+    country: z.string(),
+    hours: z.string(),
+    areaServed: z.string(),
+    priceRange: z.string(),
+    profiles: z.record(z.string(), z.string()),
   }),
 });
 export type SiteSettings = z.infer<typeof SiteSettings>;
@@ -412,3 +433,55 @@ export const VizAdmin = z.object({
   leads: z.array(VizLead),
 });
 export type VizAdmin = z.infer<typeof VizAdmin>;
+
+/* ---- Code, reviews, redirects ---- */
+export const CodeSettings = z.object({
+  gsc: z.string(),
+  bing: z.string(),
+  ga4: z.string(),
+  gtm: z.string(),
+  skipLoggedIn: z.boolean(),
+  head: z.string(),
+  bodyStart: z.string(),
+  footer: z.string(),
+});
+export type CodeSettings = z.infer<typeof CodeSettings>;
+export const CodeResponse = z.object({
+  code: CodeSettings,
+  canEditCode: z.boolean(),
+});
+
+export const ReviewItem = z.object({
+  id: z.string(),
+  author: z.string(),
+  rating: z.number(),
+  text: z.string(),
+  date: z.string(),
+  source: z.string(),
+  url: z.string(),
+  hidden: z.boolean(),
+});
+export type ReviewItem = z.infer<typeof ReviewItem>;
+export const ReviewsAdmin = z.object({
+  config: z.object({
+    profileUrl: z.string(),
+    placeId: z.string(),
+    keySet: z.boolean(),
+    keyFromServer: z.boolean(),
+    auto: z.boolean(),
+    syncedAt: z.string(),
+    lastError: z.string(),
+    writeUrl: z.string(),
+  }),
+  summary: z.object({ rating: z.number(), count: z.number() }),
+  items: z.array(ReviewItem),
+});
+export type ReviewsAdmin = z.infer<typeof ReviewsAdmin>;
+
+export const RedirectRule = z.object({
+  from: z.string(),
+  to: z.string(),
+  code: z.number(),
+});
+export type RedirectRule = z.infer<typeof RedirectRule>;
+export const RedirectList = z.object({ items: z.array(RedirectRule) });

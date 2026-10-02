@@ -360,3 +360,53 @@ function rk_builder_render_brandstrip( array $p, array $context = array() ) {
 	}
 	return $html . '</div></section>';
 }
+
+/** Five rating stars. Mirrors Stars() in blocks/reviews/View.tsx. */
+function rk_builder_stars( $rating ) {
+	$on  = max( 0, min( 5, (int) round( (float) $rating ) ) );
+	$out = '<span class="pf-stars" role="img" aria-label="' . $on . ' out of 5">';
+	for ( $i = 0; $i < 5; $i++ ) {
+		$out .= '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="' . ( $i < $on ? 'currentColor' : 'none' ) . '" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-star' . ( $i < $on ? ' on' : '' ) . '" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>';
+	}
+	return $out . '</span>';
+}
+
+function rk_builder_review_clip( $s, $n ) {
+	return rk_builder_strlen( $s ) > $n ? rtrim( rk_builder_substr( $s, 0, $n - 1 ) ) . '…' : $s;
+}
+
+/** The Google reviews block. Mirrors blocks/reviews/View.tsx. */
+function rk_builder_render_reviews( array $p, array $context = array() ) {
+	$data    = rk_builder_reviews_public( 12, (int) $p['minRating'] );
+	$items   = array_slice( $data['items'], 0, (int) $p['limit'] );
+	$profile = rk_builder_safe_href( $data['links']['profile'] );
+	$write   = rk_builder_safe_href( $data['links']['write'] );
+	$html    = '<section ' . rk_builder_root_attrs( 'reviews', 'pf-section pf-reviews ' . $p['tone'] ) . '><div class="pf-wrap">';
+	if ( '' !== $p['eyebrow'] || '' !== $p['heading'] || '' !== $p['intro'] ) {
+		$html .= '<div class="pf-center">';
+		if ( '' !== $p['eyebrow'] ) { $html .= '<p class="pf-kicker">' . rk_builder_h( $p['eyebrow'] ) . '</p>'; }
+		if ( '' !== $p['heading'] ) { $html .= '<h2>' . rk_builder_h( $p['heading'] ) . '</h2>'; }
+		if ( '' !== $p['intro'] ) { $html .= '<p class="pf-intro">' . rk_builder_h( $p['intro'] ) . '</p>'; }
+		$html .= '</div>';
+	}
+	if ( ! empty( $p['showSummary'] ) && $data['summary']['count'] > 0 ) {
+		$n = $data['summary']['count'];
+		$html .= '<div class="pf-rv-summary">' . rk_builder_stars( $data['summary']['rating'] ) . '<strong>' . number_format( (float) $data['summary']['rating'], 1, '.', '' ) . '</strong><span>' . $n . ' Google review' . ( 1 === $n ? '' : 's' ) . '</span></div>';
+	}
+	if ( ! empty( $p['showLinks'] ) && ( '' !== $profile || '' !== $write ) ) {
+		$html .= '<div class="pf-rv-links">';
+		if ( '' !== $profile ) { $html .= '<a class="pf-btn outline" href="' . $profile . '" target="_blank" rel="noopener noreferrer">See all reviews on Google</a>'; }
+		if ( '' !== $write ) { $html .= '<a class="pf-btn dark" href="' . $write . '" target="_blank" rel="noopener noreferrer">Leave a review</a>'; }
+		$html .= '</div>';
+	}
+	$html .= '<div class="pf-cardgrid pf-rv-grid" style="grid-template-columns:repeat(' . (int) $p['cols'] . ', minmax(0, 1fr))">';
+	foreach ( $items as $r ) {
+		$html .= '<article>' . rk_builder_stars( $r['rating'] );
+		if ( '' !== $r['text'] ) { $html .= '<p class="pf-rv-text">' . rk_builder_h( rk_builder_review_clip( $r['text'], 280 ) ) . '</p>'; }
+		$html .= '<footer><strong>' . rk_builder_h( $r['author'] ) . '</strong>';
+		if ( '' !== $r['date'] ) { $html .= '<small>' . rk_builder_h( $r['date'] ) . '</small>'; }
+		if ( 'google' === $r['source'] ) { $html .= '<span class="pf-rv-src">Google</span>'; }
+		$html .= '</footer></article>';
+	}
+	return $html . '</div></div></section>';
+}

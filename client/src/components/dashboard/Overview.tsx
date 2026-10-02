@@ -205,6 +205,50 @@ export function Overview({
       </div>
 
       <section className="dash-card">
+        <h2>Search &amp; local setup</h2>
+        <ul className="checklist">
+          {(
+            [
+              [
+                "Google Search Console verified",
+                data.setup.searchConsole,
+                "code",
+              ],
+              ["Analytics or Tag Manager added", data.setup.analytics, "code"],
+              ["Default social sharing image", data.setup.socialImage, "site"],
+              [
+                "Business address for local search",
+                data.setup.localBusiness,
+                "site",
+              ],
+              [
+                "Google Business Profile linked",
+                data.setup.businessProfile,
+                "site",
+              ],
+              [
+                `Reviews to show (${data.setup.reviews})`,
+                data.setup.reviews > 0,
+                "reviews",
+              ],
+            ] as [string, boolean, DashView][]
+          ).map(([label, done, view]) => (
+            <li key={label}>
+              <span className={`tick${done ? " done" : ""}`} aria-hidden="true">
+                {done ? "✓" : ""}
+              </span>
+              <span>{label}</span>
+              {!done && (
+                <button className="top-btn" onClick={() => go(view)}>
+                  Set up
+                </button>
+              )}
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section className="dash-card">
         <h2>Quick actions</h2>
         <div className="dash-actions">
           <button className="top-btn" onClick={() => setCreating(true)}>

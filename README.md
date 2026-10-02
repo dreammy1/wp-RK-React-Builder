@@ -237,3 +237,13 @@ Inside WordPress the builder opens on its own dashboard, so day-to-day work does
 - **Visualizer**: backend, keys (write-only), limits and the leads list with delete.
 
 On phones the left menu becomes a bottom tab bar. REST: `GET /builder/overview`, `POST /builder/pages/new`, `POST /builder/pages/{id}/update|duplicate|trash|front`, `GET|POST /builder/pages/{id}/seo`, `GET|POST /builder/site`, `GET|POST /builder/visualizer-admin`, `POST /builder/visualizer-admin/leads/delete`. The headless proxy keeps the plain page list.
+
+## Search, local and reviews tools
+
+All in the dashboard (WordPress-hosted editor):
+
+- **Social sharing image**: pick or upload the image for any page under Pages > Search & sharing (with a live share preview), and a site-wide default under Site & SEO. Order used: page image, featured image, site default, first image on the page.
+- **Business profile**: Google Business Profile and social links become `sameAs`; address, hours (`Mon-Fri 08:00-17:00`), service areas and a business type publish a `LocalBusiness` node in the page schema.
+- **Code & tracking**: Search Console and Bing verification (paste the code or the whole meta tag), GA4 and Tag Manager IDs (not loaded for signed-in editors by default) and free-form head, after-`<body>` and footer snippets (administrators with `unfiltered_html` only).
+- **Reviews**: add the Place ID and a Google API key (Places API (New)) to pull the rating, the review count and up to five reviews, refreshed daily if you wish, or add reviews by hand; hide any of them. The **Google reviews** block shows the rating, the cards and "See all reviews" / "Leave a review" buttons. Review ratings are deliberately not added to the structured data (Google does not allow self-serving review markup). The key can also be set with `RK_BUILDER_PLACES_KEY` in `wp-config.php`.
+- **Redirects**: 301/302 rules from an old path to a new path or address.

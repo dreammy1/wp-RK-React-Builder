@@ -329,6 +329,36 @@
         }
       },
       {
+        "id": "rev",
+        "type": "reviews",
+        "props": {
+          "eyebrow": "Reviews",
+          "heading": "What <customers> say",
+          "intro": "",
+          "limit": 6,
+          "minRating": 4,
+          "cols": 3,
+          "showSummary": true,
+          "showLinks": true,
+          "tone": "muted"
+        }
+      },
+      {
+        "id": "rev2",
+        "type": "reviews",
+        "props": {
+          "eyebrow": "",
+          "heading": "",
+          "intro": "",
+          "limit": 2,
+          "minRating": 1,
+          "cols": 2,
+          "showSummary": false,
+          "showLinks": false,
+          "tone": "light"
+        }
+      },
+      {
         "id": "viz",
         "type": "visualizer",
         "props": {

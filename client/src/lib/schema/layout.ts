@@ -24,6 +24,7 @@ import { galleryProps } from "@/blocks/gallery/schema";
 import { calculatorProps } from "@/blocks/calculator/schema";
 import { visualizerProps } from "@/blocks/visualizer/schema";
 import { brandstripProps } from "@/blocks/brandstrip/schema";
+import { reviewsProps } from "@/blocks/reviews/schema";
 import { reusableProps } from "@/blocks/reusable/schema";
 import { blockId, LIMITS } from "./primitives";
 
@@ -55,6 +56,7 @@ export const BlockSchema = z.discriminatedUnion("type", [
   b("gallery", galleryProps),
   b("calculator", calculatorProps),
   b("brandstrip", brandstripProps),
+  b("reviews", reviewsProps),
   b("visualizer", visualizerProps),
   b("reusable", reusableProps),
 ]);

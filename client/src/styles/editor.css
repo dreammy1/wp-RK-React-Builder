@@ -2220,3 +2220,169 @@ button.stat-card:hover {
 .dash .save-btn svg {
   width: 14px;
 }
+
+/* Image field, social card, reviews, code, redirects */
+.image-field {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+.image-field:not(:has(img)) {
+  grid-template-columns: minmax(0, 1fr);
+}
+.image-field img {
+  width: 150px;
+  height: 90px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid #303a44;
+  background: #0f1319;
+}
+.image-field-body {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+.social-card {
+  display: grid;
+  margin: 0 0 16px;
+  max-width: 420px;
+  overflow: hidden;
+  background: #242526;
+  border: 1px solid #3a3b3c;
+  border-radius: 10px;
+}
+.social-card img,
+.social-card-empty {
+  width: 100%;
+  aspect-ratio: 1.91 / 1;
+  object-fit: cover;
+  display: grid;
+  place-items: center;
+  background: #18191a;
+  color: #8a8d91;
+  font-size: 12px;
+}
+.social-card-body {
+  display: grid;
+  gap: 2px;
+  padding: 10px 12px;
+}
+.social-card-body small {
+  color: #8a8d91;
+  text-transform: uppercase;
+  font-size: 11px;
+}
+.social-card-body strong {
+  font-size: 15px;
+}
+.social-card-body span {
+  color: #b0b3b8;
+  font-size: 13px;
+}
+.stars-input {
+  display: inline-flex;
+  gap: 2px;
+}
+.stars-input button {
+  padding: 2px;
+  color: #6b7780;
+  background: transparent;
+  border: 0;
+}
+.stars-input button.on {
+  color: #e8a60c;
+}
+.review-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px 14px;
+  padding: 12px 0;
+  border-bottom: 1px solid #262e37;
+}
+.review-row.hidden {
+  opacity: 0.5;
+}
+.review-row p {
+  margin: 4px 0 0;
+  color: #bdc6cb;
+  font-size: 13px;
+}
+.review-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.code-area {
+  width: 100%;
+  min-height: 140px;
+  padding: 12px;
+  font:
+    13px/1.5 "IBM Plex Mono",
+    ui-monospace,
+    monospace;
+  color: #dfe5e8;
+  background: #0f1319;
+  border: 1px solid #303a44;
+  border-radius: 8px;
+  resize: vertical;
+}
+.redirect-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 96px auto;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.checklist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.checklist li {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  font-size: 14px;
+}
+.checklist .tick {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid #48555b;
+  color: #15200f;
+  font-size: 12px;
+}
+.checklist .tick.done {
+  background: #c7f36b;
+  border-color: #c7f36b;
+}
+@media (max-width: 760px) {
+  .redirect-row {
+    grid-template-columns: 1fr 1fr;
+  }
+  .image-field {
+    grid-template-columns: 1fr;
+  }
+  .image-field img {
+    width: 100%;
+    height: 140px;
+  }
+  .review-row {
+    grid-template-columns: 1fr;
+  }
+}
+.dash .inline-check input[type="checkbox"] {
+  width: auto;
+  flex: none;
+  margin: 0;
+}
+.dash .inline-check {
+  width: auto;
+}

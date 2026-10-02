@@ -3,6 +3,7 @@ import { api } from "@/lib/api/builder";
 import { describeError } from "@/lib/api/errors";
 import type { PageRow } from "@/lib/schema/api";
 import { Modal } from "../Modal";
+import { ImageField } from "./ImageField";
 
 const slugify = (s: string) =>
   s
@@ -273,6 +274,20 @@ export function SeoDialog({
                 "No description yet. Search engines will pick a snippet from the page."}
             </span>
           </div>
+          <div className="social-card" aria-label="Social share preview">
+            {f.image ? (
+              <img src={f.image} alt="" />
+            ) : (
+              <div className="social-card-empty">Site default image</div>
+            )}
+            <div className="social-card-body">
+              <small>
+                {(page.link ?? "").replace(/^https?:\/\//, "").split("/")[0]}
+              </small>
+              <strong>{shownTitle}</strong>
+              <span>{f.description.trim() || ""}</span>
+            </div>
+          </div>
           <div className="field">
             <label htmlFor="seo-title">
               <span>Search title</span>
@@ -303,18 +318,13 @@ export function SeoDialog({
               {f.description.length}/160 recommended
             </small>
           </div>
-          <div className="field">
-            <label htmlFor="seo-img">
-              <span>Social image address</span>
-            </label>
-            <input
-              id="seo-img"
-              type="url"
-              placeholder="https://"
-              value={f.image}
-              onChange={e => setF({ ...f, image: e.target.value })}
-            />
-          </div>
+          <ImageField
+            id="seo-img"
+            label="Social sharing image"
+            value={f.image}
+            onChange={image => setF({ ...f, image })}
+            help="Shown when this page is shared on Facebook, LinkedIn, WhatsApp and similar. 1200 × 630 px works best. Leave empty to use the site default."
+          />
           <Toggle
             label="Hide this page from search engines (noindex)"
             checked={f.noindex}

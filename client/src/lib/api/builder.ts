@@ -8,6 +8,12 @@ import {
   ReusableResponse,
   type ReusableItem,
   Overview,
+  CodeResponse,
+  type CodeSettings,
+  RedirectList,
+  type RedirectRule,
+  ReviewsAdmin,
+  type ReviewItem,
   PageRowResponse,
   PageSeo,
   type PageSeoFields,
@@ -294,6 +300,32 @@ export const api = {
     request("builder/visualizer-admin/leads/delete", VizAdmin, {
       method: "POST",
       body: target,
+    }),
+  getCode: () => request("builder/code", CodeResponse),
+  setCode: (patch: Partial<CodeSettings>) =>
+    request("builder/code", CodeResponse, { method: "POST", body: patch }),
+  getReviews: () => request("builder/reviews-admin", ReviewsAdmin),
+  setReviewsConfig: (body: Record<string, unknown>) =>
+    request("builder/reviews-admin", ReviewsAdmin, {
+      method: "POST",
+      body,
+    }),
+  setReviewItems: (items: ReviewItem[]) =>
+    request("builder/reviews-admin/items", ReviewsAdmin, {
+      method: "POST",
+      body: { items },
+    }),
+  syncReviews: () =>
+    request("builder/reviews-admin/sync", ReviewsAdmin, {
+      method: "POST",
+      body: {},
+      timeoutMs: 60_000,
+    }),
+  getRedirects: () => request("builder/redirects", RedirectList),
+  setRedirects: (items: RedirectRule[]) =>
+    request("builder/redirects", RedirectList, {
+      method: "POST",
+      body: { items },
     }),
   /** True inside the WordPress-hosted editor, where the dashboard API exists. */
   hasDashboard: () => getBoot()?.mode === "nonce",

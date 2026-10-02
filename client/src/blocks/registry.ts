@@ -23,6 +23,7 @@ import {
   Sparkles,
   MapPin,
   MessageSquareQuote,
+  Star,
   Pilcrow,
   Rocket,
   type LucideIcon,
@@ -101,6 +102,9 @@ import { galleryFields } from "./gallery/Editor";
 import { visualizerDefaults, visualizerProps } from "./visualizer/schema";
 import { VisualizerView } from "./visualizer/View";
 import { visualizerFields } from "./visualizer/Editor";
+import { reviewsDefaults, reviewsProps } from "./reviews/schema";
+import { ReviewsView } from "./reviews/View";
+import { reviewsFields } from "./reviews/Editor";
 import { brandstripDefaults, brandstripProps } from "./brandstrip/schema";
 import { BrandstripView } from "./brandstrip/View";
 import { brandstripFields } from "./brandstrip/Editor";
@@ -362,6 +366,16 @@ export const registry: Registry = {
     View: CalculatorView,
     fields: calculatorFields,
   },
+  reviews: {
+    type: "reviews",
+    label: "Google reviews",
+    icon: Star,
+    description: "Rating and customer reviews",
+    defaults: reviewsDefaults,
+    schema: reviewsProps,
+    View: ReviewsView,
+    fields: reviewsFields,
+  },
   brandstrip: {
     type: "brandstrip",
     label: "Brand strip",
@@ -420,5 +434,6 @@ export const PALETTE_ORDER: BlockType[] = [
   "gallery",
   "calculator",
   "brandstrip",
+  "reviews",
   "visualizer",
 ];

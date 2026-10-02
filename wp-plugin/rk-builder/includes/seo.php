@@ -97,14 +97,29 @@ function rk_builder_seo_organization() {
 
 function rk_builder_seo_organization_save( $in ) {
 	if ( ! is_array( $in ) ) { return; }
-	$out = array();
-	foreach ( array( 'name' => 120, 'telephone' => 40, 'email' => 120, 'description' => 300 ) as $f => $max ) {
-		if ( isset( $in[ $f ] ) && is_string( $in[ $f ] ) ) {
-			$v = trim( wp_strip_all_tags( $in[ $f ] ) );
-			if ( '' !== $v ) { $out[ $f ] = rk_builder_substr( $v, 0, $max ); }
-		}
+	$out = rk_builder_seo_organization();
+	$text = array( 'name' => 120, 'telephone' => 40, 'email' => 120, 'description' => 300, 'street' => 120, 'city' => 80, 'region' => 80, 'postal' => 20, 'country' => 2, 'areaServed' => 300, 'priceRange' => 12, 'hours' => 600 );
+	foreach ( $text as $f => $max ) {
+		if ( ! array_key_exists( $f, $in ) ) { continue; }
+		$v = is_string( $in[ $f ] ) ? ( 'hours' === $f ? trim( (string) preg_replace( "/[ \t]+/", ' ', wp_strip_all_tags( $in[ $f ] ) ) ) : trim( wp_strip_all_tags( $in[ $f ] ) ) ) : '';
+		if ( 'country' === $f ) { $v = strtoupper( $v ); if ( '' !== $v && 1 !== preg_match( '/^[A-Z]{2}\z/', $v ) ) { $v = ''; } }
+		if ( '' === $v ) { unset( $out[ $f ] ); } else { $out[ $f ] = rk_builder_substr( $v, 0, $max ); }
 	}
-	if ( isset( $in['logo'] ) && is_string( $in['logo'] ) && '' !== rk_builder_absolute_url( $in['logo'] ) ) { $out['logo'] = rk_builder_absolute_url( $in['logo'] ); }
+	foreach ( array( 'logo', 'defaultImage' ) as $f ) {
+		if ( ! array_key_exists( $f, $in ) ) { continue; }
+		$u = is_string( $in[ $f ] ) ? rk_builder_absolute_url( $in[ $f ] ) : '';
+		if ( '' === $u ) { unset( $out[ $f ] ); } else { $out[ $f ] = $u; }
+	}
+	if ( array_key_exists( 'businessType', $in ) ) {
+		if ( is_string( $in['businessType'] ) && in_array( $in['businessType'], rk_builder_business_types(), true ) ) { $out['businessType'] = $in['businessType']; } else { unset( $out['businessType'] ); }
+	}
+	if ( array_key_exists( 'profiles', $in ) ) {
+		$pr = array();
+		foreach ( is_array( $in['profiles'] ) ? $in['profiles'] : array() as $k => $v ) {
+			if ( in_array( $k, rk_builder_profile_keys(), true ) && '' !== ( $u = rk_builder_int_url( $v ) ) ) { $pr[ $k ] = $u; }
+		}
+		if ( $pr ) { $out['profiles'] = $pr; } else { unset( $out['profiles'] ); }
+	}
 	update_option( 'rk_builder_seo_org', $out, false );
 }
 
@@ -148,6 +163,10 @@ function rk_builder_seo_data( $page, array $layout ) {
 	$image = '';
 	$feat  = rk_builder_featured_image( $id );
 	if ( $feat ) { $image = $feat['url']; }
+	if ( '' === $image ) {
+		$org = rk_builder_seo_organization();
+		if ( isset( $org['defaultImage'] ) ) { $image = $org['defaultImage']; }
+	}
 	if ( '' === $image ) { $image = rk_builder_first_layout_image( $layout ); }
 	if ( isset( $seo['image'] ) ) { $image = $seo['image']; }
 	$image = apply_filters( 'rk_builder_og_image', $image, $id );
@@ -223,10 +242,31 @@ function rk_builder_seo_graph( $page, array $d ) {
 	$o = array( '@type' => 'Organization', '@id' => $org_id, 'name' => $name, 'url' => $home );
 	foreach ( array( 'telephone', 'email', 'description' ) as $f ) { if ( isset( $org[ $f ] ) ) { $o[ $f ] = $org[ $f ]; } }
 	if ( isset( $org['logo'] ) ) { $o['logo'] = $org['logo']; }
+	$same = isset( $org['profiles'] ) && is_array( $org['profiles'] ) ? array_values( $org['profiles'] ) : array();
+	if ( $same ) { $o['sameAs'] = $same; }
 	$graph = array(
 		$o,
 		array( '@type' => 'WebSite', '@id' => $site_id, 'url' => $home, 'name' => $name, 'publisher' => array( '@id' => $org_id ) ),
 	);
+	if ( isset( $org['city'] ) || isset( $org['street'] ) ) {
+		$types = rk_builder_business_types();
+		$lb = array( '@type' => isset( $org['businessType'] ) && in_array( $org['businessType'], $types, true ) ? $org['businessType'] : 'LocalBusiness', '@id' => $home . '#localbusiness', 'name' => $name, 'url' => $home );
+		foreach ( array( 'telephone', 'email', 'description', 'priceRange' ) as $f ) { if ( isset( $org[ $f ] ) ) { $lb[ $f ] = $org[ $f ]; } }
+		$img = isset( $org['logo'] ) ? $org['logo'] : ( isset( $org['defaultImage'] ) ? $org['defaultImage'] : '' );
+		if ( '' !== $img ) { $lb['image'] = $img; }
+		$addr = array( '@type' => 'PostalAddress' );
+		foreach ( array( 'street' => 'streetAddress', 'city' => 'addressLocality', 'region' => 'addressRegion', 'postal' => 'postalCode', 'country' => 'addressCountry' ) as $f => $k ) { if ( isset( $org[ $f ] ) ) { $addr[ $k ] = $org[ $f ]; } }
+		$lb['address'] = $addr;
+		$hours = isset( $org['hours'] ) ? rk_builder_parse_hours( $org['hours'] ) : array();
+		if ( $hours ) { $lb['openingHoursSpecification'] = $hours; }
+		if ( isset( $org['areaServed'] ) ) {
+			$areas = array_values( array_filter( array_map( 'trim', explode( ',', $org['areaServed'] ) ), 'strlen' ) );
+			if ( $areas ) { $lb['areaServed'] = array_map( function ( $a ) { return array( '@type' => 'City', 'name' => $a ); }, array_slice( $areas, 0, 30 ) ); }
+		}
+		if ( isset( $org['profiles']['googleBusiness'] ) ) { $lb['hasMap'] = $org['profiles']['googleBusiness']; }
+		if ( $same ) { $lb['sameAs'] = $same; }
+		$graph[] = $lb;
+	}
 	$wp = array( '@type' => 'WebPage', '@id' => $url . '#webpage', 'url' => $url, 'name' => $d['title'] );
 	if ( '' !== $d['description'] ) { $wp['description'] = $d['description']; }
 	$wp['isPartOf'] = array( '@id' => $site_id );

@@ -192,7 +192,7 @@ function rk_test_role_caps( $role ) {
 	$sub = array( 'read' );
 	$aut = array( 'read', 'edit_posts', 'upload_files', 'publish_posts' );
 	$edi = array( 'read', 'edit_posts', 'upload_files', 'edit_pages', 'edit_others_pages', 'publish_pages', 'edit_others_posts' );
-	$map = array( 'subscriber' => $sub, 'author' => $aut, 'editor' => $edi, 'administrator' => array_merge( $edi, array( 'manage_options' ) ) );
+	$map = array( 'subscriber' => $sub, 'author' => $aut, 'editor' => $edi, 'administrator' => array_merge( $edi, array( 'manage_options', 'unfiltered_html' ) ) );
 	return $map[ $role ];
 }
 function current_user_can( $cap, $id = null ) {

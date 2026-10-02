@@ -2614,3 +2614,84 @@
   padding: 12px 20px;
   font-size: 14px;
 }
+
+/* Google reviews */
+.pf-reviews .pf-intro {
+  margin: 12px auto 0;
+  max-width: 640px;
+  color: var(--pf-muted);
+}
+.pf-stars {
+  display: inline-flex;
+  gap: 2px;
+  color: #d4a017;
+}
+.pf-stars svg {
+  display: block;
+  color: #cfcfc8;
+}
+.pf-stars svg.on {
+  color: #e8a60c;
+}
+.pf-rv-summary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 28px 0 0;
+  font-size: 15px;
+}
+.pf-rv-summary strong {
+  font-size: 22px;
+}
+.pf-rv-summary span:last-child {
+  color: var(--pf-muted);
+}
+.pf-rv-links {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 22px 0 0;
+}
+.pf-rv-links .pf-btn {
+  margin-top: 0;
+}
+.pf-rv-grid {
+  margin-top: 34px;
+}
+.pf-rv-grid article {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  text-align: left;
+}
+.pf-rv-text {
+  margin: 0;
+  line-height: 1.6;
+  color: var(--pf-ink);
+}
+.pf-rv-grid footer {
+  margin-top: auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  font-size: 14px;
+}
+.pf-rv-grid footer small {
+  color: var(--pf-muted);
+}
+.pf-rv-src {
+  margin-left: auto;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--pf-muted);
+}
+@media (max-width: 860px) {
+  .pf-rv-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
