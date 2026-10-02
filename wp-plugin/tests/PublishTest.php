@@ -237,3 +237,13 @@ rk_test( 'public page includes the featured image URL when set', function () {
 	$GLOBALS['RK']['meta'][ $id ]['_thumbnail_id'] = '900';
 	t_eq( t_ok( rk_public( 'about' ) )['page']['image'], 'https://cms.example.com/wp-content/uploads/f.jpg' );
 } );
+
+rk_test( 'legacy URLs: a nested path yields the last segment as the candidate slug; anything odd yields none', function () {
+	t_eq( rk_builder_legacy_slug( '/services/deck-refinishing-peoria-il' ), 'deck-refinishing-peoria-il' );
+	t_eq( rk_builder_legacy_slug( '/services/deck-refinishing-peoria-il/' ), 'deck-refinishing-peoria-il' );
+	t_eq( rk_builder_legacy_slug( '/about' ), '' );
+	t_eq( rk_builder_legacy_slug( '/' ), '' );
+	t_eq( rk_builder_legacy_slug( '/a/b/c/d' ), '' );
+	t_eq( rk_builder_legacy_slug( '/services/Bad_Slug' ), '' );
+	t_eq( rk_builder_legacy_slug( '/services/..%2f' ), '' );
+} );

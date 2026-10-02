@@ -51,7 +51,18 @@ function rk_builder_bundle_media_refs( $layout, $theme = null ) {
 			if ( ! is_array( $b ) || ! isset( $b['type'], $b['props'] ) || ! is_array( $b['props'] ) ) { continue; }
 			$p = $b['props'];
 			if ( 'image' === $b['type'] ) { $add( isset( $p['mediaId'] ) ? $p['mediaId'] : null, isset( $p['url'] ) ? $p['url'] : null ); }
-			if ( 'hero' === $b['type'] ) { $add( isset( $p['bgMediaId'] ) ? $p['bgMediaId'] : null, isset( $p['bgUrl'] ) ? $p['bgUrl'] : null ); }
+			if ( 'hero' === $b['type'] || 'coverhero' === $b['type'] ) { $add( isset( $p['bgMediaId'] ) ? $p['bgMediaId'] : null, isset( $p['bgUrl'] ) ? $p['bgUrl'] : null ); }
+			if ( 'catalog' === $b['type'] || 'gallery' === $b['type'] ) {
+				foreach ( rk_builder_parse_rows( isset( $p['items'] ) ? $p['items'] : '', 'gallery' === $b['type'] ? 3 : 7, 40 ) as $r ) {
+					if ( '' !== $r[0] && ! rk_builder_is_hex( $r[0] ) ) { $add( null, $r[0] ); }
+				}
+				if ( 'catalog' === $b['type'] ) {
+					foreach ( rk_builder_parse_rows( isset( $p['modals'] ) ? $p['modals'] : '', 4, 24 ) as $r ) { if ( '' !== $r[0] ) { $add( null, $r[0] ); } }
+				}
+			}
+			if ( 'sitefooter' === $b['type'] ) { $add( isset( $p['logoMediaId'] ) ? $p['logoMediaId'] : null, isset( $p['logoUrl'] ) ? $p['logoUrl'] : null ); }
+			if ( 'split' === $b['type'] ) { $add( isset( $p['imageMediaId'] ) ? $p['imageMediaId'] : null, isset( $p['imageUrl'] ) ? $p['imageUrl'] : null ); }
+			if ( 'navbar' === $b['type'] ) { $add( isset( $p['logoMediaId'] ) ? $p['logoMediaId'] : null, isset( $p['logoUrl'] ) ? $p['logoUrl'] : null ); }
 		}
 	}
 	if ( is_array( $theme ) ) { $add( isset( $theme['logoMediaId'] ) ? $theme['logoMediaId'] : null, isset( $theme['logoUrl'] ) ? $theme['logoUrl'] : null ); }
@@ -84,7 +95,44 @@ function rk_builder_bundle_remap_layout( array $layout, array $maps ) {
 				if ( ! empty( $rec['width'] ) ) { $p['width'] = (int) $rec['width']; }
 				if ( ! empty( $rec['height'] ) ) { $p['height'] = (int) $rec['height']; }
 			}
-		} elseif ( 'hero' === $b['type'] ) {
+		} elseif ( 'catalog' === $b['type'] || 'gallery' === $b['type'] ) {
+			// Photos live inside the text lines: point each at its local copy (an unmapped URL is left as written).
+			$n   = 'gallery' === $b['type'] ? 3 : 7;
+			$out = array();
+			foreach ( explode( "\n", isset( $p['items'] ) ? (string) $p['items'] : '' ) as $line ) {
+				$parts = explode( '|', $line );
+				$u     = trim( $parts[0] );
+				$rec   = '' !== $u ? rk_builder_bundle_lookup( $maps, null, $u ) : null;
+				if ( null !== $rec ) { $parts[0] = (string) $rec['url']; }
+				$out[] = implode( '|', $parts );
+			}
+			$p['items'] = implode( "\n", $out );
+			if ( 'catalog' === $b['type'] && ! empty( $p['modals'] ) ) {
+				$out = array();
+				foreach ( explode( "\n", (string) $p['modals'] ) as $line ) {
+					$parts = explode( '|', $line );
+					$u     = trim( $parts[0] );
+					$rec   = '' !== $u ? rk_builder_bundle_lookup( $maps, null, $u ) : null;
+					if ( null !== $rec ) { $parts[0] = (string) $rec['url']; }
+					$out[] = implode( '|', $parts );
+				}
+				$p['modals'] = implode( "\n", $out );
+			}
+		} elseif ( 'navbar' === $b['type'] || 'sitefooter' === $b['type'] ) {
+			$rec = rk_builder_bundle_lookup( $maps, isset( $p['logoMediaId'] ) && is_numeric( $p['logoMediaId'] ) ? (int) $p['logoMediaId'] : null, isset( $p['logoUrl'] ) ? $p['logoUrl'] : null );
+			unset( $p['logoMediaId'] );
+			if ( null !== $rec ) {
+				$p['logoMediaId'] = (int) $rec['id'];
+				$p['logoUrl']     = (string) $rec['url'];
+			}
+		} elseif ( 'split' === $b['type'] ) {
+			$rec = rk_builder_bundle_lookup( $maps, isset( $p['imageMediaId'] ) && is_numeric( $p['imageMediaId'] ) ? (int) $p['imageMediaId'] : null, isset( $p['imageUrl'] ) ? $p['imageUrl'] : null );
+			unset( $p['imageMediaId'] );
+			if ( null !== $rec ) {
+				$p['imageMediaId'] = (int) $rec['id'];
+				$p['imageUrl']     = (string) $rec['url'];
+			}
+		} elseif ( 'hero' === $b['type'] || 'coverhero' === $b['type'] ) {
 			$rec = rk_builder_bundle_lookup( $maps, isset( $p['bgMediaId'] ) && is_numeric( $p['bgMediaId'] ) ? (int) $p['bgMediaId'] : null, isset( $p['bgUrl'] ) ? $p['bgUrl'] : null );
 			unset( $p['bgMediaId'] );
 			if ( null !== $rec ) {

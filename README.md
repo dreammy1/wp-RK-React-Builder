@@ -171,3 +171,18 @@ More in [OPERATIONS.md](OPERATIONS.md).
 ## License
 
 MIT
+
+### Marketing blocks (v1.5)
+
+For brochure-style sites: `navbar` (fixed header that turns solid on scroll), `coverhero` (full-bleed photo hero with
+breadcrumb), `sitefooter`, `contactband`, `section`, `split`, `panel` (copy beside divider rows, or heading beside checks),
+`values`, `catalog` (photo/swatch cards with specs and bullets), `detail` (steps, factors, FAQ and a sticky sidebar) and
+`gallery`. List-like props are plain text, one item per line with `|` between fields (for example `Label|/path`), so they stay
+flat, validated and identical in the PHP and React renderers. Header, footer and contact band are normally reusable blocks.
+The full-width look needs the **standalone** rendering mode (Settings → RK Builder).
+
+Small behaviours ship as one inline script (no extra file): `calculator` (project type × quantity → a planning range; one
+`Label|rate|unit` line per type), filter buttons on `catalog`/`gallery` (`filters`; a catalog card's tag is the text after the
+last ` · ` in its blurb, a gallery photo's tag is its category), product pop-ups on `catalog` (`modals`, one line per card:
+`image|Title|Intro|item; item`), the navbar's mobile menu, and the active-page underline. Without JavaScript the pages still
+render; only the interaction is missing.

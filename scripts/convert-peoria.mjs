@@ -141,7 +141,20 @@ const useImage = (p, alt, title = "") => {
 };
 
 /* ---------- block builders ---------- */
+const clean = v => String(v).replace(/[|\n;]/g, v2 => (v2 === ";" ? "," : " ")).trim();
+const rows = list => list.map(r => r.map(x => String(x).replace(/[|\n]/g, " ").trim()).join("|")).join("\n");
 const clip = (s, n) => (s.length <= n ? s : s.slice(0, n - 1).trimEnd() + "…");
+const EYEBROWS = {
+  about: "Our story",
+  contact: "Start a conversation",
+  gallery: "Selected work",
+  "estimate-calculator": "A rough starting point",
+  stains: "Color direction",
+  pricing: "Pricing guidance",
+  finishes: "The final layer",
+  services: "Services",
+  products: "Flooring products",
+};
 class Page {
   constructor(slug, title) {
     this.slug = slug;
@@ -158,15 +171,81 @@ class Page {
     return this;
   }
   hero({ heading, sub = "", cta = "", ctaHref = "", bg }) {
+    // Mirrors the source: the home hero fills the screen with two buttons; every other page has a shorter header with no buttons.
+    const home = this.slug === "home";
     const props = {
+      crumb: home
+        ? ""
+        : (this.crumb ?? this.title),
+      eyebrow: home
+        ? "Family owned · Central Illinois"
+        : (EYEBROWS[this.slug] ?? "Service"),
       heading: clip(heading, 160),
       sub: clip(sub, 400),
-      cta: clip(cta, 60),
-      ctaHref,
+      cta: home ? clip(cta, 60) : "",
+      ctaHref: home ? ctaHref : "",
+      cta2: home ? "Get a rough estimate" : "",
+      cta2Href: home ? "/estimate-calculator" : "",
+      size: home ? "screen" : "page",
     };
     const bgImage = bg ? useImage(bg, "") : null;
     if (bgImage) props.bgUrl = bgImage.url;
-    return this.add("hero", props);
+    return this.add("coverhero", props);
+  }
+  split({ eyebrow = "", heading, body = "", facts = "", cta = "", ctaHref = "", img, alt = "", side = "left", tone = "light" }) {
+    const props = {
+      eyebrow, heading: clip(heading, 200), body: clip(body, 3000), facts, cta, ctaHref,
+      imageAlt: clip(alt, 300), side, tone,
+    };
+    const image = img ? useImage(img, alt) : null;
+    if (image) props.imageUrl = image.url;
+    return this.add("split", props);
+  }
+  section({ eyebrow = "", heading, body = "", linkLabel = "", linkHref = "", tone = "light" }) {
+    return this.add("section", { eyebrow, heading: clip(heading, 200), body: clip(body, 3000), linkLabel, linkHref, tone });
+  }
+  panel(o) {
+    return this.add("panel", {
+      mode: "rows", eyebrow: "", heading: "", body: "", checks: "", actions: "", items: "",
+      itemStyle: "feature", flip: false, kicker: "", box: false, tone: "light", ...o,
+    });
+  }
+  values({ eyebrow = "", heading, items, cols = 4, tone = "muted" }) {
+    return this.add("values", { eyebrow, heading, items: rows(items.map(i => [i[0], i[1]])), cols, tone });
+  }
+  // cards: [{ image, eyebrow, title, blurb, specs: [[k,v]], bullets: [..], href }]
+  cards({ eyebrow = "", heading = "", intro = "", cols = 3, tone = "light", numbered = false, items, filters = false, modals = null }) {
+    const line = c => {
+      const img = c.image && !c.image.startsWith("#") ? useImage(c.image, c.title)?.url ?? "" : (c.image ?? "");
+      return [
+        img, c.eyebrow ?? "", c.title, c.blurb ?? "",
+        (c.specs ?? []).map(([k, v]) => clean(`${k}: ${v}`)).join("; "),
+        (c.bullets ?? []).map(clean).join("; "), c.href ?? "",
+      ].map((v, i) => (i === 4 || i === 5 ? v : clean(v))).join("|");
+    };
+    const props = {
+      eyebrow, heading, intro, items: items.map(line).join("\n"), cols, tone, numbered,
+    };
+    if (filters) props.filters = true;
+    if (modals) {
+      // One pop-up per card, matched in order: image|Title|Intro|item; item
+      props.modals = modals.items
+        .map(m => [useImage(m.image, m.title)?.url ?? "", clean(m.title), clean(m.source), m.items.map(clean).join("; ")].join("|"))
+        .join("\n");
+      props.modalLabel = modals.label;
+      props.modalCta = modals.cta;
+    }
+    return this.add("catalog", props);
+  }
+  gallery(items) {
+    const line = g => {
+      const image = useImage(g.src, g.alt);
+      return image ? [image.url, g.service, g.alt].map(clean).join("|") : null;
+    };
+    return this.add("gallery", { items: items.map(line).filter(Boolean).join("\n"), filters: true });
+  }
+  detail(o) {
+    return this.add("detail", o);
   }
   h(text, level = 2) {
     return this.add("heading", { text: clip(text, 200), level });
@@ -218,7 +297,14 @@ class Page {
       slug: this.slug,
       title: this.title,
       wasPublished: true,
-      layout: { version: 1, blocks: this.blocks },
+      layout: {
+        version: 1,
+        blocks: [
+          { id: "site-header", type: "reusable", props: { refId: REUSABLE_IDS.header } },
+          ...this.blocks,
+          { id: "site-footer", type: "reusable", props: { refId: REUSABLE_IDS.footer } },
+        ],
+      },
       ...extra,
     };
   }
@@ -228,8 +314,57 @@ const tel = site.phoneHref;
 const callLabel = `Call ${site.phone}`;
 
 /* ---------- reusable library ---------- */
-const REUSABLE_IDS = { contact: 11, cta: 12, area: 13, products: 14 };
+// The source's primary nav, on the flat URLs used here. "Visualizer" is left out until that tool exists as a block.
+function primaryNavLinks() {
+  return [
+    "About|/about", "Services|/services", "Finishes|/finishes", "Stains|/stains",
+    "Products|/products", "Gallery|/gallery", "Pricing|/pricing",
+  ].join("\n");
+}
+
+const REUSABLE_IDS = { contact: 11, cta: 12, area: 13, products: 14, header: 15, footer: 16 };
 const reusables = [
+  {
+    id: REUSABLE_IDS.header,
+    slug: "site-header",
+    name: "Site header",
+    block: {
+      type: "navbar",
+      props: {
+        brand: site.name,
+        logoUrl: "__LOGO__",
+        links: primaryNavLinks(),
+        phone: site.phone,
+        phoneHref: site.phoneHref,
+        overlay: true,
+      },
+    },
+  },
+  {
+    id: REUSABLE_IDS.footer,
+    slug: "site-footer",
+    name: "Site footer",
+    block: {
+      type: "sitefooter",
+      props: {
+        brand: site.name,
+        tagline: clip(String(site.tagline ?? ""), 300),
+        colATitle: "Services",
+        colALinks: services.map(s => `${s.title}|/${s.slug}`).join("\n"),
+        colBTitle: "Explore",
+        colBLinks: [
+          "About|/about", "Finishes|/finishes", "Stains|/stains", "Products|/products", "Gallery|/gallery",
+          "Estimate Calculator|/estimate-calculator", "Contact|/contact",
+        ].join("\n"),
+        contactTitle: "Get in touch",
+        phone: site.phone,
+        email: site.email,
+        address: clip(`Serving Peoria & surrounding Central Illinois communities, ${site.serviceRadius}.`, 300),
+        copyright: `© ${new Date().getFullYear()} ${site.name}. Family owned & operated.`,
+        note: "Estimates are rough guides — final pricing depends on site conditions and project scope.",
+      },
+    },
+  },
   {
     id: REUSABLE_IDS.contact,
     slug: "contact-details",
@@ -252,11 +387,12 @@ const reusables = [
     slug: "call-to-action",
     name: "Call-to-action band",
     block: {
-      type: "cta",
+      type: "contactband",
       props: {
         heading: "Ready to talk about your floors?",
-        cta: callLabel,
-        ctaHref: tel,
+        sub: "Call or email to discuss your project and the right next step. We answer real questions — no fragile contact forms.",
+        phone: site.phone,
+        email: site.email,
       },
     },
   },
@@ -265,12 +401,17 @@ const reusables = [
     slug: "service-area",
     name: "Service area",
     block: {
-      type: "text",
+      type: "section",
       props: {
-        text: clip(
-          `Serving Peoria & Central Illinois. We travel to homes and businesses ${site.serviceRadius}. If you're nearby and not listed, give us a call — chances are we cover your town.\n\nTowns we serve: ${serviceAreas.join(", ")}.`,
-          5000
+        eyebrow: "Where we work",
+        heading: "Serving Peoria & Central Illinois",
+        body: clip(
+          `We travel to homes and businesses ${site.serviceRadius}. If you're nearby and not listed, give us a call — chances are we cover your town.\n\nTowns we serve: ${serviceAreas.join(", ")}.`,
+          3000
         ),
+        linkLabel: "",
+        linkHref: "",
+        tone: "muted",
       },
     },
   },
@@ -301,25 +442,31 @@ const add = p => (pages[p.slug] = p);
     ctaHref: tel,
     bg: "/images/hero-kitchen.png",
   });
-  p.p(
-    "FOCUSED ON WOOD\n\nInstallation, sanding, refinishing, stains, and finishes for homes and businesses across Peoria and Central Illinois."
-  );
-  p.h("A trusted, family-owned hardwood specialist");
-  p.img("/images/about-craft.png", "Craftsman hand-finishing a hardwood floor");
-  p.p(
-    "We treat every floor like it's in our own home — careful prep, honest recommendations, and a finish that holds up to real life. From a single room refresh to a full commercial install, we bring the same attention to detail.",
-    "No pushy sales, no fine-print surprises. Just clear guidance and quality workmanship you can stand on for years."
-  );
-  p.bullets([
-    "Wood — focused specialty",
-    "75 mi — service radius from Peoria",
-    "Family — owned & operated",
-  ]);
-  p.h("Six ways we care for wood");
-  p.p(
-    "Separate expertise for every kind of project — each done to the same high standard."
-  );
-  p.grid("What we do", 6);
+  p.add("section", {
+    eyebrow: "Focused on wood",
+    heading: "",
+    body: "Installation, sanding, refinishing, stains, and finishes for homes and businesses across Peoria and Central Illinois.",
+    linkLabel: "",
+    linkHref: "",
+    tone: "light",
+    center: true,
+  });
+  p.split({
+    eyebrow: "Who we are",
+    heading: "A trusted, family-owned hardwood specialist",
+    body: "We treat every floor like it's in our own home — careful prep, honest recommendations, and a finish that holds up to real life. From a single room refresh to a full commercial install, we bring the same attention to detail.\n\nNo pushy sales, no fine-print surprises. Just clear guidance and quality workmanship you can stand on for years.",
+    facts: "Wood|Focused specialty\n75 mi|Service radius from Peoria\nFamily|Owned & operated",
+    img: "/images/about-craft.png",
+    alt: "Craftsman hand-finishing a hardwood floor",
+  });
+  p.section({
+    eyebrow: "What we do",
+    heading: "Six ways we care for wood",
+    body: "Separate expertise for every kind of project — each done to the same high standard.",
+    linkLabel: "All services",
+    linkHref: "/services",
+  });
+  p.grid("", 6);
   p.ref("area");
   p.h("Clear guidance for your flooring project");
   p.bullets([
@@ -337,40 +484,26 @@ const add = p => (pages[p.slug] = p);
   p.hero({
     heading: "Rooted in Peoria, built on trust.",
     sub: "A family-owned hardwood flooring company that treats your home and business like our own.",
-    cta: callLabel,
-    ctaHref: tel,
     bg: "/images/about-craft.png",
   });
-  p.h("Hardwood is all we do — and we do it right");
-  p.p(
-    "Peoria Hardwood Floors is a family-owned business serving homeowners and businesses throughout Peoria and the surrounding Central Illinois region. We specialize entirely in wood — installation, sanding, refinishing, staining, and durable finishing — so every project gets focused, experienced hands.",
-    "We believe a floor should be beautiful and honest. That means clear communication, realistic timelines, and recommendations based on what your floor truly needs. If a lower-cost sandless refresh will do the job, we'll tell you — we're not here to oversell.",
-    "From a single worn room to a full commercial gymnasium, we bring the same standard of care and finish every time."
-  );
-  p.img(
-    "/images/new-images/IMG_0216.jpg",
-    "Freshly refinished hardwood floor in a bright living room"
-  );
-  p.h("Values you can stand on");
-  for (const [t, b] of [
-    [
-      "Family owned",
-      "You work directly with the people doing the work — not a call center. We stand behind every floor we touch.",
+  p.split({
+    eyebrow: "Who we are",
+    heading: "Hardwood is all we do — and we do it right",
+    body: "Peoria Hardwood Floors is a family-owned business serving homeowners and businesses throughout Peoria and the surrounding Central Illinois region. We specialize entirely in wood — installation, sanding, refinishing, staining, and durable finishing — so every project gets focused, experienced hands.\n\nWe believe a floor should be beautiful and honest. That means clear communication, realistic timelines, and recommendations based on what your floor truly needs. If a lower-cost sandless refresh will do the job, we'll tell you — we're not here to oversell.\n\nFrom a single worn room to a full commercial gymnasium, we bring the same standard of care and finish every time.",
+    img: "/images/new-images/IMG_0216.jpg",
+    alt: "Freshly refinished hardwood floor in a bright living room",
+    side: "right",
+  });
+  p.values({
+    eyebrow: "What we stand for",
+    heading: "Values you can stand on",
+    items: [
+      ["Family owned", "You work directly with the people doing the work — not a call center. We stand behind every floor we touch."],
+      ["Craftsmanship first", "Careful prep, precise sanding, and clean detail work around cabinets, stairs, and transitions."],
+      ["Honest guidance", "We recommend what your floor actually needs — including sandless when a full refinish isn't necessary."],
+      ["Quality materials", "Trusted finishes and stains from Bona, Rubio Monocoat, and DuraSeal for lasting results."],
     ],
-    [
-      "Craftsmanship first",
-      "Careful prep, precise sanding, and clean detail work around cabinets, stairs, and transitions.",
-    ],
-    [
-      "Honest guidance",
-      "We recommend what your floor actually needs — including sandless when a full refinish isn't necessary.",
-    ],
-    [
-      "Quality materials",
-      "Trusted finishes and stains from Bona, Rubio Monocoat, and DuraSeal for lasting results.",
-    ],
-  ])
-    p.h(t, 3).p(b);
+  });
   p.ref("area");
   p.ref("cta");
   add(p);
@@ -381,15 +514,24 @@ const add = p => (pages[p.slug] = p);
   p.hero({
     heading: "Tell us what your floor needs.",
     sub: "Phone and email are the fastest way to reach the team. Share a few details and we will help you figure out the right next step.",
-    cta: callLabel,
-    ctaHref: tel,
     bg: "/images/hero-kitchen.png",
   });
-  p.ref("contact");
-  p.h("Peoria and Central Illinois.");
-  p.p(
-    "We serve Peoria and surrounding communities within roughly 75 miles. If you are nearby and unsure whether we cover your project, call — we are happy to talk it through."
-  );
+  // Same rates as the source's EstimateCalculatorClient.tsx
+  p.add("calculator", {
+    heading: "Project details",
+    types: [
+      "Sand & refinish|5.5|Approximate square feet",
+      "New installation|8|Approximate square feet",
+      "Sandless refresh|3.5|Approximate square feet",
+      "Deck refinishing|4.5|Approximate square feet",
+      "Cabinet refinishing|85|Number of doors / drawers",
+    ].join("\n"),
+    amount: 800,
+    resultLabel: "Planning range",
+    note: "This is a rough planning number, not a quote. It does not include unusual prep, repairs, stairs, furniture moving, or material upgrades.",
+    ctaLabel: "Talk through your project",
+    ctaHref: "/contact",
+  });
   add(p);
 }
 // Services index
@@ -398,15 +540,27 @@ const add = p => (pages[p.slug] = p);
   p.hero({
     heading: "Everything we do with wood.",
     sub: "Focused expertise for residential and commercial projects across Peoria and Central Illinois.",
-    cta: callLabel,
-    ctaHref: tel,
     bg: "/images/new-images/IMG_1224.jpeg",
   });
-  p.h("Start with the condition of the wood and the way you use the space.");
-  p.p(
-    "New floors call for material and subfloor planning. Existing floors may need a full refinish, a lower-disruption sandless refresh, or a focused repair. Commercial, deck, and cabinet work each has its own preparation and scheduling considerations."
+  p.section({
+    eyebrow: "Choose the right starting point",
+    heading: "Start with the condition of the wood and the way you use the space.",
+    body: "New floors call for material and subfloor planning. Existing floors may need a full refinish, a lower-disruption sandless refresh, or a focused repair. Commercial, deck, and cabinet work each has its own preparation and scheduling considerations.",
+    linkLabel: "Talk through your project",
+    linkHref: "/contact",
+  });
+  services.forEach((s, i) =>
+    p.split({
+      eyebrow: String(i + 1).padStart(2, "0"),
+      heading: s.title,
+      body: s.short,
+      cta: "View service",
+      ctaHref: `/${s.slug}`,
+      img: s.image,
+      alt: s.title,
+      side: i % 2 === 1 ? "right" : "left",
+    })
   );
-  p.grid("Our services", 12);
   p.ref("area");
   p.ref("cta");
   add(p);
@@ -417,77 +571,101 @@ const add = p => (pages[p.slug] = p);
   p.hero({
     heading: "A clear conversation before the work begins.",
     sub: "Every floor is different. We prefer to look at the space, understand the scope, and give you a useful estimate instead of hiding behind a one-size-fits-all price.",
-    cta: callLabel,
-    ctaHref: tel,
     bg: "/images/new-images/IMG_0214.jpg",
   });
-  p.h("Good pricing starts with the right questions.");
-  p.p(
-    "Square footage is only part of the story. We account for preparation, materials, access, details, and the finish you want so the recommendation fits the project—not just a calculator. The calculator is planning guidance; final scope and pricing are assessed for the specific space."
-  );
-  for (const [t, b] of [
-    [
-      "Installation",
-      "Material, layout, subfloor preparation, trim, and installation method all shape the final range.",
-    ],
-    [
-      "Sanding & refinishing",
-      "Room count, repairs, stain selection, finish system, and the existing floor's condition matter most.",
-    ],
-    [
-      "Sandless refinishing",
-      "A lower-disruption refresh for floors with a sound existing finish and surface-level wear.",
-    ],
-    [
-      "Deck & cabinet refinishing",
-      "Exterior prep, board condition, cabinet count, color changes, and finish choice affect the scope.",
-    ],
-  ])
-    p.h(t, 3).p(b);
-  p.h("No surprises. No pressure.");
-  p.bullets([
-    "A clear scope before scheduling",
-    "Material and finish options explained in plain language",
-    "Recommendations based on your home, business, and budget",
-    "A local team serving Peoria and Central Illinois",
-  ]);
+  p.panel({
+    mode: "rows",
+    eyebrow: "What affects cost",
+    heading: "Good pricing starts with the right questions.",
+    body: "Square footage is only part of the story. We account for preparation, materials, access, details, and the finish you want so the recommendation fits the project—not just a calculator. The calculator is planning guidance; final scope and pricing are assessed for the specific space.",
+    actions: "Try the estimate calculator|/estimate-calculator\nReview services|/services\nTalk through your project|/contact",
+    items: rows([
+      ["Installation", "Material, layout, subfloor preparation, trim, and installation method all shape the final range."],
+      ["Sanding & refinishing", "Room count, repairs, stain selection, finish system, and the existing floor's condition matter most."],
+      ["Sandless refinishing", "A lower-disruption refresh for floors with a sound existing finish and surface-level wear."],
+      ["Deck & cabinet refinishing", "Exterior prep, board condition, cabinet count, color changes, and finish choice affect the scope."],
+    ]),
+  });
+  p.panel({
+    mode: "intro",
+    tone: "muted",
+    eyebrow: "Our promise",
+    heading: "No surprises. No pressure.",
+    checks: "A clear scope before scheduling\nMaterial and finish options explained in plain language\nRecommendations based on your home, business, and budget\nA local team serving Peoria and Central Illinois",
+  });
   p.ref("cta");
   add(p);
 }
 // Estimate calculator (interactive in the original)
 {
   const p = new Page("estimate-calculator", "Estimate");
+  p.crumb = "Estimate Calculator";
   p.hero({
-    heading: "Get a rough estimate.",
-    sub: "The online calculator is not part of this page. Call or email and we will talk through your space and give you a useful number.",
-    cta: callLabel,
-    ctaHref: tel,
+    heading: "Get a feel for the range.",
+    sub: "Use this simple calculator for planning only. Your final price depends on site conditions, materials, prep, and project scope.",
+    bg: "/images/service-refinishing.png",
   });
-  p.p(
-    "Pricing depends on the space, the material, the finish and the condition of the existing floor. Share the room sizes and what you have in mind and we will help you plan the right next step."
-  );
-  p.ref("contact");
+  // Same rates as the source's EstimateCalculatorClient.tsx
+  p.add("calculator", {
+    heading: "Project details",
+    types: [
+      "Sand & refinish|5.5|Approximate square feet",
+      "New installation|8|Approximate square feet",
+      "Sandless refresh|3.5|Approximate square feet",
+      "Deck refinishing|4.5|Approximate square feet",
+      "Cabinet refinishing|85|Number of doors / drawers",
+    ].join("\n"),
+    amount: 800,
+    resultLabel: "Planning range",
+    note: "This is a rough planning number, not a quote. It does not include unusual prep, repairs, stairs, furniture moving, or material upgrades.",
+    ctaLabel: "Talk through your project",
+    ctaHref: "/contact",
+  });
   add(p);
 }
 // Service detail pages
+const SERVICE_LINKS = {
+  "hardwood-floor-installation-peoria-il": ["Compare flooring products|/products"],
+  "hardwood-floor-refinishing-peoria-il": ["Compare finishes|/finishes", "Explore stain directions|/stains"],
+  "sandless-floor-refinishing-peoria-il": ["Compare full refinishing|/hardwood-floor-refinishing-peoria-il"],
+  "commercial-sports-flooring-central-illinois": ["View selected work|/gallery"],
+  "deck-refinishing-peoria-il": ["View selected work|/gallery"],
+  "cabinet-refinishing-peoria-il": ["Review finish directions|/finishes"],
+};
 for (const s of services) {
   const p = new Page(s.slug, s.title);
-  p.hero({
-    heading: s.hero,
-    sub: s.short,
-    cta: callLabel,
-    ctaHref: tel,
-    bg: s.image,
+  p.crumb = `Services|/services\n${s.title}`;
+  p.hero({ heading: s.hero, sub: s.short, bg: s.image });
+  p.detail({
+    eyebrow: "Who it's for",
+    heading: s.title,
+    body: s.who,
+    note:
+      s.slug === "hardwood-floor-refinishing-peoria-il"
+        ? "Full refinishing sands the existing finish and prepares the wood for a new stain or finish. If the wear is limited to the existing surface, compare it with sandless refinishing before choosing a scope."
+        : "",
+    stepsTitle: "How the process works",
+    steps: s.process.join("\n"),
+    factorsTitle: "What affects your price",
+    factorsIntro: "Every project is unique — these are the main factors we weigh when quoting.",
+    factors: s.factors.join("\n"),
+    links: [...(SERVICE_LINKS[s.slug] ?? []), "Talk through your project|/contact"].join("\n"),
+    faqTitle: "Frequently asked",
+    faq: rows(s.faqs.map(f => [f.q, f.a])),
+    asideTitle: "Discuss your project",
+    asideText: "Tell us about your space and we'll give honest guidance and a realistic estimate — no pressure.",
+    phone: site.phone,
+    ctaLabel: "Try the estimate calculator",
+    ctaHref: "/estimate-calculator",
   });
-  p.h("Who it's for");
-  p.p(s.who);
-  p.h("How the process works");
-  p.p(...s.process.map((x, i) => `${i + 1}. ${x}`));
-  p.h("What affects your price");
-  p.bullets(s.factors);
-  p.h("Frequently asked");
-  for (const f of s.faqs) p.h(f.q, 3).p(f.a);
-  p.ref("contact");
+  p.cards({
+    heading: "Explore other services",
+    tone: "muted",
+    items: services
+      .filter(o => o.slug !== s.slug)
+      .slice(0, 3)
+      .map(o => ({ image: o.image, title: o.title, blurb: o.short, href: `/${o.slug}` })),
+  });
   p.ref("cta");
   add(p);
 }
@@ -497,24 +675,26 @@ for (const s of services) {
   p.hero({
     heading: "Finish is where the floor becomes yours.",
     sub: "We help you compare sheen, durability, maintenance, and the feel you want underfoot — then recommend the right system for your space.",
-    cta: callLabel,
-    ctaHref: tel,
     bg: "/images/finish-water.png",
   });
-  for (const f of finishes) {
-    p.img(f.image, `${f.name} finish`);
-    p.h(f.name, 3);
-    p.p(`${f.family} · ${f.sheen}`, `Best for: ${f.bestFor}.`, f.notes);
-  }
-  p.h("See samples in your own light.");
-  p.p(
-    "Screen colors and online photos are useful for direction, but they cannot show exactly how a finish will look in your home. We bring the conversation back to real samples, your wood species, and your lighting."
-  );
-  p.bullets([
-    "Compare sheen without guesswork",
-    "Understand cure and maintenance needs",
-    "Choose a finish that fits your everyday life",
-  ]);
+  p.cards({
+    items: finishes.map(f => ({
+      image: f.image,
+      eyebrow: f.family,
+      title: f.name,
+      blurb: f.notes,
+      specs: [["Sheen", f.sheen], ["Best for", f.bestFor]],
+    })),
+  });
+  p.panel({
+    mode: "intro",
+    tone: "muted",
+    eyebrow: "A better decision",
+    heading: "See samples in your own light.",
+    body: "Screen colors and online photos are useful for direction, but they cannot show exactly how a finish will look in your home. We bring the conversation back to real samples, your wood species, and your lighting.",
+    checks: "Compare sheen without guesswork\nUnderstand cure and maintenance needs\nChoose a finish that fits your everyday life",
+    actions: "Explore refinishing|/hardwood-floor-refinishing-peoria-il\nTalk through your finish|/contact",
+  });
   p.ref("cta");
   add(p);
 }
@@ -524,17 +704,23 @@ for (const s of services) {
   p.hero({
     heading: "Start with a tone. Finish with a sample.",
     sub: "Explore stain directions we work with, then narrow the choice with real samples on your actual wood.",
-    cta: callLabel,
-    ctaHref: tel,
     bg: "/images/finish-oil.png",
   });
-  for (const st of stains) {
-    p.img(st.image, `${st.name} stain on hardwood`);
-    p.h(st.name, 3);
-    p.p(`${st.family} · ${st.tone} tone · ${st.brand}`, st.notes);
-  }
-  p.ref("products");
-  p.ref("cta");
+  p.cards({
+    cols: 4,
+    filters: true,
+    items: stains.map(st => ({
+      image: st.color,
+      title: st.name,
+      blurb: `${st.brand} · ${st.tone}`,
+    })),
+  });
+  p.section({
+    heading: "Directional only.",
+    body: "Stain chips are directional only. Final color varies with wood species, age, preparation, application, and lighting. We recommend choosing from samples made for your floor.",
+    linkLabel: "Request a sample conversation",
+    linkHref: "/contact",
+  });
   add(p);
 }
 // Products
@@ -543,26 +729,26 @@ for (const s of services) {
   p.hero({
     heading: "A floor that feels like it belongs there.",
     sub: "A wide variety of wood flooring options, from classic unfinished oak to custom patterns, reclaimed boards, and specialty materials sourced for your project.",
-    cta: callLabel,
-    ctaHref: tel,
     bg: "/images/new-images/IMG_1778.JPG",
   });
-  for (const pr of products) {
-    p.img(pr.image, pr.title);
-    p.h(pr.title, 3);
-    p.p(pr.body);
-    p.bullets(pr.details);
-  }
-  p.h("Product catalog");
-  for (const c of catalog) {
-    p.h(c.title, 3);
-    p.p(c.source);
-    p.bullets(c.items);
-  }
-  p.h("Need help narrowing it down?");
-  p.p(
-    "Tell us what you are imagining and we will help you compare species, grades, widths and finishes."
-  );
+  p.section({
+    eyebrow: "One page, every direction",
+    heading: "More than a catalog. A place to start the conversation.",
+    body: "We work with a range of manufacturers, mills, importers, and reclaimed flooring specialists. Options can be reviewed against your project specifications, including species, width, stain, finish, and texture where available.",
+  });
+  p.cards({
+    numbered: true,
+    items: products.map(pr => ({ image: pr.image, title: pr.title, blurb: pr.body, bullets: pr.details })),
+    modals: { items: catalog, label: "View all products", cta: "Ask about this category|/contact" },
+  });
+  p.panel({
+    mode: "rows",
+    tone: "muted",
+    eyebrow: "Need help narrowing it down?",
+    heading: "Tell us what you are imagining.",
+    body: "Feel free to reach out. We would be happy to help with your flooring needs, talk through samples, and source a product that fits your space, budget, and daily life.",
+    actions: `Plan an installation|/hardwood-floor-installation-peoria-il\n!Talk with us|/contact\nCall ${site.phone}|${tel}`,
+  });
   p.ref("cta");
   add(p);
 }
@@ -572,17 +758,16 @@ for (const s of services) {
   p.hero({
     heading: "Floors with a story to tell.",
     sub: "A look at installations, refinishing, stains, and custom detail from our recent projects.",
-    cta: callLabel,
-    ctaHref: tel,
     bg: "/images/new-images/IMG_0214.jpg",
   });
-  const groups = new Map();
-  for (const g of galleryImages)
-    (groups.get(g.service) ?? groups.set(g.service, []).get(g.service)).push(g);
-  for (const [service, imgs] of groups) {
-    p.h(service, 2);
-    for (const g of imgs) p.img(g.src, g.alt);
-  }
+  p.section({
+    eyebrow: "Visual context",
+    heading: "Explore the kinds of work we discuss.",
+    body: "Browse installation, refinishing, finish, deck, cabinet, commercial, and detail-work examples. The images are visual direction; project scope and final selections depend on the space.",
+    linkLabel: "Review services",
+    linkHref: "/services",
+  });
+  p.gallery(galleryImages);
   p.ref("cta");
   add(p);
 }
@@ -602,6 +787,8 @@ const content = services.map((s, i) => ({
 
 /* ---------- theme ---------- */
 const logo = useImage("/images/peoriahardwoodfloors-logo.png", site.name);
+reusables[0].block.props.logoUrl = logo.url;
+reusables[1].block.props.logoUrl = logo.url;
 const theme = {
   version: 1,
   primary: "#94704a",
@@ -620,8 +807,16 @@ const mediaFor = pageList => {
   for (const pg of pageList)
     for (const b of pg.blocks) {
       if (b.type === "image") urls.add(b.props.url);
-      if (b.type === "hero" && b.props.bgUrl) urls.add(b.props.bgUrl);
+      if (b.type === "split" && b.props.imageUrl) urls.add(b.props.imageUrl);
+      if (b.type === "catalog" || b.type === "gallery")
+        for (const l of b.props.items.split("\n")) {
+          const u = l.split("|")[0];
+          if (u && !u.startsWith("#")) urls.add(u);
+        }
+      if ((b.type === "hero" || b.type === "coverhero") && b.props.bgUrl)
+        urls.add(b.props.bgUrl);
     }
+  urls.add(logo.url); // the shared header carries the logo
   return urls;
 };
 function bundle(pageSlugs, { withTheme = false, withContent = false } = {}) {

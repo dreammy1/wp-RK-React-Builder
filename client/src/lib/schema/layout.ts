@@ -10,6 +10,18 @@ import { spacerProps } from "@/blocks/spacer/schema";
 import { dividerProps } from "@/blocks/divider/schema";
 import { testimonialProps } from "@/blocks/testimonial/schema";
 import { contactProps } from "@/blocks/contact/schema";
+import { navbarProps } from "@/blocks/navbar/schema";
+import { coverheroProps } from "@/blocks/coverhero/schema";
+import { sitefooterProps } from "@/blocks/sitefooter/schema";
+import { sectionProps } from "@/blocks/section/schema";
+import { splitProps } from "@/blocks/split/schema";
+import { contactbandProps } from "@/blocks/contactband/schema";
+import { panelProps } from "@/blocks/panel/schema";
+import { valuesProps } from "@/blocks/values/schema";
+import { catalogProps } from "@/blocks/catalog/schema";
+import { detailProps } from "@/blocks/detail/schema";
+import { galleryProps } from "@/blocks/gallery/schema";
+import { calculatorProps } from "@/blocks/calculator/schema";
 import { reusableProps } from "@/blocks/reusable/schema";
 import { blockId, LIMITS } from "./primitives";
 
@@ -28,6 +40,18 @@ export const BlockSchema = z.discriminatedUnion("type", [
   b("divider", dividerProps),
   b("testimonial", testimonialProps),
   b("contact", contactProps),
+  b("navbar", navbarProps),
+  b("coverhero", coverheroProps),
+  b("sitefooter", sitefooterProps),
+  b("section", sectionProps),
+  b("split", splitProps),
+  b("contactband", contactbandProps),
+  b("panel", panelProps),
+  b("values", valuesProps),
+  b("catalog", catalogProps),
+  b("detail", detailProps),
+  b("gallery", galleryProps),
+  b("calculator", calculatorProps),
   b("reusable", reusableProps),
 ]);
 export type Block = z.infer<typeof BlockSchema>;

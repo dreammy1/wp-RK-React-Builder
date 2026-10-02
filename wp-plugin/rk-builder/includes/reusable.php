@@ -58,6 +58,12 @@ function rk_builder_reusable_get( $id ) {
 	return array( 'id' => (int) $post->ID, 'name' => rk_builder_plain( $post->post_title ), 'slug' => (string) $post->post_name, 'block' => $block );
 }
 
+/** Block type held by a library entry ('' when it is missing). */
+function rk_builder_reusable_type( $id ) {
+	$r = rk_builder_reusable_get( (int) $id );
+	return ( null !== $r && isset( $r['block']['type'] ) ) ? (string) $r['block']['type'] : '';
+}
+
 function rk_builder_reusable_list() {
 	$posts = get_posts( array( 'post_type' => RK_BUILDER_REUSABLE_TYPE, 'post_status' => 'publish', 'posts_per_page' => RK_BUILDER_MAX_REUSABLES, 'orderby' => 'title', 'order' => 'ASC' ) );
 	$out   = array();

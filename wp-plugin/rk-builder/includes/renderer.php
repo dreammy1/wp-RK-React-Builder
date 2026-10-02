@@ -19,6 +19,8 @@
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 
 require_once __DIR__ . '/render/hero.php';
+require_once __DIR__ . '/render/pf.php';
+require_once __DIR__ . '/render/pf2.php';
 require_once __DIR__ . '/render/heading.php';
 require_once __DIR__ . '/render/text.php';
 require_once __DIR__ . '/render/image.php';
@@ -148,6 +150,18 @@ function rk_builder_block_renderers() {
 		'divider'   => 'rk_builder_render_divider',
 		'testimonial' => 'rk_builder_render_testimonial',
 		'contact'   => 'rk_builder_render_contact',
+		'navbar'    => 'rk_builder_render_navbar',
+		'coverhero' => 'rk_builder_render_coverhero',
+		'sitefooter' => 'rk_builder_render_sitefooter',
+		'section'   => 'rk_builder_render_section',
+		'split'     => 'rk_builder_render_split',
+		'contactband' => 'rk_builder_render_contactband',
+		'panel' => 'rk_builder_render_panel',
+		'values' => 'rk_builder_render_values',
+		'catalog' => 'rk_builder_render_catalog',
+		'detail' => 'rk_builder_render_detail',
+		'gallery' => 'rk_builder_render_gallery',
+		'calculator' => 'rk_builder_render_calculator',
 		'reusable'  => 'rk_builder_render_reusable',
 	);
 }

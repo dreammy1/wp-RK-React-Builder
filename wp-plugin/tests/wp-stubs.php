@@ -369,6 +369,15 @@ if ( ! function_exists( 'remove_action' ) ) { function remove_action( $tag, $fn,
 if ( ! function_exists( 'wp_enqueue_style' ) ) {
 	function wp_enqueue_style( $h, $src = '', $deps = array(), $ver = false ) { $GLOBALS['RK']['styles'][ $h ] = array( 'src' => $src, 'ver' => $ver, 'inline' => array() ); }
 }
+if ( ! function_exists( 'wp_register_script' ) ) {
+	function wp_register_script( $h, $src = '', $deps = array(), $ver = false, $in_footer = false ) { $GLOBALS['RK']['scripts'][ $h ] = array( 'src' => $src, 'inline' => array() ); return true; }
+}
+if ( ! function_exists( 'wp_enqueue_script' ) ) {
+	function wp_enqueue_script( $h ) { return true; }
+}
+if ( ! function_exists( 'wp_add_inline_script' ) ) {
+	function wp_add_inline_script( $h, $js ) { $GLOBALS['RK']['scripts'][ $h ]['inline'][] = $js; return true; }
+}
 if ( ! function_exists( 'wp_add_inline_style' ) ) {
 	function wp_add_inline_style( $h, $css ) { $GLOBALS['RK']['styles'][ $h ]['inline'][] = $css; return true; }
 }

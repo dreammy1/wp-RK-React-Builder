@@ -21,6 +21,18 @@ export const BLOCK_TYPES = [
   "divider",
   "testimonial",
   "contact",
+  "navbar",
+  "coverhero",
+  "sitefooter",
+  "section",
+  "split",
+  "contactband",
+  "panel",
+  "values",
+  "catalog",
+  "detail",
+  "gallery",
+  "calculator",
   "reusable",
 ] as const;
 export type BlockType = (typeof BLOCK_TYPES)[number];

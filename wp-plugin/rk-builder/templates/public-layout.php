@@ -12,6 +12,16 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 $rk_page  = rk_builder_current_request_page();
 $rk_theme = rk_builder_get_theme();
 $rk_html  = $rk_page ? rk_builder_render_layout( $rk_page['layout'], array( 'page_id' => (int) $rk_page['page']->ID, 'preview' => false ) ) : '';
+// A layout that brings its own header / footer blocks (navbar, sitefooter, or a reusable that holds one) replaces the default chrome.
+$rk_has = function ( $type ) use ( $rk_page ) {
+	if ( ! $rk_page || empty( $rk_page['layout']['blocks'] ) ) { return false; }
+	foreach ( $rk_page['layout']['blocks'] as $b ) {
+		if ( ! is_array( $b ) || ! isset( $b['type'] ) ) { continue; }
+		if ( $type === $b['type'] ) { return true; }
+		if ( 'reusable' === $b['type'] && isset( $b['props']['refId'] ) && function_exists( 'rk_builder_reusable_type' ) && rk_builder_reusable_type( (int) $b['props']['refId'] ) === $type ) { return true; }
+	}
+	return false;
+};
 ?><!doctype html>
 <html <?php language_attributes(); ?>>
 <head>
@@ -26,9 +36,9 @@ $rk_html  = $rk_page ? rk_builder_render_layout( $rk_page['layout'], array( 'pag
 if ( function_exists( 'wp_body_open' ) ) { wp_body_open(); }
 // All fragments below are escaped by the renderer (see includes/renderer.php).
 echo '<div class="site-root rk-root">';
-echo rk_builder_site_header_html( $rk_theme ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+if ( ! $rk_has( 'navbar' ) ) { echo rk_builder_site_header_html( $rk_theme ); } // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 echo '<main id="main">' . $rk_html . '</main>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-echo rk_builder_site_footer_html( $rk_theme ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+if ( ! $rk_has( 'sitefooter' ) ) { echo rk_builder_site_footer_html( $rk_theme ); } // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 echo '</div>';
 wp_footer();
 ?>

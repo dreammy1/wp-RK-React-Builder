@@ -1,0 +1,21 @@
+import type { FieldDef } from "../fields";
+
+export const detailFields: FieldDef[] = [
+  { kind: "text", key: "eyebrow", label: "Eyebrow label", maxLength: 80 },
+  { kind: "text", key: "heading", label: "Heading", maxLength: 200 },
+  { kind: "textarea", key: "body", label: "Intro copy", maxLength: 2000 },
+  { kind: "textarea", key: "note", label: "Highlighted note", maxLength: 600 },
+  { kind: "text", key: "stepsTitle", label: "Steps title", maxLength: 120 },
+  { kind: "textarea", key: "steps", label: "Steps", maxLength: 3000, help: "One per line" },
+  { kind: "text", key: "factorsTitle", label: "Factors title", maxLength: 120 },
+  { kind: "text", key: "factorsIntro", label: "Factors intro", maxLength: 300 },
+  { kind: "textarea", key: "factors", label: "Factors", maxLength: 3000, help: "One per line" },
+  { kind: "textarea", key: "links", label: "Links", maxLength: 1500, help: "One per line: Label|/path" },
+  { kind: "text", key: "faqTitle", label: "FAQ title", maxLength: 120 },
+  { kind: "textarea", key: "faq", label: "FAQ", maxLength: 6000, help: "One per line: Question|Answer" },
+  { kind: "text", key: "asideTitle", label: "Sidebar title", maxLength: 120 },
+  { kind: "textarea", key: "asideText", label: "Sidebar copy", maxLength: 400 },
+  { kind: "text", key: "phone", label: "Sidebar phone", maxLength: 40 },
+  { kind: "text", key: "ctaLabel", label: "Sidebar second button", maxLength: 60 },
+  { kind: "url", key: "ctaHref", label: "Sidebar second link", maxLength: 500 },
+];
