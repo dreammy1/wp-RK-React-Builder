@@ -49,11 +49,16 @@ class WP_REST_Response {
 	public function set_status( $s ) { $this->status = $s; }
 	public function header( $k, $v ) { $this->headers[ $k ] = $v; }
 	public function get_headers() { return $this->headers; }
+	public function is_error() { return $this->status >= 400; }
 }
 
 class WP_REST_Request implements ArrayAccess {
 	public $method; public $route; public $url = array(); public $query = array(); public $body = ''; public $hdr = array(); public $files = array();
 	public function get_file_params() { return $this->files; }
+	public function set_param( $k, $v ) { $this->query[ $k ] = $v; }
+	public function set_header( $k, $v ) { $this->hdr[ strtolower( $k ) ] = $v; }
+	public function get_header( $k ) { return isset( $this->hdr[ strtolower( $k ) ] ) ? $this->hdr[ strtolower( $k ) ] : null; }
+	public function set_body( $b ) { $this->body = $b; }
 	public function __construct( $method = 'GET', $route = '' ) { $this->method = $method; $this->route = $route; }
 	public function get_body() { return $this->body; }
 	public function get_json_params() {
@@ -186,11 +191,12 @@ function rk_test_login( $who ) {
 	$ids = array( 'anon' => 0, 'admin' => 1, 'editor' => 2, 'subscriber' => 3, 'author' => 4 );
 	$GLOBALS['RK']['user'] = $ids[ $who ];
 }
+function wp_set_current_user( $id ) { $GLOBALS['RK']['user'] = (int) $id; return null; }
 function is_user_logged_in() { return $GLOBALS['RK']['user'] > 0; }
 function get_current_user_id() { return (int) $GLOBALS['RK']['user']; }
 function get_userdata( $id ) {
 	if ( ! isset( $GLOBALS['RK']['users'][ $id ] ) ) { return false; }
-	return (object) array( 'ID' => $id, 'display_name' => $GLOBALS['RK']['users'][ $id ]['name'] );
+	return (object) array( 'ID' => $id, 'display_name' => $GLOBALS['RK']['users'][ $id ]['name'], 'user_login' => 'user' . $id );
 }
 function rk_test_role_caps( $role ) {
 	$sub = array( 'read' );
@@ -352,6 +358,7 @@ function rk_test_request( $method, $path, $opts = array() ) {
 			$req = new WP_REST_Request( $method, $path );
 			foreach ( $m as $k => $v ) { if ( is_string( $k ) ) { $req->url[ $k ] = $v; } }
 			$req->query = isset( $opts['query'] ) ? $opts['query'] : array();
+			foreach ( isset( $opts['headers'] ) ? $opts['headers'] : array() as $hk => $hv ) { $req->hdr[ strtolower( $hk ) ] = $hv; }
 			if ( isset( $opts['body'] ) ) { $req->body = is_string( $opts['body'] ) ? $opts['body'] : json_encode( $opts['body'] ); }
 			if ( ! empty( $h['args'] ) ) {
 				foreach ( $h['args'] as $name => $spec ) {
@@ -369,6 +376,22 @@ function rk_test_request( $method, $path, $opts = array() ) {
 	}
 	return new WP_Error( 'rest_no_route', 'No route was found matching the URL and request method.', array( 'status' => 404 ) );
 }
+
+/** Core's internal dispatch: the same routing, validation and permission checks as a real request. */
+function rest_do_request( $req ) {
+	$opts = array( 'query' => $req->query, 'headers' => $req->hdr );
+	if ( '' !== $req->body ) { $opts['body'] = $req->body; }
+	$r = rk_test_request( $req->method, $req->route, $opts );
+	if ( $r instanceof WP_Error ) {
+		$d = $r->get_error_data();
+		return new WP_REST_Response( array( 'code' => $r->get_error_code(), 'message' => $r->get_error_message(), 'data' => $d ), is_array( $d ) && isset( $d['status'] ) ? $d['status'] : 500 );
+	}
+	return $r;
+}
+if ( ! function_exists( 'wp_get_current_user' ) ) {
+	function wp_get_current_user() { $id = get_current_user_id(); return (object) array( 'ID' => $id, 'user_login' => $id ? 'user' . $id : '' ); }
+}
+if ( ! function_exists( 'wp_is_application_passwords_available' ) ) { function wp_is_application_passwords_available() { return true; } }
 
 require __DIR__ . '/wp-stubs-admin.php'; // stubs for the admin/settings/setup/migration tests (all guarded)
 require __DIR__ . '/wp-stubs-dynamic.php'; // taxonomies, terms, query-string helpers (content types / templates tests)

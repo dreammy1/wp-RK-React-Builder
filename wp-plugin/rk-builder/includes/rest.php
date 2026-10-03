@@ -217,6 +217,7 @@ function rk_builder_register_routes() {
 	rk_builder_register_type_routes( $ns );
 	rk_builder_register_template_routes( $ns );
 	rk_builder_register_global_routes( $ns );
+	rk_builder_register_mcp_routes( $ns );
 	rk_builder_register_dashboard_routes( $ns );
 	rk_builder_register_integration_routes( $ns );
 	register_rest_route( $ns, '/theme-config', array(

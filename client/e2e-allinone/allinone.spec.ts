@@ -1037,3 +1037,156 @@ test("16 · reusable library: rename a block, see where it is used, delete the u
   await lib.getByRole("button", { name: "Delete Library renamed" }).click();
   await expect(lib.getByText("Library renamed")).toHaveCount(0);
 });
+
+test("17 · AI & MCP: off by default, switched on from the dashboard, access level decides the tools, an Application Password signs in, activity is logged", async ({
+  page,
+  request,
+}) => {
+  await login(page, AIO.admin, AIO.adminPass);
+  await page.goto(builderUrl());
+  const rpc = async (method: string, params: unknown = {}) => {
+    const r = await wpFetch(page, "builder-mcp", {
+      method: "POST",
+      json: { jsonrpc: "2.0", id: 1, method, params },
+    });
+    return r as { status: number; json: any }; // eslint-disable-line @typescript-eslint/no-explicit-any
+  };
+  const tools = async () =>
+    (await rpc("tools/list")).json.result.tools.map(
+      (t: { name: string }) => t.name
+    ) as string[];
+
+  // off until switched on
+  const off = await rpc("initialize");
+  expect(off.status).toBe(403);
+  expect(off.json.code).toBe("rk_mcp_disabled");
+
+  await page
+    .getByRole("complementary", { name: "Dashboard" })
+    .getByRole("button", { name: "AI & MCP", exact: true })
+    .click();
+  const access = page.getByRole("region", { name: "Access" });
+  await access.getByLabel(/Allow AI assistants to connect/).check();
+  await expect(page.getByText(/MCP is on/)).toBeVisible();
+  await access.locator("label.kind-card", { hasText: "Read only" }).click();
+  await expect(page.getByText(/Access level: Read only/)).toBeVisible();
+
+  let names = await tools();
+  expect(names).toContain("rkb_overview");
+  expect(names).not.toContain("rkb_create_page");
+
+  await access
+    .locator("label.kind-card", { hasText: "Read and write" })
+    .click();
+  await expect(page.getByText(/Access level: Read and write/)).toBeVisible();
+  names = await tools();
+  expect(names).toContain("rkb_create_page");
+  expect(names).not.toContain("rkb_delete_media");
+
+  // a real tool call through the protocol
+  const call = async (name: string, args: unknown = {}) => {
+    const r = await rpc("tools/call", { name, arguments: args });
+    return {
+      error: r.json.result.isError as boolean,
+      data: JSON.parse(r.json.result.content[0].text),
+    };
+  };
+  const made = await call("rkb_create_page", { title: "MCP made this" });
+  expect(made.error).toBe(false);
+  const id = made.data.page.id as number;
+  expect(
+    (await call("rkb_list_pages", { search: "MCP made" })).data.pages
+  ).toHaveLength(1);
+  expect((await call("rkb_block_catalog")).data.blocks.hero.heading.type).toBe(
+    "text"
+  );
+  expect((await call("rkb_delete_media", { id: 1 })).data.code).toBe(
+    "rk_mcp_unknown_tool"
+  );
+  expect((await call("rkb_trash_page", { id })).error).toBe(false);
+
+  // sign in the way an AI client does: an Application Password over HTTP Basic
+  const made2 = await page.evaluate(async () => {
+    const boot = (window as unknown as { RK_BUILDER_BOOT: { nonce: string } })
+      .RK_BUILDER_BOOT;
+    const r = await fetch(
+      "/index.php?rest_route=/wp/v2/users/me/application-passwords",
+      {
+        method: "POST",
+        headers: {
+          "X-WP-Nonce": boot.nonce,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ name: "e2e mcp" }),
+      }
+    );
+    return { status: r.status, json: await r.json() };
+  });
+  if (made2.status === 201) {
+    const basic = Buffer.from(`${AIO.admin}:${made2.json.password}`).toString(
+      "base64"
+    );
+    const url = `${AIO.wp}/index.php?rest_route=/rk/v1/builder-mcp`;
+    const anon = await request.post(url, {
+      data: { jsonrpc: "2.0", id: 1, method: "tools/list" },
+    });
+    expect(anon.status()).toBe(401);
+    const ok = await request.post(url, {
+      headers: { Authorization: `Basic ${basic}` },
+      data: { jsonrpc: "2.0", id: 1, method: "tools/list" },
+    });
+    expect(ok.status()).toBe(200);
+    expect(JSON.stringify(await ok.json())).toContain("rkb_overview");
+  } else {
+    test.info().annotations.push({
+      type: "note",
+      description: `Application Passwords unavailable here (${made2.status})`,
+    });
+  }
+
+  // the easy way in: a connection key made on the screen, sent in X-RK-API-Key
+  await page.getByLabel("Name", { exact: true }).fill("E2E assistant");
+  await page.getByRole("button", { name: "Create key" }).click();
+  const fresh = page.getByLabel("New connection key");
+  await expect(fresh).toBeVisible();
+  const token = (await fresh.textContent())!.trim();
+  expect(token).toMatch(/^rkb_[0-9a-f]{40}$/);
+  const keyUrl = `${AIO.wp}/index.php?rest_route=/rk/v1/builder-mcp`;
+  const viaKey = await request.post(keyUrl, {
+    headers: { "X-RK-API-Key": token },
+    data: { jsonrpc: "2.0", id: 1, method: "tools/list" },
+  });
+  expect(viaKey.status()).toBe(200);
+  expect(JSON.stringify(await viaKey.json())).toContain("rkb_create_page");
+  const bearer = await request.post(keyUrl, {
+    headers: { Authorization: `Bearer ${token}` },
+    data: { jsonrpc: "2.0", id: 1, method: "tools/list" },
+  });
+  expect(bearer.status()).toBe(200);
+  await expect(
+    page.getByLabel("Setup for code").getByText(token, { exact: false })
+  ).toBeVisible();
+  page.once("dialog", d => void d.accept());
+  await page.getByRole("button", { name: "Revoke E2E assistant" }).click();
+  await expect(page.getByText(/Revoked “E2E assistant”/)).toBeVisible();
+  const gone = await request.post(keyUrl, {
+    headers: { "X-RK-API-Key": token },
+    data: { jsonrpc: "2.0", id: 1, method: "tools/list" },
+  });
+  expect(gone.status()).toBe(401);
+
+  // the activity shows up on the screen
+  await page.goto(builderUrl());
+  await page
+    .getByRole("complementary", { name: "Dashboard" })
+    .getByRole("button", { name: "AI & MCP", exact: true })
+    .click();
+  const log = page.getByRole("region", { name: "Recent activity" });
+  await expect(log.getByText("rkb_create_page")).toBeVisible();
+  await expect(log.getByText("refused or failed").first()).toBeVisible();
+
+  // leave the site as it was
+  await access.getByLabel(/Allow AI assistants to connect/).uncheck();
+  await expect(page.getByText(/MCP is off/)).toBeVisible();
+  expect((await rpc("initialize")).status).toBe(403);
+});

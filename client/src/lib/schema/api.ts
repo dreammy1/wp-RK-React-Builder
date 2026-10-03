@@ -680,3 +680,46 @@ export const GlobalSettings = z.object({
 });
 export type GlobalSettings = z.infer<typeof GlobalSettings>;
 export const GlobalResponse = z.object({ global: GlobalSettings });
+
+export const McpLevel = z.enum(["read", "write", "full"]);
+export type McpLevel = z.infer<typeof McpLevel>;
+export const McpAdmin = z.object({
+  settings: z.object({ enabled: z.boolean(), level: McpLevel }),
+  endpoint: z.string(),
+  tools: z.array(
+    z.object({
+      name: z.string(),
+      title: z.string(),
+      group: z.string(),
+      risk: McpLevel,
+      description: z.string(),
+      enabled: z.boolean(),
+    })
+  ),
+  log: z.array(
+    z.object({
+      t: z.string(),
+      user: z.string(),
+      tool: z.string(),
+      ok: z.boolean(),
+      via: z.string().optional(),
+    })
+  ),
+  keys: z.array(
+    z.object({
+      id: z.string(),
+      name: z.string(),
+      prefix: z.string(),
+      level: McpLevel,
+      created: z.string(),
+      used: z.string(),
+      user: z.string(),
+    })
+  ),
+  /** Only in the answer to creating a key: the key itself, shown once. */
+  created: z.object({ token: z.string(), id: z.string() }).optional(),
+  passwordsOk: z.boolean(),
+  profileUrl: z.string(),
+  username: z.string(),
+});
+export type McpAdmin = z.infer<typeof McpAdmin>;

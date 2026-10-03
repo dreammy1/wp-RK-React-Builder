@@ -21,6 +21,8 @@ import {
   type PageSeoFields,
   SiteSettingsResponse,
   GlobalResponse,
+  McpAdmin,
+  type McpLevel,
   type GlobalSettings,
   type SiteSettings,
   VizAdmin,
@@ -334,6 +336,22 @@ export const api = {
   getGlobal: () => request("builder/global", GlobalResponse),
   setGlobal: (patch: Partial<GlobalSettings>) =>
     request("builder/global", GlobalResponse, { method: "POST", body: patch }),
+  getMcp: () => request("builder/mcp", McpAdmin),
+  setMcp: (patch: {
+    enabled?: boolean;
+    level?: McpLevel;
+    clearLog?: boolean;
+  }) => request("builder/mcp", McpAdmin, { method: "POST", body: patch }),
+  createMcpKey: (name: string, level: McpLevel) =>
+    request("builder/mcp/keys", McpAdmin, {
+      method: "POST",
+      body: { name, level },
+    }),
+  revokeMcpKey: (id: string) =>
+    request(`builder/mcp/keys/${id}/revoke`, McpAdmin, {
+      method: "POST",
+      body: {},
+    }),
   getViz: () => request("builder/visualizer-admin", VizAdmin),
   setViz: (settings: Record<string, unknown>) =>
     request("builder/visualizer-admin", VizAdmin, {

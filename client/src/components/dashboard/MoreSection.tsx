@@ -1,4 +1,5 @@
 import {
+  Bot,
   Boxes,
   CodeXml,
   LayoutTemplate,
@@ -44,6 +45,9 @@ export function MoreSection({
             </button>
             <button className="more-item" onClick={() => go("global")}>
               <SlidersHorizontal size={16} aria-hidden="true" /> Global settings
+            </button>
+            <button className="more-item" onClick={() => go("ai")}>
+              <Bot size={16} aria-hidden="true" /> AI &amp; MCP
             </button>
             <button className="more-item" onClick={() => go("reviews")}>
               <Star size={16} aria-hidden="true" /> Reviews
