@@ -399,7 +399,7 @@ export function ThemeEngine({
                 maxLength={80}
                 value={form.name}
                 onChange={e => setForm({ ...form, name: e.target.value })}
-                placeholder="e.g. Hardwood Floors Pro"
+                placeholder="e.g. Acme Studio"
               />
             </div>
             <div className="field">

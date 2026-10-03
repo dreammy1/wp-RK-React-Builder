@@ -9,7 +9,7 @@ export const contactbandProps = z.strictObject({
 });
 export type ContactbandProps = z.infer<typeof contactbandProps>;
 export const contactbandDefaults: ContactbandProps = {
-  heading: "Ready to talk about your floors?",
+  heading: "Ready to get started?",
   sub: "",
   phone: "",
   email: "",

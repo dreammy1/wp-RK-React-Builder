@@ -420,7 +420,7 @@ export const registry: Registry = {
     label: "AI flooring visualizer",
     icon: Sparkles,
     description:
-      "Upload a room photo and get an AI floor concept (needs the visualizer backend)",
+      "Flooring add-on: visitors upload a room photo and get an AI floor concept (needs the visualizer backend)",
     defaults: visualizerDefaults,
     schema: visualizerProps,
     View: VisualizerView,

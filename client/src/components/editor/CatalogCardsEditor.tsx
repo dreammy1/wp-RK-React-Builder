@@ -529,7 +529,7 @@ export function CatalogCardsEditor({
                   id={`${id}-bul`}
                   label="Checklist"
                   items={c.bullets}
-                  placeholder="e.g. Custom stain matching"
+                  placeholder="e.g. Custom sizing"
                   addLabel="Add item"
                   onChange={v => patchCard(i, { bullets: v })}
                 />

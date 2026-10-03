@@ -275,7 +275,7 @@ export function SchemaPanel({
             className="code-area"
             rows={5}
             value={v.faq.items}
-            placeholder={"How long does staining take? | Usually two days."}
+            placeholder={"How long does delivery take? | Usually two days."}
             onChange={e => set({ faq: { ...v.faq, items: e.target.value } })}
           />
         </Field>

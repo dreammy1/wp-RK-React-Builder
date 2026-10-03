@@ -125,7 +125,7 @@ describe("editor reducer", () => {
     expect(s.past.length).toBe(base + 1);
     s = reducer(s, { type: "undo" });
     expect((s.layout.blocks[0]!.props as { heading: string }).heading).toBe(
-      "Powering what’s next"
+      "Your headline goes here"
     );
     // a pause > 1s starts a new step
     s = run(

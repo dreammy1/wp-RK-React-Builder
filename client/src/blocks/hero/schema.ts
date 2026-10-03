@@ -12,8 +12,8 @@ export const heroProps = z.strictObject({
 });
 export type HeroProps = z.infer<typeof heroProps>;
 export const heroDefaults: HeroProps = {
-  heading: "Powering what’s next",
-  sub: "Licensed electrical and energy contractors serving the islands.",
+  heading: "Your headline goes here",
+  sub: "One or two lines about what you do and who it is for.",
   cta: "Get a quote",
   ctaHref: "/contact",
 };

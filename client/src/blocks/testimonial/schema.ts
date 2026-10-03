@@ -8,7 +8,7 @@ export const testimonialProps = z.strictObject({
 });
 export type TestimonialProps = z.infer<typeof testimonialProps>;
 export const testimonialDefaults: TestimonialProps = {
-  quote: "They finished on time and the floor looks incredible.",
+  quote: "They did exactly what they promised, and the result looks great.",
   author: "Customer name",
-  role: "Homeowner",
+  role: "Customer",
 };

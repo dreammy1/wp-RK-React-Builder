@@ -18,7 +18,7 @@ export const imageProps = z
 export type ImageProps = z.infer<typeof imageProps>;
 export const imageDefaults: ImageProps = {
   url: "/placeholder.svg",
-  alt: "Editorial workspace texture",
+  alt: "Describe what the image shows",
   decorative: false,
   width: 1200,
   height: 600,

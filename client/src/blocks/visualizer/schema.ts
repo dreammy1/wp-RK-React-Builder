@@ -10,7 +10,7 @@ export const visualizerProps = z.strictObject({
 });
 export type VisualizerProps = z.infer<typeof visualizerProps>;
 export const visualizerDefaults: VisualizerProps = {
-  cities: "Peoria\nPeoria Heights\nDunlap\nChillicothe\nMorton",
+  cities: "City one\nCity two\nCity three",
   submitLabel: "Create my floor visualization",
   ctaLabel: "Talk with us",
   ctaHref: "/contact",

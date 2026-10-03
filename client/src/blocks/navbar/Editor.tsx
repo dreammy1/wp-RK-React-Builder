@@ -52,7 +52,7 @@ export const navbarFields: FieldDef[] = [
     key: "links",
     label: "Menu links",
     maxLength: 3000,
-    help: "One per line: Label|/path (up to 12). Start a line with “- ” to put it in a drop-down under the line above (up to 8 each), e.g. “- Hardwood|/services/hardwood”. Add a short description after a second bar to show it under the item: “- Hardwood|/services/hardwood|New floors, any species”.",
+    help: "One per line: Label|/path (up to 12). Start a line with “- ” to put it in a drop-down under the line above (up to 8 each), e.g. “- Web design|/services/web-design”. Add a short description after a second bar to show it under the item: “- Hardwood|/services/hardwood|New floors, any species”.",
   },
   {
     kind: "select",
