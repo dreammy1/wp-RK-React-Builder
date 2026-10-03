@@ -262,7 +262,7 @@ test.describe("editing round trip", () => {
   test("theme edits save and apply as CSS variables", async ({ page }) => {
     await openEditor(page, 42);
     await page.getByRole("tab", { name: "Theme" }).click();
-    await page.getByLabel("Type system").selectOption("Georgia");
+    await page.getByLabel("Body font").selectOption("Georgia");
     await page.getByRole("button", { name: "Save draft" }).click();
     await expect(page.getByTestId("save-status")).toHaveText(
       "Draft saved to WordPress"

@@ -6,7 +6,7 @@ import type { LocalDraft } from "@/lib/editor/drafts";
 import type { RevisionSummary } from "@/lib/schema/api";
 import type { LayoutDocument } from "@/lib/schema/layout";
 import type { ThemeConfig } from "@/lib/schema/theme";
-import { themeToCssVars } from "@/lib/schema/theme";
+import { themeToCssVars, themeToDesignRules } from "@/lib/schema/theme";
 import { LayoutRenderer } from "@/render/BlockRenderer";
 import type { ContentStore } from "@/lib/api/contentStore";
 import { ContentProvider } from "../ContentProvider";
@@ -274,6 +274,7 @@ export function RevisionsDialog({
               className="site-root"
               style={themeToCssVars(theme) as React.CSSProperties}
             >
+              <style>{themeToDesignRules(theme)}</style>
               <ContentProvider store={store}>
                 <LayoutRenderer layout={preview.layout} mode="editor" />
               </ContentProvider>

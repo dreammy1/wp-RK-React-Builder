@@ -185,7 +185,7 @@ test("5 · theme: administrators can save it, editors cannot", async ({
   await login(page, AIO.admin, AIO.adminPass);
   await page.goto(builderUrl(state().pageId));
   await page.getByRole("tab", { name: "Theme" }).click();
-  await page.getByLabel("Type system").selectOption("Georgia");
+  await page.getByLabel("Body font").selectOption("Georgia");
   await page.getByRole("button", { name: "Save draft" }).click();
   await expect(page.getByTestId("save-status")).toHaveText(
     "Draft saved to WordPress"
@@ -197,7 +197,7 @@ test("5 · theme: administrators can save it, editors cannot", async ({
   await expect(
     ed.page.getByText("Only administrators can change the global theme.")
   ).toBeVisible();
-  await expect(ed.page.getByLabel("Type system")).toBeDisabled();
+  await expect(ed.page.getByLabel("Body font")).toBeDisabled();
   await ed.ctx.close();
 });
 
@@ -1367,4 +1367,117 @@ test("18 · site kit: download the whole site as one zip, delete its picture, up
   // the install had published it; undo puts it back as it was before (not live)
   const left = (gone.json as { pages: { status: string }[] }).pages;
   expect(left.every(p => p.status !== "publish")).toBe(true);
+});
+
+test("19 · design system: a style preset changes the editor canvas; saved tokens restyle the live page (buttons, corners, headings, accent)", async ({
+  page,
+}) => {
+  await login(page, AIO.admin, AIO.adminPass);
+  await page.goto(builderUrl(state().pageId));
+
+  // editor: pick the Bold preset and the canvas variables follow
+  await page.getByRole("tab", { name: "Theme" }).click();
+  await page.getByRole("button", { name: /Apply the Bold style/ }).click();
+  const vars = await page.locator(".canvas-area").evaluate(el => {
+    const cs = getComputedStyle(el);
+    return {
+      btn: cs.getPropertyValue("--site-btn-radius").trim(),
+      accent: cs.getPropertyValue("--site-accent").trim(),
+    };
+  });
+  expect(vars.btn).toBe("999px");
+  expect(vars.accent.toLowerCase()).toBe("#ff5a36");
+
+  // live site: save tokens through the API, publish a page with a hero button, read the computed styles
+  const theme = {
+    version: 1,
+    primary: "#C7F36B",
+    bg: "#F8F5ED",
+    ink: "#1B2430",
+    font: "Space Grotesk",
+    accent: "#FF5A36",
+    radius: "round",
+    buttonStyle: "outline",
+    headingWeight: 800,
+    headingFont: "Classic Serif",
+  };
+  const saved = await wpFetch(page, "theme-config", {
+    method: "POST",
+    json: theme,
+  });
+  expect(saved.status).toBe(200);
+  const made = await wpFetch(page, "builder/site-import", {
+    method: "POST",
+    json: {
+      options: { dryRun: false },
+      bundle: {
+        format: "rk-builder-site",
+        version: 1,
+        source: { url: "https://old.example.com/" },
+        theme: null,
+        content: [],
+        media: [],
+        pages: [
+          {
+            slug: "design-check",
+            title: "Design Check",
+            wasPublished: true,
+            layout: {
+              version: 1,
+              blocks: [
+                {
+                  id: "hero-1",
+                  type: "hero",
+                  props: {
+                    heading: "Design check",
+                    sub: "sub",
+                    cta: "Go",
+                    ctaHref: "/x",
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  });
+  expect(made.status).toBe(200);
+  const list = await wpFetch(page, "builder/pages?search=Design%20Check");
+  const id = (list.json as { pages: { id: number; revision: number }[] })
+    .pages[0]!;
+  const pub = await wpFetch(page, `builder/publish/${id.id}`, {
+    method: "POST",
+    json: { expectedRevision: id.revision },
+  });
+  expect(pub.status).toBe(200);
+
+  await page.goto(`${AIO.wp}/?page_id=${id.id}`);
+  const look = await page.evaluate(() => {
+    const b = document.querySelector(".site-btn") as HTMLElement;
+    const h = document.querySelector(".site-root h1") as HTMLElement;
+    return {
+      radius: getComputedStyle(b).borderRadius,
+      bg: getComputedStyle(b).backgroundColor,
+      weight: getComputedStyle(h).fontWeight,
+      family: getComputedStyle(h).fontFamily,
+    };
+  });
+  expect(look.radius).toBe("999px");
+  expect(look.bg).toBe("rgba(0, 0, 0, 0)"); // outline: no fill
+  expect(look.weight).toBe("800");
+  expect(look.family).toContain("Palatino");
+
+  // put the default look back so nothing else is affected
+  await page.goto(builderUrl());
+  await wpFetch(page, "theme-config", {
+    method: "POST",
+    json: {
+      version: 1,
+      primary: "#C7F36B",
+      bg: "#F8F5ED",
+      ink: "#1B2430",
+      font: "Space Grotesk",
+    },
+  });
 });

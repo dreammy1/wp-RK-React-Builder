@@ -47,7 +47,13 @@ copied in on install).
 Open any page in the editor and use the **Theme** tab (administrators only):
 
 - **Primary**, **Canvas background**, **Ink** colours: every block uses these tokens, so change them here, not per block.
-- **Type system**: Space Grotesk, IBM Plex Mono or Georgia.
+- **Style presets** (Modern, Classic, Bold, Minimal): one click sets colours, fonts, corners and buttons together. Start
+  from one, then adjust.
+- **Accent**, **Dark** (header, footer, dark buttons) and **Soft background** (cards): optional extra colours. Leave them
+  alone and the blocks keep their designed colours.
+- **Body font** and **Heading font**: Space Grotesk, IBM Plex Mono, Georgia, System Sans, Humanist Sans, Classic Serif,
+  Rounded Sans (all load instantly: no font files to download). **Heading weight** 400 to 800.
+- **Corners**: Square, Soft or Round (cards, photos, form fields and buttons). **Buttons**: Solid or Outline.
 - **Logo**, social links, sticky header, footer columns (1–4).
 
 Pick colours with enough contrast: body text on the background should be at least **4.5 : 1**.

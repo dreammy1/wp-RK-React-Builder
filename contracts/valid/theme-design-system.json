@@ -1,0 +1,19 @@
+{
+  "kind": "theme",
+  "description": "A theme that sets every design-system token",
+  "document": {
+    "version": 1,
+    "primary": "#4F46E5",
+    "bg": "#FFFFFF",
+    "ink": "#0F172A",
+    "font": "System Sans",
+    "accent": "#4F46E5",
+    "dark": "#0F172A",
+    "surface": "#F1F5F9",
+    "bodyFont": "Humanist Sans",
+    "headingFont": "Classic Serif",
+    "headingWeight": 700,
+    "radius": "soft",
+    "buttonStyle": "outline"
+  }
+}

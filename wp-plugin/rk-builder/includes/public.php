@@ -31,7 +31,36 @@ function rk_builder_font_stacks() {
 		'Space Grotesk' => "'Space Grotesk', system-ui, sans-serif",
 		'IBM Plex Mono' => "'IBM Plex Mono', ui-monospace, monospace",
 		'Georgia'       => "Georgia, 'Times New Roman', serif",
+		'System Sans'   => "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+		'Humanist Sans' => "'Gill Sans', 'Gill Sans MT', Seravek, 'Trebuchet MS', sans-serif",
+		'Classic Serif' => "'Iowan Old Style', 'Palatino Linotype', Palatino, 'Book Antiqua', Georgia, serif",
+		'Rounded Sans'  => "ui-rounded, 'SF Pro Rounded', 'Hiragino Maru Gothic ProN', Quicksand, 'Varela Round', sans-serif",
 	);
+}
+
+/**
+ * Design-system rules for a validated theme: only what the theme sets, so a theme without them prints nothing extra.
+ * Mirrors themeToDesignRules() in client/src/lib/schema/theme.ts.
+ */
+function rk_builder_theme_design_rules( array $theme, $scope = '.site-root' ) {
+	$r = array();
+	$radius = isset( $theme['radius'] ) ? $theme['radius'] : '';
+	$weight = isset( $theme['headingWeight'] ) ? (int) $theme['headingWeight'] : 0;
+	$heads  = $scope . ' :is(h1,h2,h3,h4)';
+	if ( isset( $theme['headingFont'] ) ) { $r[] = $heads . '{font-family:var(--site-heading-font)!important}'; }
+	if ( $weight > 0 ) { $r[] = $heads . '{font-weight:' . $weight . '!important}'; }
+	if ( isset( $theme['accent'] ) ) { $r[] = $scope . ' :is(p,li,td,dd) a:not([class]){color:var(--site-accent)}'; }
+	if ( isset( $theme['surface'] ) ) { $r[] = $scope . ' :is(.content-card,.pf-panel,.site-card){background:var(--site-surface)}'; }
+	if ( '' !== $radius ) {
+		$r[] = $scope . ' :is(.content-card,.content-card img,.pf-section img,.site-grid img,.pf-panel,.site-card,input,select,textarea){border-radius:var(--site-radius)}';
+		$r[] = $scope . ' :is(.site-btn,.pf-btn){border-radius:var(--site-btn-radius)}';
+	}
+	if ( isset( $theme['buttonStyle'] ) && 'outline' === $theme['buttonStyle'] ) {
+		$r[] = $scope . ' .site-btn{background:transparent!important;color:var(--site-ink)!important;box-shadow:inset 0 0 0 2px var(--site-ink)}';
+		$r[] = $scope . ' .pf-btn.solid{background:transparent!important;color:#fff!important;box-shadow:inset 0 0 0 2px #fff}';
+		$r[] = $scope . ' .pf-btn.dark{background:transparent!important;color:var(--pf-ink)!important;box-shadow:inset 0 0 0 2px var(--pf-ink)}';
+	}
+	return implode( '', $r );
 }
 
 /**
@@ -48,11 +77,21 @@ function rk_builder_theme_css( array $theme, $selector = '.rk-root' ) {
 		$vars[ '--site-' . $k ] = $v;
 		$vars[ '--rk-' . $k ]   = $v;
 	}
+	if ( isset( $theme['bodyFont'] ) && isset( $stacks[ $theme['bodyFont'] ] ) ) {
+		$font = $stacks[ $theme['bodyFont'] ];
+		$vars['--site-body-font'] = $font;
+	}
 	$vars['--site-font'] = $font;
 	$vars['--rk-font']   = $font;
+	foreach ( array( 'accent' => '--site-accent', 'dark' => '--site-dark', 'surface' => '--site-surface' ) as $k => $var ) {
+		if ( isset( $theme[ $k ] ) && 1 === preg_match( '/^#[0-9a-fA-F]{6}\z/', (string) $theme[ $k ] ) ) { $vars[ $var ] = $theme[ $k ]; }
+	}
+	if ( isset( $theme['headingFont'] ) && isset( $stacks[ $theme['headingFont'] ] ) ) { $vars['--site-heading-font'] = $stacks[ $theme['headingFont'] ]; }
+	$radii = array( 'square' => array( '0', '0' ), 'soft' => array( '8px', '6px' ), 'round' => array( '16px', '999px' ) );
+	if ( isset( $theme['radius'], $radii[ $theme['radius'] ] ) ) { $vars['--site-radius'] = $radii[ $theme['radius'] ][0]; $vars['--site-btn-radius'] = $radii[ $theme['radius'] ][1]; }
 	$decl = array();
 	foreach ( $vars as $k => $v ) { $decl[] = $k . ':' . $v; }
-	return $selector . '{' . implode( ';', $decl ) . '}';
+	return $selector . '{' . implode( ';', $decl ) . '}' . rk_builder_theme_design_rules( $theme );
 }
 
 /* ------------------------------------------------------------------ *

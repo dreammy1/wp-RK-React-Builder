@@ -659,8 +659,17 @@ function rk_builder_empty_layout() {
  * ------------------------------------------------------------------ */
 
 function rk_builder_theme_fonts() {
-	return array( 'Space Grotesk', 'IBM Plex Mono', 'Georgia' );
+	return array( 'Space Grotesk', 'IBM Plex Mono', 'Georgia', 'System Sans', 'Humanist Sans', 'Classic Serif', 'Rounded Sans' );
 }
+
+/** Optional design-system choices on a theme (mirrors client/src/lib/schema/theme.ts). */
+function rk_builder_theme_design_enums() {
+	return array(
+		'radius'      => array( 'square', 'soft', 'round' ),
+		'buttonStyle' => array( 'solid', 'outline' ),
+	);
+}
+function rk_builder_theme_heading_weights() { return array( 400, 500, 600, 700, 800 ); }
 
 function rk_builder_default_theme() {
 	return array(
@@ -684,7 +693,7 @@ function rk_builder_validate_theme( $doc, $image_hosts = array() ) {
 		rk_builder_add_issue( $issues, '', 'Expected object' );
 		return $issues;
 	}
-	$known = array( 'version', 'primary', 'bg', 'ink', 'font', 'logoMediaId', 'logoUrl', 'social', 'header', 'footer' );
+	$known = array( 'version', 'primary', 'bg', 'ink', 'font', 'logoMediaId', 'logoUrl', 'social', 'header', 'footer', 'accent', 'dark', 'surface', 'bodyFont', 'headingFont', 'headingWeight', 'radius', 'buttonStyle' );
 	foreach ( $doc as $k => $_ ) {
 		if ( ! in_array( (string) $k, $known, true ) ) {
 			rk_builder_add_issue( $issues, (string) $k, 'Unrecognized key "' . $k . '"' );
@@ -706,6 +715,18 @@ function rk_builder_validate_theme( $doc, $image_hosts = array() ) {
 		rk_builder_add_issue( $issues, 'font', 'Required' );
 	} elseif ( ! is_string( $doc['font'] ) || ! in_array( $doc['font'], rk_builder_theme_fonts(), true ) ) {
 		rk_builder_add_issue( $issues, 'font', 'Invalid enum value' );
+	}
+	foreach ( array( 'accent', 'dark', 'surface' ) as $c ) {
+		if ( array_key_exists( $c, $doc ) && null !== ( $e = rk_builder_check_hex( $doc[ $c ] ) ) ) { rk_builder_add_issue( $issues, $c, $e ); }
+	}
+	foreach ( array( 'bodyFont', 'headingFont' ) as $f ) {
+		if ( array_key_exists( $f, $doc ) && ( ! is_string( $doc[ $f ] ) || ! in_array( $doc[ $f ], rk_builder_theme_fonts(), true ) ) ) { rk_builder_add_issue( $issues, $f, 'Invalid enum value' ); }
+	}
+	if ( array_key_exists( 'headingWeight', $doc ) && ( ! rk_builder_is_intlike( $doc['headingWeight'] ) || ! in_array( (int) $doc['headingWeight'], rk_builder_theme_heading_weights(), true ) ) ) {
+		rk_builder_add_issue( $issues, 'headingWeight', 'Invalid enum value' );
+	}
+	foreach ( rk_builder_theme_design_enums() as $k => $allowed ) {
+		if ( array_key_exists( $k, $doc ) && ( ! is_string( $doc[ $k ] ) || ! in_array( $doc[ $k ], $allowed, true ) ) ) { rk_builder_add_issue( $issues, $k, 'Invalid enum value' ); }
 	}
 	if ( array_key_exists( 'logoMediaId', $doc ) && null !== ( $e = rk_builder_check_int( $doc['logoMediaId'], 0, 2147483647 ) ) ) {
 		rk_builder_add_issue( $issues, 'logoMediaId', $e );
@@ -745,6 +766,10 @@ function rk_builder_canonicalize_theme( array $theme ) {
 		'ink'     => $theme['ink'],
 		'font'    => $theme['font'],
 	);
+	foreach ( array( 'accent', 'dark', 'surface', 'bodyFont', 'headingFont', 'radius', 'buttonStyle' ) as $k ) {
+		if ( array_key_exists( $k, $theme ) ) { $out[ $k ] = $theme[ $k ]; }
+	}
+	if ( array_key_exists( 'headingWeight', $theme ) ) { $out['headingWeight'] = (int) $theme['headingWeight']; }
 	if ( array_key_exists( 'logoMediaId', $theme ) ) { $out['logoMediaId'] = (int) $theme['logoMediaId']; }
 	if ( array_key_exists( 'logoUrl', $theme ) ) { $out['logoUrl'] = $theme['logoUrl']; }
 	if ( array_key_exists( 'social', $theme ) ) {

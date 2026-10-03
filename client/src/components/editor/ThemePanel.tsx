@@ -1,5 +1,12 @@
 import { useId, useState } from "react";
-import { FONTS, type ThemeConfig } from "@/lib/schema/theme";
+import {
+  BUTTON_STYLES,
+  FONTS,
+  HEADING_WEIGHTS,
+  RADII,
+  type ThemeConfig,
+} from "@/lib/schema/theme";
+import { THEME_PRESETS } from "@/lib/schema/themePresets";
 import { MediaPicker } from "./MediaPicker";
 
 function ColorField({
@@ -31,6 +38,43 @@ function ColorField({
   );
 }
 
+/** A color that is optional: shows the fallback until set, and can be cleared. */
+function OptionalColor({
+  label,
+  value,
+  fallback,
+  onChange,
+  disabled,
+}: {
+  label: string;
+  value: string | undefined;
+  fallback: string;
+  onChange: (v: string | undefined) => void;
+  disabled: boolean;
+}) {
+  return (
+    <div>
+      <ColorField
+        label={label}
+        value={value ?? fallback}
+        disabled={disabled}
+        onChange={onChange}
+      />
+      {value && !disabled && (
+        <button
+          type="button"
+          className="top-btn"
+          onClick={() => onChange(undefined)}
+        >
+          Reset {label.toLowerCase()}
+        </button>
+      )}
+    </div>
+  );
+}
+
+const RADIUS_LABEL = { square: "Square", soft: "Soft", round: "Round" };
+
 export function ThemePanel({
   theme,
   canEdit,
@@ -53,6 +97,31 @@ export function ThemePanel({
           Only administrators can change the global theme.
         </p>
       )}
+      <fieldset className="field theme-presets" disabled={!canEdit}>
+        <legend>Style presets</legend>
+        <div className="preset-row">
+          {THEME_PRESETS.map(p => (
+            <button
+              key={p.name}
+              type="button"
+              className="top-btn preset"
+              title={p.note}
+              aria-label={`Apply the ${p.name} style: ${p.note}`}
+              onClick={() => onPatch({ ...p.style })}
+            >
+              <span
+                className="preset-dots"
+                aria-hidden="true"
+                style={{
+                  ["--a" as string]: p.style.primary,
+                  ["--b" as string]: p.style.dark,
+                }}
+              />
+              {p.name}
+            </button>
+          ))}
+        </div>
+      </fieldset>
       <ColorField
         label="Primary signal"
         value={theme.primary}
@@ -71,20 +140,135 @@ export function ThemePanel({
         disabled={!canEdit}
         onChange={v => onPatch({ ink: v })}
       />
+      <OptionalColor
+        label="Accent"
+        value={theme.accent}
+        fallback="#A97C50"
+        disabled={!canEdit}
+        onChange={v => onPatch({ accent: v })}
+      />
+      <OptionalColor
+        label="Dark (header, footer, buttons)"
+        value={theme.dark}
+        fallback="#131313"
+        disabled={!canEdit}
+        onChange={v => onPatch({ dark: v })}
+      />
+      <OptionalColor
+        label="Soft background (cards)"
+        value={theme.surface}
+        fallback="#F1EADF"
+        disabled={!canEdit}
+        onChange={v => onPatch({ surface: v })}
+      />
       <div className="field">
         <label htmlFor={`${uid}-font`}>
-          <span>Type system</span>
+          <span>Body font</span>
         </label>
         <select
           id={`${uid}-font`}
-          value={theme.font}
+          value={theme.bodyFont ?? theme.font}
           disabled={!canEdit}
           onChange={e =>
-            onPatch({ font: e.target.value as ThemeConfig["font"] })
+            onPatch({
+              font: e.target.value as ThemeConfig["font"],
+              bodyFont: e.target.value as ThemeConfig["font"],
+            })
           }
         >
           {FONTS.map(f => (
             <option key={f}>{f}</option>
+          ))}
+        </select>
+      </div>
+      <div className="field">
+        <label htmlFor={`${uid}-hfont`}>
+          <span>Heading font</span>
+        </label>
+        <select
+          id={`${uid}-hfont`}
+          value={theme.headingFont ?? ""}
+          disabled={!canEdit}
+          onChange={e =>
+            onPatch({
+              headingFont: (e.target.value || undefined) as
+                ThemeConfig["headingFont"] | undefined,
+            })
+          }
+        >
+          <option value="">As designed</option>
+          {FONTS.map(f => (
+            <option key={f}>{f}</option>
+          ))}
+        </select>
+      </div>
+      <div className="field">
+        <label htmlFor={`${uid}-hw`}>
+          <span>Heading weight</span>
+        </label>
+        <select
+          id={`${uid}-hw`}
+          value={theme.headingWeight ?? ""}
+          disabled={!canEdit}
+          onChange={e =>
+            onPatch({
+              headingWeight: e.target.value
+                ? Number(e.target.value)
+                : undefined,
+            })
+          }
+        >
+          <option value="">As designed</option>
+          {HEADING_WEIGHTS.map(w => (
+            <option key={w} value={w}>
+              {w}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className="field">
+        <label htmlFor={`${uid}-rad`}>
+          <span>Corners</span>
+        </label>
+        <select
+          id={`${uid}-rad`}
+          value={theme.radius ?? ""}
+          disabled={!canEdit}
+          onChange={e =>
+            onPatch({
+              radius: (e.target.value || undefined) as
+                ThemeConfig["radius"] | undefined,
+            })
+          }
+        >
+          <option value="">As designed</option>
+          {RADII.map(r => (
+            <option key={r} value={r}>
+              {RADIUS_LABEL[r]}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className="field">
+        <label htmlFor={`${uid}-bs`}>
+          <span>Buttons</span>
+        </label>
+        <select
+          id={`${uid}-bs`}
+          value={theme.buttonStyle ?? "solid"}
+          disabled={!canEdit}
+          onChange={e =>
+            onPatch({
+              buttonStyle: (e.target.value === "solid"
+                ? undefined
+                : e.target.value) as ThemeConfig["buttonStyle"] | undefined,
+            })
+          }
+        >
+          {BUTTON_STYLES.map(b => (
+            <option key={b} value={b}>
+              {b === "solid" ? "Solid" : "Outline"}
+            </option>
           ))}
         </select>
       </div>

@@ -1,0 +1,12 @@
+{
+  "kind": "theme",
+  "description": "Corner style must be one of square, soft, round",
+  "document": {
+    "version": 1,
+    "primary": "#000000",
+    "bg": "#ffffff",
+    "ink": "#000000",
+    "font": "Georgia",
+    "radius": "blob"
+  }
+}

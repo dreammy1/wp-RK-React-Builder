@@ -9,6 +9,7 @@ import {
   DEFAULT_THEME,
   themeToCssText,
   themeToCssVars,
+  themeToDesignRules,
   ThemeSchema,
 } from "./theme";
 
@@ -191,6 +192,42 @@ describe("theme", () => {
     expect(themeToCssText(DEFAULT_THEME, ".x")).toBe(
       ".x{--site-primary:#C7F36B;--site-bg:#F8F5ED;--site-ink:#1B2430;--site-font:'Space Grotesk', system-ui, sans-serif}"
     );
+  });
+  it("design-system tokens are optional, validated, and print nothing when unset", () => {
+    expect(themeToDesignRules(DEFAULT_THEME)).toBe("");
+    const t = {
+      ...DEFAULT_THEME,
+      accent: "#112233",
+      dark: "#000000",
+      surface: "#EEEEEE",
+      bodyFont: "System Sans",
+      headingFont: "Classic Serif",
+      headingWeight: 800,
+      radius: "round",
+      buttonStyle: "outline",
+    } as const;
+    expect(ThemeSchema.safeParse(t).success).toBe(true);
+    const vars = themeToCssVars(t);
+    expect(vars["--site-accent"]).toBe("#112233");
+    expect(vars["--site-dark"]).toBe("#000000");
+    expect(vars["--site-btn-radius"]).toBe("999px");
+    expect(vars["--site-font"]).toContain("system-ui");
+    expect(vars["--site-heading-font"]).toContain("Palatino");
+    const rules = themeToDesignRules(t);
+    expect(rules).toContain("font-weight:800!important");
+    expect(rules).toContain(".site-btn{background:transparent");
+    for (const bad of [
+      { accent: "red" },
+      { dark: "#12345" },
+      { headingWeight: 550 },
+      { radius: "blob" },
+      { buttonStyle: "glow" },
+      { headingFont: "Comic Sans" },
+      { unknownKey: 1 },
+    ])
+      expect(ThemeSchema.safeParse({ ...DEFAULT_THEME, ...bad }).success).toBe(
+        false
+      );
   });
   it("rejects css injection through colors", () => {
     expect(

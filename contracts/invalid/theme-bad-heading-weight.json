@@ -1,0 +1,12 @@
+{
+  "kind": "theme",
+  "description": "Heading weight must be 400, 500, 600, 700 or 800",
+  "document": {
+    "version": 1,
+    "primary": "#000000",
+    "bg": "#ffffff",
+    "ink": "#000000",
+    "font": "Georgia",
+    "headingWeight": 550
+  }
+}

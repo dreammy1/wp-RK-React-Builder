@@ -29,7 +29,7 @@ import { pageHref } from "@/lib/router";
 import { previewUrl } from "@/lib/previewUrl";
 import { useEditorSession } from "@/lib/editor/useEditorSession";
 import { STATUS_LABEL, STATUS_TONE } from "@/lib/editor/saveStatus";
-import { themeToCssVars } from "@/lib/schema/theme";
+import { themeToCssVars, themeToDesignRules } from "@/lib/schema/theme";
 import { LIMITS, type BlockType } from "@/lib/schema/primitives";
 import { LayoutRenderer } from "@/render/BlockRenderer";
 import { ContentProvider } from "../ContentProvider";
@@ -228,6 +228,7 @@ export function EditorPage({
   const invalidCount = s.blockErrors.size;
   const full = state.layout.blocks.length >= LIMITS.maxBlocks;
   const themeVars = themeToCssVars(state.theme) as React.CSSProperties;
+  const designRules = themeToDesignRules(state.theme);
   const isPublished = s.page?.status === "publish";
 
   return (
@@ -441,6 +442,7 @@ export function EditorPage({
                         className={`site-root preview-canvas${template?.kind === "header" ? " solid-header" : ""}`}
                         style={themeVars}
                       >
+                        {designRules && <style>{designRules}</style>}
                         <LayoutRenderer layout={state.layout} mode="public" />
                         {template && SITEWIDE.includes(template.kind) && (
                           <div className="preview-sample" aria-hidden="true">
@@ -642,6 +644,7 @@ export function EditorPage({
                   aria-label="Page canvas"
                   style={themeVars}
                 >
+                  {designRules && <style>{designRules}</style>}
                   <div className="canvas-topline">
                     <div>
                       <span className="eyebrow">
