@@ -69,6 +69,39 @@ function rk_builder_bundle_media_refs( $layout, $theme = null ) {
 	return $refs;
 }
 
+/** Built-in and bundled post types a site export carries as plain content, with the taxonomy their terms live in. */
+function rk_builder_transfer_content_types() {
+	return array( 'service' => 'service_cat', 'portfolio' => 'portfolio_cat', 'post' => 'category' );
+}
+
+/** Attachment ids that an HTML body points at (WordPress adds a wp-image-N class to every inserted image). */
+function rk_builder_content_media_ids( $html ) {
+	$ids = array();
+	if ( is_string( $html ) && preg_match_all( '/wp-image-(\d{1,10})/', $html, $m ) ) {
+		foreach ( $m[1] as $id ) { if ( (int) $id > 0 ) { $ids[ (int) $id ] = (int) $id; } }
+	}
+	return array_values( $ids );
+}
+
+/** A media URL on this site, as the local copy of it (or the URL itself when it was not copied). */
+function rk_builder_bundle_remap_url( array $maps, $url ) {
+	$rec = is_string( $url ) && '' !== $url ? rk_builder_bundle_lookup( $maps, null, $url ) : null;
+	return null !== $rec ? (string) $rec['url'] : $url;
+}
+
+/** Point the images inside an HTML body at their local copies (longest URL first, so sizes never half-match). */
+function rk_builder_bundle_remap_html( array $maps, $html ) {
+	if ( ! is_string( $html ) || '' === $html || empty( $maps['url'] ) ) { return $html; }
+	$pairs = array();
+	foreach ( $maps['url'] as $old => $rec ) { $pairs[ (string) $old ] = (string) $rec['url']; }
+	uksort( $pairs, function ( $a, $b ) { return strlen( $b ) - strlen( $a ); } );
+	$html = strtr( $html, $pairs );
+	foreach ( isset( $maps['id'] ) ? $maps['id'] : array() as $old => $rec ) {
+		$html = preg_replace( '/wp-image-' . (int) $old . '(?!\d)/', 'wp-image-' . (int) $rec['id'], $html );
+	}
+	return $html;
+}
+
 /** Look up a media record by old attachment ID first, then by old URL. */
 function rk_builder_bundle_lookup( array $maps, $id, $url ) {
 	if ( is_int( $id ) && $id > 0 && isset( $maps['id'][ $id ] ) ) { return $maps['id'][ $id ]; }
@@ -213,7 +246,7 @@ function rk_builder_bundle_check_shape( $bundle ) {
 	if ( ! isset( $bundle['version'] ) || 1 !== $bundle['version'] ) {
 		rk_builder_add_issue( $issues, 'version', 'Unsupported bundle version (this site reads version 1)' );
 	}
-	$limits = array( 'pages' => RK_BUILDER_MAX_TRANSFER_PAGES, 'media' => RK_BUILDER_MAX_TRANSFER_MEDIA, 'content' => RK_BUILDER_MAX_TRANSFER_CONTENT, 'reusables' => RK_BUILDER_MAX_REUSABLES, 'templates' => RK_BUILDER_MAX_TEMPLATES, 'types' => RK_BUILDER_MAX_TYPES + 3, 'entries' => RK_BUILDER_MAX_TRANSFER_CONTENT );
+	$limits = array( 'pages' => RK_BUILDER_MAX_TRANSFER_PAGES, 'media' => RK_BUILDER_MAX_TRANSFER_MEDIA, 'content' => RK_BUILDER_MAX_TRANSFER_CONTENT * 2 + 100, 'reusables' => RK_BUILDER_MAX_REUSABLES, 'templates' => RK_BUILDER_MAX_TEMPLATES, 'types' => RK_BUILDER_MAX_TYPES + 3, 'entries' => RK_BUILDER_MAX_TRANSFER_CONTENT );
 	foreach ( $limits as $key => $max ) {
 		if ( ! isset( $bundle[ $key ] ) ) { continue; }
 		if ( ! is_array( $bundle[ $key ] ) || ( array() !== $bundle[ $key ] && rk_builder_is_object( $bundle[ $key ] ) ) ) {
@@ -248,6 +281,9 @@ function rk_builder_bundle_media_entries( array $bundle, array &$bad ) {
 			'url'   => $url,
 			'alt'   => isset( $m['alt'] ) && is_string( $m['alt'] ) ? substr( $m['alt'], 0, 1200 ) : '',
 			'title' => isset( $m['title'] ) && is_string( $m['title'] ) ? substr( $m['title'], 0, 200 ) : '',
+			'caption'     => isset( $m['caption'] ) && is_string( $m['caption'] ) ? substr( $m['caption'], 0, 600 ) : '',
+			'description' => isset( $m['description'] ) && is_string( $m['description'] ) ? substr( $m['description'], 0, 2000 ) : '',
+			'file'        => isset( $m['file'] ) && is_string( $m['file'] ) && 1 === preg_match( '#^images/[A-Za-z0-9][A-Za-z0-9._-]{0,119}\z#', $m['file'] ) ? $m['file'] : '',
 		);
 	}
 	return $out;
@@ -278,6 +314,7 @@ function rk_builder_build_site_bundle() {
 		return rk_builder_error( 'rk_payload_too_large', 'This site has more than ' . RK_BUILDER_MAX_TRANSFER_PAGES . ' builder pages; export is limited to that many.', 413 );
 	}
 	$theme   = rk_builder_get_theme();
+	$org     = rk_builder_seo_organization();
 	$pages   = array();
 	$refs    = rk_builder_bundle_media_refs( null, $theme );
 	foreach ( $page_ids as $pid ) {
@@ -301,13 +338,14 @@ function rk_builder_build_site_bundle() {
 
 	$content   = array();
 	$media_ids = array();
-	foreach ( array( 'service', 'portfolio' ) as $type ) {
+	foreach ( rk_builder_transfer_content_types() as $type => $tax ) {
 		if ( ! post_type_exists( $type ) ) { continue; }
-		$posts = get_posts( array( 'post_type' => $type, 'post_status' => array( 'publish', 'draft' ), 'posts_per_page' => RK_BUILDER_MAX_TRANSFER_CONTENT, 'orderby' => 'ID', 'order' => 'ASC' ) );
+		$posts = get_posts( array( 'post_type' => $type, 'post_status' => array( 'publish', 'draft' ), 'posts_per_page' => 'post' === $type ? 100 : RK_BUILDER_MAX_TRANSFER_CONTENT, 'orderby' => 'post' === $type ? 'date' : 'ID', 'order' => 'post' === $type ? 'DESC' : 'ASC' ) );
 		foreach ( $posts as $p ) {
-			$terms = wp_get_object_terms( $p->ID, $type . '_cat' );
+			$terms = wp_get_object_terms( $p->ID, $tax );
 			$thumb = (int) get_post_thumbnail_id( $p->ID );
 			if ( $thumb > 0 ) { $media_ids[ $thumb ] = true; }
+			foreach ( rk_builder_content_media_ids( (string) $p->post_content ) as $cid ) { $media_ids[ $cid ] = true; }
 			$content[] = array(
 				'type'     => $type,
 				'slug'     => (string) $p->post_name,
@@ -318,17 +356,28 @@ function rk_builder_build_site_bundle() {
 				'order'    => (int) $p->menu_order,
 				'terms'    => is_array( $terms ) ? array_map( function ( $t ) { return array( 'slug' => (string) $t->slug, 'name' => (string) $t->name ); }, $terms ) : array(),
 				'featured' => $thumb > 0 ? $thumb : null,
+				'seo'      => rk_builder_seo_read( (int) $p->ID ),
 			);
 		}
 	}
 	$dyn = rk_builder_dyn_export_bundle( $refs, $media_ids );
 	foreach ( $refs as $r ) { if ( null !== $r['id'] ) { $media_ids[ $r['id'] ] = true; } }
+	// Pictures that are only named by address (logo, favicon, social image): copy them too when they live in this library.
+	$loose = array();
+	foreach ( array( 'logo', 'defaultImage', 'favicon' ) as $k ) { if ( ! empty( $org[ $k ] ) ) { $loose[] = $org[ $k ]; } }
+	foreach ( $pages as $pg ) { if ( ! empty( $pg['seo']['image'] ) ) { $loose[] = $pg['seo']['image']; } }
+	foreach ( $content as $c ) { if ( ! empty( $c['seo']['image'] ) ) { $loose[] = $c['seo']['image']; } }
+	foreach ( $dyn['entries'] as $e ) { if ( ! empty( $e['seo']['image'] ) ) { $loose[] = $e['seo']['image']; } }
+	foreach ( array_unique( $loose ) as $u ) {
+		$aid = function_exists( 'attachment_url_to_postid' ) ? (int) attachment_url_to_postid( $u ) : 0;
+		if ( $aid > 0 ) { $media_ids[ $aid ] = true; }
+	}
 
 	$media = array();
 	foreach ( array_keys( $media_ids ) as $mid ) {
-		$item = rk_builder_media_item( (int) $mid );
+		$item = rk_builder_media_item( (int) $mid, true );
 		if ( null === $item ) { continue; }
-		$media[] = array_intersect_key( $item, array_flip( array( 'id', 'url', 'alt', 'title', 'width', 'height' ) ) );
+		$media[] = array_intersect_key( $item, array_flip( array( 'id', 'url', 'alt', 'title', 'width', 'height', 'caption', 'description' ) ) );
 	}
 
 	return array(
@@ -344,8 +393,22 @@ function rk_builder_build_site_bundle() {
 		'types'      => $dyn['types'],
 		'templates'  => $dyn['templates'],
 		'entries'    => $dyn['entries'],
-		'seo'        => array( 'organization' => rk_builder_seo_organization() ),
+		'seo'        => array( 'organization' => $org ),
+		'site'       => rk_builder_site_info_export(),
+		'global'     => rk_builder_global(),
+		'redirects'  => rk_builder_redirects_list(),
 	);
+}
+
+/** Site name, tagline and which page is the front page (by slug, so it survives the move). */
+function rk_builder_site_info_export() {
+	$front = '';
+	if ( 'page' === get_option( 'show_on_front', 'posts' ) ) {
+		$pid  = (int) get_option( 'page_on_front', 0 );
+		$post = $pid > 0 ? get_post( $pid ) : null;
+		if ( $post ) { $front = (string) $post->post_name; }
+	}
+	return array( 'title' => (string) get_option( 'blogname', '' ), 'tagline' => (string) get_option( 'blogdescription', '' ), 'frontPage' => $front );
 }
 
 /* ------------------------------------------------------------------ *
@@ -369,21 +432,30 @@ function rk_builder_find_page_by_slug( $slug ) {
  *
  * @return array|WP_Error rec array( id, url, width, height )
  */
-function rk_builder_import_media_entry( array $m ) {
+function rk_builder_import_media_entry( array $m, $zip = null ) {
 	$existing = get_posts( array( 'post_type' => 'attachment', 'post_status' => 'inherit', 'meta_key' => '_rk_import_source', 'meta_value' => $m['url'], 'posts_per_page' => 1, 'fields' => 'ids' ) );
 	if ( $existing ) {
 		$item = rk_builder_media_item( (int) $existing[0] );
 		if ( null !== $item ) { return array( 'id' => $item['id'], 'url' => $item['url'], 'width' => isset( $item['width'] ) ? $item['width'] : null, 'height' => isset( $item['height'] ) ? $item['height'] : null, 'reused' => true ); }
 	}
-	if ( ! wp_http_validate_url( $m['url'] ) ) { return rk_builder_error( 'rk_invalid_media', 'The image URL is not allowed (private or malformed address).', 400 ); }
 	rk_builder_load_media_includes();
-	$tmp = download_url( $m['url'], 30 );
-	if ( is_wp_error( $tmp ) ) { return rk_builder_error( 'rk_invalid_media', 'Could not download the image.', 502 ); }
+	// A kit zip carries its own copy of the picture: use that, and only go to the old address when the file is missing.
+	$tmp = null;
+	if ( null !== $zip && ! empty( $m['file'] ) ) {
+		$got = rk_builder_kit_extract( $zip, $m['file'], rk_builder_max_upload_bytes() );
+		if ( ! is_wp_error( $got ) ) { $tmp = $got; }
+	}
+	$from_zip = null !== $tmp;
+	if ( null === $tmp ) {
+		if ( ! wp_http_validate_url( $m['url'] ) ) { return rk_builder_error( 'rk_invalid_media', 'The image URL is not allowed (private or malformed address).', 400 ); }
+		$tmp = download_url( $m['url'], 30 );
+		if ( is_wp_error( $tmp ) ) { return rk_builder_error( 'rk_invalid_media', 'Could not download the image.', 502 ); }
+	}
 	if ( (int) @filesize( $tmp ) > rk_builder_max_upload_bytes() ) {
 		@unlink( $tmp ); // phpcs:ignore WordPress.PHP.NoSilencedErrors, WordPress.WP.AlternativeFunctions
 		return rk_builder_error( 'rk_payload_too_large', 'The image is larger than the upload limit.', 413 );
 	}
-	$path = (string) wp_parse_url( $m['url'], PHP_URL_PATH );
+	$path = $from_zip ? (string) preg_replace( '/^\d+-/', '', basename( $m['file'] ) ) : (string) wp_parse_url( $m['url'], PHP_URL_PATH );
 	$name = sanitize_file_name( basename( $path ) );
 	$kind = rk_builder_check_image_file( $tmp, $name );
 	if ( is_wp_error( $kind ) ) {
@@ -397,6 +469,10 @@ function rk_builder_import_media_entry( array $m ) {
 		return $id;
 	}
 	update_post_meta( $id, '_rk_import_source', $m['url'] );
+	$more = array( 'ID' => (int) $id );
+	if ( ! empty( $m['caption'] ) ) { $more['post_excerpt'] = sanitize_textarea_field( $m['caption'] ); }
+	if ( ! empty( $m['description'] ) ) { $more['post_content'] = sanitize_textarea_field( $m['description'] ); }
+	if ( count( $more ) > 1 ) { wp_update_post( wp_slash( $more ) ); }
 	$item = rk_builder_media_item( $id );
 	if ( null === $item ) { return rk_builder_error( 'rk_server_error', 'The image was saved but could not be read back.', 500 ); }
 	return array( 'id' => $item['id'], 'url' => $item['url'], 'width' => isset( $item['width'] ) ? $item['width'] : null, 'height' => isset( $item['height'] ) ? $item['height'] : null, 'reused' => false );
@@ -434,11 +510,11 @@ function rk_builder_handle_site_import( $req ) {
 	if ( ! isset( $body['bundle'] ) ) { rk_builder_add_issue( $extra, 'bundle', 'Required' ); }
 	if ( $extra ) { return rk_builder_invalid( 'rk_invalid_bundle', $extra ); }
 
-	$opts = array( 'dryRun' => true, 'theme' => false, 'content' => false, 'contentStatus' => 'draft' );
+	$opts = array( 'dryRun' => true, 'theme' => false, 'content' => false, 'contentStatus' => 'draft', 'settings' => false, 'redirects' => false, 'siteInfo' => false );
 	if ( isset( $body['options'] ) ) {
 		if ( ! rk_builder_is_object( $body['options'] ) && array() !== $body['options'] ) { return rk_builder_invalid( 'rk_invalid_bundle', array( array( 'path' => 'options', 'message' => 'Expected object' ) ) ); }
 		foreach ( $body['options'] as $k => $v ) {
-			if ( in_array( $k, array( 'dryRun', 'theme', 'content' ), true ) && is_bool( $v ) ) { $opts[ $k ] = $v; }
+			if ( in_array( $k, array( 'dryRun', 'theme', 'content', 'settings', 'redirects', 'siteInfo' ), true ) && is_bool( $v ) ) { $opts[ $k ] = $v; }
 			elseif ( 'contentStatus' === $k && in_array( $v, array( 'draft', 'publish' ), true ) ) { $opts[ $k ] = $v; }
 			else { return rk_builder_invalid( 'rk_invalid_bundle', array( array( 'path' => 'options.' . $k, 'message' => 'Unrecognized or invalid option' ) ) ); }
 		}
@@ -452,6 +528,9 @@ function rk_builder_handle_site_import( $req ) {
 /** Check (dry run) or apply a validated bundle. Shared by the import route and the theme engine. */
 function rk_builder_site_import_run( array $bundle, array $opts ) {
 	if ( function_exists( 'set_time_limit' ) ) { @set_time_limit( 300 ); } // phpcs:ignore WordPress.PHP.NoSilencedErrors
+
+	$opts = array_merge( array( 'settings' => false, 'redirects' => false, 'siteInfo' => false, 'kitZip' => null ), $opts );
+	$zip  = $opts['kitZip'];
 
 	$real_hosts = rk_builder_allowed_image_hosts();
 	$pre_hosts  = array_merge( $real_hosts, rk_builder_bundle_hosts( $bundle ) );
@@ -518,7 +597,7 @@ function rk_builder_site_import_run( array $bundle, array $opts ) {
 	$content_in = array();
 	if ( $opts['content'] && isset( $bundle['content'] ) && is_array( $bundle['content'] ) ) {
 		foreach ( $bundle['content'] as $c ) {
-			if ( ! is_array( $c ) || ! isset( $c['type'], $c['slug'], $c['title'] ) || ! in_array( $c['type'], array( 'service', 'portfolio' ), true ) || ! post_type_exists( $c['type'] ) || ! rk_builder_bundle_slug_ok( $c['slug'] ) || ! is_string( $c['title'] ) || '' === trim( $c['title'] ) ) {
+			if ( ! is_array( $c ) || ! isset( $c['type'], $c['slug'], $c['title'] ) || ! isset( rk_builder_transfer_content_types()[ $c['type'] ] ) || ! post_type_exists( $c['type'] ) || ! rk_builder_bundle_slug_ok( $c['slug'] ) || ! is_string( $c['title'] ) || '' === trim( $c['title'] ) ) {
 				$warnings[] = 'A content item was skipped because it is not valid.';
 				continue;
 			}
@@ -554,6 +633,8 @@ function rk_builder_site_import_run( array $bundle, array $opts ) {
 		'types'    => array( 'included' => count( $types_in ), 'applied' => false ),
 		'templates' => array( 'create' => 0, 'update' => 0, 'skipped' => $tpl_skipped, 'done' => array() ),
 		'entries'  => array( 'included' => count( $entries_in ), 'created' => 0, 'updated' => 0 ),
+		'site'     => array( 'settings' => false, 'redirects' => 0, 'siteInfo' => false ),
+		'touched'  => array( 'posts' => array() ),
 		'warnings' => $warnings,
 	);
 	foreach ( $tpl_ok as $t ) { $report['templates'][ rk_builder_dyn_find_template_by_slug( $t['slug'] ) > 0 ? 'update' : 'create' ]++; }
@@ -571,7 +652,7 @@ function rk_builder_site_import_run( array $bundle, array $opts ) {
 	/* 5 · apply: media first so layouts can be rewritten */
 	$maps = array( 'id' => array(), 'url' => array() );
 	foreach ( $entries as $m ) {
-		$rec = rk_builder_import_media_entry( $m );
+		$rec = rk_builder_import_media_entry( $m, $zip );
 		if ( is_wp_error( $rec ) ) {
 			$report['media']['failed'][] = array( 'url' => substr( $m['url'], 0, 120 ), 'reason' => $rec->get_error_message() );
 			continue;
@@ -652,10 +733,14 @@ function rk_builder_site_import_run( array $bundle, array $opts ) {
 			$report['pages']['skipped'][] = array( 'slug' => $pg['slug'], 'issues' => array( $commit->get_error_message() ) );
 			continue;
 		}
-		rk_builder_seo_write( (int) $id, $pg['seo'] );
+		rk_builder_seo_write( (int) $id, rk_builder_seo_remap( $pg['seo'], $maps ) );
 		$report['pages']['done'][] = array( 'slug' => $pg['slug'], 'id' => (int) $id, 'action' => $action, 'revision' => $commit['revision'], 'link' => (string) get_permalink( $id ) );
 	}
-	if ( isset( $bundle['seo']['organization'] ) ) { rk_builder_seo_organization_save( $bundle['seo']['organization'] ); }
+	if ( isset( $bundle['seo']['organization'] ) && is_array( $bundle['seo']['organization'] ) ) {
+		$org_in = $bundle['seo']['organization'];
+		foreach ( array( 'logo', 'defaultImage', 'favicon' ) as $k ) { if ( isset( $org_in[ $k ] ) ) { $org_in[ $k ] = rk_builder_bundle_remap_url( $maps, $org_in[ $k ] ); } }
+		rk_builder_seo_organization_save( $org_in );
+	}
 	$report['pages']['create'] = count( array_filter( $report['pages']['done'], function ( $d ) { return 'created' === $d['action']; } ) );
 	$report['pages']['update'] = count( $report['pages']['done'] ) - $report['pages']['create'];
 
@@ -680,20 +765,61 @@ function rk_builder_site_import_run( array $bundle, array $opts ) {
 			'post_title'   => sanitize_text_field( $c['title'] ),
 			'post_name'    => $c['slug'],
 			'post_excerpt' => isset( $c['excerpt'] ) && is_string( $c['excerpt'] ) ? wp_kses_post( $c['excerpt'] ) : '',
-			'post_content' => isset( $c['content'] ) && is_string( $c['content'] ) ? wp_kses_post( $c['content'] ) : '',
+			'post_content' => isset( $c['content'] ) && is_string( $c['content'] ) ? wp_kses_post( rk_builder_bundle_remap_html( $maps, $c['content'] ) ) : '',
 			'menu_order'   => isset( $c['order'] ) && is_int( $c['order'] ) ? $c['order'] : 0,
 		);
 		if ( $existing ) { $data['ID'] = (int) $existing[0]; $pid = wp_update_post( $data, true ); }
 		else { $data['post_status'] = $opts['contentStatus']; $pid = wp_insert_post( $data, true ); }
 		if ( is_wp_error( $pid ) || ! $pid ) { $report['warnings'][] = 'Could not import "' . $c['slug'] . '".'; continue; }
 		$report['content'][ $existing ? 'updated' : 'created' ]++;
-		rk_builder_import_terms( (int) $pid, $c['type'] . '_cat', isset( $c['terms'] ) ? $c['terms'] : array() );
+		$report['touched']['posts'][] = (int) $pid;
+		if ( $existing ) { rk_builder_theme_unhide_post( (int) $pid, $opts['contentStatus'] ); }
+		rk_builder_import_terms( (int) $pid, rk_builder_transfer_content_types()[ $c['type'] ], isset( $c['terms'] ) ? $c['terms'] : array() );
+		if ( isset( $c['seo'] ) ) { rk_builder_seo_write( (int) $pid, rk_builder_seo_remap( rk_builder_seo_clean( $c['seo'] ), $maps ) ); }
 		if ( isset( $c['featured'] ) ) {
 			$rec = rk_builder_bundle_lookup( $maps, is_int( $c['featured'] ) ? $c['featured'] : null, null );
 			if ( null !== $rec ) { set_post_thumbnail( (int) $pid, (int) $rec['id'] ); }
 		}
 	}
 	if ( $entries_in ) { rk_builder_dyn_import_entries_apply( $entries_in, $maps, $opts['contentStatus'], $report ); }
+	$report['site'] = rk_builder_site_settings_apply( $bundle, $opts );
 	if ( $report['pages']['done'] ) { $report['warnings'][] = 'Pages were imported as drafts. Review them, then publish.'; }
 	return rk_builder_no_store( $report );
+}
+
+/** The bundle's own seo / image URLs, after the pictures have been copied. */
+function rk_builder_seo_remap( array $seo, array $maps ) {
+	if ( isset( $seo['image'] ) ) { $seo['image'] = rk_builder_bundle_remap_url( $maps, $seo['image'] ); }
+	return $seo;
+}
+
+/**
+ * Layout settings, redirects, site name and tagline: each only when the importer asked for it, because they describe
+ * the source site rather than its pages. Returns what was applied.
+ */
+function rk_builder_site_settings_apply( array $bundle, array $opts ) {
+	$done = array( 'settings' => false, 'redirects' => 0, 'siteInfo' => false );
+	if ( ! empty( $opts['settings'] ) && isset( $bundle['global'] ) && is_array( $bundle['global'] ) ) {
+		update_option( 'rk_builder_global', rk_builder_global_sanitize( $bundle['global'], rk_builder_global() ), false );
+		$done['settings'] = true;
+	}
+	if ( ! empty( $opts['redirects'] ) && isset( $bundle['redirects'] ) && is_array( $bundle['redirects'] ) ) {
+		$have = array();
+		foreach ( rk_builder_redirects_list() as $r ) { if ( is_array( $r ) && isset( $r['from'] ) ) { $have[ $r['from'] ] = $r; } }
+		foreach ( array_slice( $bundle['redirects'], 0, 300 ) as $raw ) {
+			$r = rk_builder_redirect_clean( $raw );
+			if ( null !== $r ) { $have[ $r['from'] ] = $r; $done['redirects']++; }
+		}
+		update_option( 'rk_builder_redirects', array_slice( array_values( $have ), 0, 300 ), false );
+	}
+	if ( ! empty( $opts['siteInfo'] ) && isset( $bundle['site'] ) && is_array( $bundle['site'] ) ) {
+		foreach ( array( 'title' => 'blogname', 'tagline' => 'blogdescription' ) as $k => $opt ) {
+			if ( isset( $bundle['site'][ $k ] ) && is_string( $bundle['site'][ $k ] ) && '' !== trim( $bundle['site'][ $k ] ) ) {
+				update_option( $opt, sanitize_text_field( rk_builder_substr( $bundle['site'][ $k ], 0, 160 ) ) );
+				$done['siteInfo'] = true;
+			}
+		}
+	}
+	if ( $done['settings'] || $done['redirects'] > 0 ) { rk_builder_purge_all_public_cache(); }
+	return $done;
 }

@@ -1,4 +1,5 @@
 import AxeBuilder from "@axe-core/playwright";
+import { execFileSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -1202,4 +1203,152 @@ test("17 · AI & MCP: off by default, switched on from the dashboard, access lev
   await access.getByLabel(/Allow AI assistants to connect/).uncheck();
   await expect(page.getByText(/MCP is off/)).toBeVisible();
   expect((await rpc("initialize")).status).toBe(403);
+});
+
+test("18 · site kit: download the whole site as one zip, delete its picture, upload the zip and install it: the picture comes out of the zip", async ({
+  page,
+}) => {
+  await login(page, AIO.admin, AIO.adminPass);
+  await page.goto(builderUrl());
+
+  // a page that uses a picture (the seed attachment is tagged with this source address, so it is reused here)
+  const seedUrl = "https://assets.example.com/seed.png";
+  const made = await wpFetch(page, "builder/site-import", {
+    method: "POST",
+    json: {
+      options: { dryRun: false },
+      bundle: {
+        format: "rk-builder-site",
+        version: 1,
+        source: { url: "https://old.example.com/" },
+        theme: null,
+        content: [],
+        media: [{ id: 4243, url: seedUrl, alt: "Seed alt", title: "Seed" }],
+        pages: [
+          {
+            slug: "kit-demo",
+            title: "Kit Demo",
+            wasPublished: true,
+            layout: {
+              version: 1,
+              blocks: [
+                {
+                  id: "hero-1",
+                  type: "hero",
+                  props: {
+                    heading: "Kit hero",
+                    sub: "",
+                    cta: "",
+                    ctaHref: "",
+                    bgMediaId: 4243,
+                    bgUrl: seedUrl,
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  });
+  expect(made.status).toBe(200);
+
+  const dash = page.getByRole("complementary", { name: "Dashboard" });
+  await dash.getByRole("button", { name: "Themes", exact: true }).click();
+  await page.getByLabel("Theme name").fill("E2E Kit");
+  await page.getByLabel("Industry").fill("Testing");
+  const [download] = await Promise.all([
+    page.waitForEvent("download", { timeout: 120_000 }),
+    page.getByRole("button", { name: /Download kit/ }).click(),
+  ]);
+  const zipPath = join(tmpdir(), `rk-e2e-kit-${Date.now()}.zip`);
+  await download.saveAs(zipPath);
+  expect(download.suggestedFilename()).toMatch(/^rk-kit-e2e-kit-.*\.zip$/);
+
+  // what is inside: a manifest, the site data and the picture itself
+  const listing = execFileSync("unzip", ["-Z1", zipPath])
+    .toString()
+    .split("\n");
+  expect(listing).toContain("manifest.json");
+  expect(listing).toContain("site.json");
+  const pics = listing.filter(n => n.startsWith("images/") && n.length > 7);
+  expect(pics.length).toBeGreaterThan(0);
+  const manifest = JSON.parse(
+    execFileSync("unzip", ["-p", zipPath, "manifest.json"]).toString()
+  );
+  expect(manifest.format).toBe("rk-builder-kit");
+  expect(manifest.name).toBe("E2E Kit");
+  expect(manifest.industry).toBe("Testing");
+  const site = JSON.parse(
+    execFileSync("unzip", ["-p", zipPath, "site.json"], {
+      maxBuffer: 64 * 1024 * 1024,
+    }).toString()
+  );
+  expect(site.format).toBe("rk-builder-site");
+  expect(site.site.title.length).toBeGreaterThan(0); // site name travels
+  expect(site.global.layout_width).toBeGreaterThan(0); // layout settings travel
+  expect(
+    site.media.some((m: { file?: string }) =>
+      (m.file ?? "").startsWith("images/")
+    )
+  ).toBe(true);
+  expect(JSON.stringify(site)).not.toMatch(/api[_-]?key|secret|password/i); // nothing sensitive is packed
+
+  // remove the demo page and its picture, so the only copy of the picture left is the one in the zip
+  const before = await wpFetch(page, "builder/pages?search=Kit%20Demo");
+  const pageId = (before.json as { pages: { id: number }[] }).pages[0]!.id;
+  const layout = await wpFetch(page, `builder/layout/${pageId}`);
+  const mediaId = (
+    layout.json as { layout: { blocks: { props: { bgMediaId: number } }[] } }
+  ).layout.blocks[0]!.props.bgMediaId;
+  expect(mediaId).toBeGreaterThan(0);
+  expect(
+    (
+      await wpFetch(page, `builder/media/${mediaId}/delete`, {
+        method: "POST",
+        json: {},
+      })
+    ).status
+  ).toBe(200);
+  expect(
+    (
+      await wpFetch(page, `builder/pages/${pageId}/delete`, {
+        method: "POST",
+        json: {},
+      })
+    ).status
+  ).toBeLessThan(500);
+
+  // upload the zip into the library, then install it
+  await page.reload();
+  await dash.getByRole("button", { name: "Themes", exact: true }).click();
+  await page
+    .locator('input[type="file"][accept*="zip"]')
+    .setInputFiles(zipPath);
+  await expect(page.getByText(/Added the kit .E2E Kit./)).toBeVisible({
+    timeout: 120_000,
+  });
+  const card = page.locator(".theme-card", { hasText: "E2E Kit" });
+  await expect(card.getByText("Kit ·")).toBeVisible();
+  await card.getByRole("button", { name: "Install", exact: true }).click();
+  await page.getByRole("button", { name: "Install theme" }).click();
+  await expect(page.getByText(/E2E Kit.* is installed/)).toBeVisible({
+    timeout: 180_000,
+  });
+  await expect(page.getByText(/Images:/)).toContainText("copied");
+
+  // the page is back, with a NEW picture that came out of the zip (the old address does not exist)
+  const after = await wpFetch(page, "builder/pages?search=Kit%20Demo");
+  const newId = (after.json as { pages: { id: number }[] }).pages[0]!.id;
+  const back = await wpFetch(page, `builder/layout/${newId}`);
+  const hero = (
+    back.json as {
+      layout: { blocks: { props: { bgMediaId: number; bgUrl: string } }[] };
+    }
+  ).layout.blocks[0]!.props;
+  expect(hero.bgMediaId).toBeGreaterThan(0);
+  expect(hero.bgUrl).toContain("/wp-content/uploads/");
+  expect(hero.bgUrl).not.toContain("assets.example.com");
+  const img = await page.request.get(hero.bgUrl);
+  expect(img.status()).toBe(200);
 });

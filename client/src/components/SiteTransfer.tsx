@@ -96,11 +96,27 @@ export function Summary({ r }: { r: SiteImportReport }) {
         )}
         {r.content.included > 0 && (
           <li>
-            Services &amp; projects: {r.content.included} in the file
+            Posts, services &amp; projects: {r.content.included} in the file
             {!r.dryRun &&
               ` (${r.content.created} new, ${r.content.updated} updated)`}
           </li>
         )}
+        {!r.dryRun &&
+          r.site &&
+          (r.site.settings || r.site.siteInfo || r.site.redirects > 0) && (
+            <li>
+              Site:{" "}
+              {[
+                r.site.siteInfo && "name and tagline",
+                r.site.settings && "layout settings",
+                r.site.redirects > 0 &&
+                  `${r.site.redirects} redirect${r.site.redirects === 1 ? "" : "s"}`,
+              ]
+                .filter(Boolean)
+                .join(", ")}{" "}
+              applied
+            </li>
+          )}
       </ul>
       {r.pages.skipped.length > 0 && (
         <details open>

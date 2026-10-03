@@ -35,6 +35,7 @@ import {
   ThemeSaved,
   type ThemeInstallOptions,
   type ThemeMetaInput,
+  type KitMetaInput,
   PageListResponse,
   TypesResponse,
   EntryList,
@@ -56,7 +57,13 @@ import type { ThemeConfig } from "@/lib/schema/theme";
 import type { ContentQuery } from "@/render/content";
 import { getBoot } from "@/lib/boot";
 import { ApiError } from "./errors";
-import { getApiConfig, patchApiConfig, request, setApiConfig } from "./http";
+import {
+  getApiConfig,
+  patchApiConfig,
+  request,
+  requestBlob,
+  setApiConfig,
+} from "./http";
 
 export type LoadedPage = {
   page: z.infer<typeof LoadResponse>["page"];
@@ -482,6 +489,28 @@ export const api = {
       SiteBundle,
       { timeoutMs: 120_000 }
     ),
+  /** The whole site as one zip that carries its own images. */
+  exportKit: (meta: KitMetaInput) =>
+    requestBlob("builder/kits/export", {
+      method: "POST",
+      body: meta,
+      timeoutMs: 300_000,
+    }),
+  /** Add a kit zip to the library (not installed yet). */
+  uploadKit: (file: File) => {
+    const fd = new FormData();
+    fd.append("file", file);
+    return request("builder/kits/upload", ThemeAdded, {
+      method: "POST",
+      body: fd,
+      timeoutMs: 300_000,
+    });
+  },
+  /** A kit in the library, as the same zip. */
+  exportKitFile: (slug: string) =>
+    requestBlob(`builder/themes/export?slug=${encodeURIComponent(slug)}`, {
+      timeoutMs: 300_000,
+    }),
   deleteTheme: (slug: string) =>
     request("builder/themes/delete", z.object({ deleted: z.string() }), {
       method: "POST",

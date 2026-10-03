@@ -194,6 +194,9 @@ export type SiteImportOptions = {
   theme: boolean;
   content: boolean;
   contentStatus: "draft" | "publish";
+  settings?: boolean;
+  redirects?: boolean;
+  siteInfo?: boolean;
 };
 const Skipped = z.object({ slug: z.string(), issues: z.array(z.string()) });
 export const SiteImportReport = z.object({
@@ -242,6 +245,21 @@ export const SiteImportReport = z.object({
   entries: z
     .object({ included: z.number(), created: z.number(), updated: z.number() })
     .optional(),
+  hidden: z
+    .object({
+      from: z.string(),
+      pages: z.number(),
+      templates: z.number(),
+      posts: z.number(),
+    })
+    .optional(),
+  site: z
+    .object({
+      settings: z.boolean(),
+      redirects: z.number(),
+      siteInfo: z.boolean(),
+    })
+    .optional(),
   warnings: z.array(z.string()),
 });
 export type SiteImportReport = z.infer<typeof SiteImportReport>;
@@ -262,6 +280,14 @@ export const ThemeSummary = z.object({
   preview: z.string(),
   createdAt: z.string(),
   bytes: z.number(),
+  /** A kit zip (carries its own images) rather than a plain JSON package. */
+  kit: z.boolean().optional(),
+  /** The theme most recently installed on this site. */
+  active: z.boolean().optional(),
+  images: z.number().optional(),
+  industry: z.string().optional(),
+  license: z.string().optional(),
+  demo: z.string().optional(),
 });
 export type ThemeSummary = z.infer<typeof ThemeSummary>;
 export const ThemeList = z.object({ items: z.array(ThemeSummary) });
@@ -282,12 +308,22 @@ export type ThemeInstallOptions = {
   content: boolean;
   publish: boolean;
   frontPage: boolean;
+  settings?: boolean;
+  redirects?: boolean;
+  siteInfo?: boolean;
+  /** Hide the active theme's pages, templates and content (default on). */
+  switch?: boolean;
 };
 export type ThemeMetaInput = {
   name: string;
   description: string;
   version: string;
   author: string;
+};
+export type KitMetaInput = ThemeMetaInput & {
+  industry: string;
+  license: string;
+  demo: string;
 };
 
 export const ContentItem = z.object({

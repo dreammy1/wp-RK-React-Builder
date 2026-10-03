@@ -9,7 +9,7 @@ import type {
 } from "@/lib/schema/api";
 import { SubPage } from "./SubPage";
 import { Summary } from "./SiteTransfer";
-import { downloadJson } from "./editor/Dialogs";
+import { downloadBlob, downloadJson } from "./editor/Dialogs";
 
 const MAX_FILE = 8 * 1024 * 1024;
 
@@ -54,12 +54,25 @@ function Toggle({
   );
 }
 
+function hiddenNote(r: ThemeInstallReport, future: boolean) {
+  const h = r.hidden;
+  if (!h || h.pages + h.templates + h.posts === 0) return null;
+  const parts = [
+    h.pages > 0 && `${h.pages} page${h.pages === 1 ? "" : "s"}`,
+    h.templates > 0 && `${h.templates} template${h.templates === 1 ? "" : "s"}`,
+    h.posts > 0 && `${h.posts} content item${h.posts === 1 ? "" : "s"}`,
+  ].filter(Boolean);
+  return `${future ? "Will hide" : "Hid"} ${parts.join(", ")} of “${h.from}” (kept as drafts, not deleted).`;
+}
+
 function InstallPanel({
   theme,
+  activeName,
   onBack,
   onDone,
 }: {
   theme: ThemeSummary;
+  activeName: string;
   onBack: () => void;
   onDone: (r: ThemeInstallReport) => void;
 }) {
@@ -69,6 +82,10 @@ function InstallPanel({
     content: true,
     publish: true,
     frontPage: true,
+    settings: true,
+    redirects: false,
+    siteInfo: false,
+    switch: true,
   });
   const [phase, setPhase] = useState<
     "idle" | "checking" | "installing" | { error: string }
@@ -95,6 +112,7 @@ function InstallPanel({
         {theme.pages} page{theme.pages === 1 ? "" : "s"}, {theme.reusables}{" "}
         reusable block{theme.reusables === 1 ? "" : "s"}, {theme.media} image
         {theme.media === 1 ? "" : "s"}
+        {theme.kit && " (the pictures are inside the kit)"}
         {(theme.templates ?? 0) > 0 &&
           `, ${theme.templates} template${theme.templates === 1 ? "" : "s"}`}
         . Pages with the same address are <strong>replaced</strong> by the
@@ -114,6 +132,32 @@ function InstallPanel({
           disabled={theme.content === 0}
           onChange={v => setO({ ...o, content: v })}
         />
+        <Toggle
+          label="Layout settings"
+          hint="content width and side spacing"
+          checked={o.settings ?? false}
+          onChange={v => setO({ ...o, settings: v })}
+        />
+        <Toggle
+          label="Site name and tagline"
+          hint="replaces yours with the kit's"
+          checked={o.siteInfo ?? false}
+          onChange={v => setO({ ...o, siteInfo: v })}
+        />
+        <Toggle
+          label="Redirects"
+          hint="adds the kit's rules to yours"
+          checked={o.redirects ?? false}
+          onChange={v => setO({ ...o, redirects: v })}
+        />
+        {activeName && (
+          <Toggle
+            label={`Switch from “${activeName}”`}
+            hint="hides its pages, templates and content (nothing is deleted)"
+            checked={o.switch ?? false}
+            onChange={v => setO({ ...o, switch: v })}
+          />
+        )}
         <Toggle
           label="Publish the pages right away"
           hint="otherwise they arrive as drafts"
@@ -137,6 +181,7 @@ function InstallPanel({
       {check && (
         <div role="status" aria-live="polite">
           <h3>This is what will happen</h3>
+          {hiddenNote(check, true) && <p>{hiddenNote(check, true)}</p>}
           <Summary r={check} />
         </div>
       )}
@@ -195,6 +240,9 @@ export function ThemeEngine({
     description: "",
     version: "1.0.0",
     author: "",
+    industry: "",
+    license: "",
+    demo: "",
   });
 
   const load = useCallback(() => {
@@ -227,8 +275,27 @@ export function ThemeEngine({
       load();
     });
 
+  const downloadKit = () =>
+    guard(async () => {
+      const { blob, filename } = await api.exportKit(form);
+      downloadBlob(filename, blob);
+      setNote(
+        `Downloaded ${filename} (${(blob.size / 1048576).toFixed(1)} MB). It holds every page, block, template, type, setting and image.`
+      );
+    });
+
   const onFile = (file: File | undefined) => {
     if (!file) return;
+    if (/\.zip$/i.test(file.name)) {
+      guard(async () => {
+        const r = await api.uploadKit(file);
+        setNote(
+          `Added the kit “${r.theme.name}” (${r.theme.images ?? 0} images) to the library. Install it when you are ready.`
+        );
+        load();
+      });
+      return;
+    }
     if (file.size > MAX_FILE) {
       setError("That file is larger than 8 MB.");
       return;
@@ -263,6 +330,11 @@ export function ThemeEngine({
 
   const exportTheme = (t: ThemeSummary) =>
     guard(async () => {
+      if (t.kit) {
+        const { blob, filename } = await api.exportKitFile(t.slug);
+        downloadBlob(filename, blob);
+        return;
+      }
       downloadJson(
         `rk-theme-${t.slug}-${t.version}.json`,
         await api.exportTheme(t.slug)
@@ -274,6 +346,9 @@ export function ThemeEngine({
       {view.kind === "install" && (
         <InstallPanel
           theme={view.theme}
+          activeName={
+            items?.find(i => i.active && i.slug !== view.theme.slug)?.name ?? ""
+          }
           onBack={() => setView({ kind: "library" })}
           onDone={report => {
             setView({ kind: "done", theme: view.theme, report });
@@ -291,6 +366,9 @@ export function ThemeEngine({
               `, ${view.report.publishedTemplates} template${view.report.publishedTemplates === 1 ? "" : "s"} live`}
             {view.report.frontPage && ", Home is now the front page"}.
           </p>
+          {hiddenNote(view.report, false) && (
+            <p>{hiddenNote(view.report, false)}</p>
+          )}
           <Summary r={view.report} />
           <div className="dialog-actions">
             <button
@@ -307,9 +385,11 @@ export function ThemeEngine({
       {view.kind === "library" && (
         <>
           <p className="muted">
-            Package this whole site (pages, reusable blocks, images, colors,
-            logo, header, footer and SEO) as a theme. Install it on any site
-            with one click, or export it as a file to share.
+            Package this whole site (pages, blocks, templates, content types,
+            blog posts, images, colors, logo, header, footer and SEO) as a
+            theme. Download it as a <strong>kit zip</strong> that carries its
+            own pictures, install it on any site with one click, or share it.
+            Tracking codes and API keys are never included.
           </p>
           {error && (
             <p className="form-error" role="alert">
@@ -326,7 +406,8 @@ export function ThemeEngine({
           {items === null && <p className="muted">Loading…</p>}
           {items?.length === 0 && (
             <p className="muted">
-              No themes yet. Save this site below, or import a theme file.
+              No themes yet. Save this site below, or import a kit zip or theme
+              file.
             </p>
           )}
           <ul className="theme-grid">
@@ -346,13 +427,18 @@ export function ThemeEngine({
                 <div className="theme-body">
                   <strong>{t.name}</strong>
                   <span className="muted">
-                    v{t.version}
+                    {t.active && (
+                      <strong className="theme-active">Active · </strong>
+                    )}
+                    {t.kit && <strong>Kit · </strong>}v{t.version}
+                    {t.industry && ` · ${t.industry}`}
                     {t.author && ` · ${t.author}`}
                     {fmtDate(t.createdAt) && ` · ${fmtDate(t.createdAt)}`}
                   </span>
                   {t.description && <p>{t.description}</p>}
                   <span className="muted">
-                    {t.pages} pages · {t.reusables} blocks · {t.media} images
+                    {t.pages} pages · {t.reusables} blocks ·{" "}
+                    {t.kit ? (t.images ?? 0) : t.media} images
                     {(t.templates ?? 0) > 0 && ` · ${t.templates} templates`}
                     {t.content > 0 &&
                       ` · ${t.content} services/projects/entries`}
@@ -364,7 +450,7 @@ export function ThemeEngine({
                     disabled={busy}
                     onClick={() => setView({ kind: "install", theme: t })}
                   >
-                    Install
+                    {t.active ? "Reinstall" : "Install"}
                   </button>
                   <button
                     className="top-btn"
@@ -426,6 +512,45 @@ export function ThemeEngine({
                 onChange={e => setForm({ ...form, author: e.target.value })}
               />
             </div>
+            <div className="field">
+              <label htmlFor="te-industry">
+                <span>Industry</span>
+              </label>
+              <input
+                id="te-industry"
+                type="text"
+                maxLength={60}
+                value={form.industry}
+                onChange={e => setForm({ ...form, industry: e.target.value })}
+                placeholder="e.g. Interior design"
+              />
+            </div>
+            <div className="field">
+              <label htmlFor="te-license">
+                <span>License</span>
+              </label>
+              <input
+                id="te-license"
+                type="text"
+                maxLength={80}
+                value={form.license}
+                onChange={e => setForm({ ...form, license: e.target.value })}
+                placeholder="e.g. Regular license"
+              />
+            </div>
+            <div className="field">
+              <label htmlFor="te-demo">
+                <span>Demo link</span>
+              </label>
+              <input
+                id="te-demo"
+                type="url"
+                maxLength={300}
+                value={form.demo}
+                onChange={e => setForm({ ...form, demo: e.target.value })}
+                placeholder="https://"
+              />
+            </div>
             <div className="field theme-wide">
               <label htmlFor="te-desc">
                 <span>Description</span>
@@ -443,10 +568,10 @@ export function ThemeEngine({
           </div>
           <div className="dialog-actions">
             <label className="top-btn media-upload-btn">
-              <Upload size={14} aria-hidden="true" /> Import theme file
+              <Upload size={14} aria-hidden="true" /> Import kit or theme file
               <input
                 type="file"
-                accept="application/json,.json"
+                accept="application/json,.json,application/zip,.zip"
                 disabled={busy}
                 onChange={e => {
                   onFile(e.target.files?.[0]);
@@ -454,6 +579,13 @@ export function ThemeEngine({
                 }}
               />
             </label>
+            <button
+              className="top-btn"
+              disabled={busy || form.name.trim() === ""}
+              onClick={downloadKit}
+            >
+              <Download size={14} aria-hidden="true" /> Download kit (.zip)
+            </button>
             <button
               className="save-btn"
               disabled={busy || form.name.trim() === ""}

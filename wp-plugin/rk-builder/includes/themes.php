@@ -91,6 +91,9 @@ function rk_builder_theme_summary( $slug, array $bundle, array $meta, $bytes ) {
 		'preview'     => rk_builder_theme_preview_url( $bundle ),
 		'createdAt'   => isset( $bundle['themeMeta']['createdAt'] ) && is_string( $bundle['themeMeta']['createdAt'] ) ? $bundle['themeMeta']['createdAt'] : rk_builder_iso( rk_builder_now() ),
 		'bytes'       => (int) $bytes,
+		'industry'    => isset( $meta['industry'] ) ? $meta['industry'] : '',
+		'license'     => isset( $meta['license'] ) ? $meta['license'] : '',
+		'demo'        => isset( $meta['demo'] ) ? $meta['demo'] : '',
 	);
 }
 
@@ -107,9 +110,11 @@ function rk_builder_theme_store( $slug, array $bundle, array $meta ) {
 	) );
 	$json = wp_json_encode( $bundle, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES );
 	if ( ! is_string( $json ) ) { return rk_builder_error( 'rk_server_error', 'Could not encode the theme.', 500 ); }
+	$replacing_kit = '' !== rk_builder_theme_kit_path( $slug );
 	if ( strlen( $json ) > RK_BUILDER_MAX_IMPORT_BYTES ) {
 		return rk_builder_error( 'rk_payload_too_large', 'The theme is larger than ' . ( RK_BUILDER_MAX_IMPORT_BYTES / 1048576 ) . ' MB.', 413 );
 	}
+	if ( $replacing_kit ) { rk_builder_theme_kit_forget( $slug ); }
 	update_option( 'rk_builder_theme_pkg_' . $slug, $json, false );
 	$index[ $slug ] = rk_builder_theme_summary( $slug, $bundle, $meta, strlen( $json ) );
 	update_option( 'rk_builder_theme_index', $index, false );
@@ -138,7 +143,10 @@ function rk_builder_theme_pick_slug( $name, $replace_slug = '' ) {
  * ------------------------------------------------------------------ */
 
 function rk_builder_handle_themes_list( $req ) {
-	return rk_builder_no_store( array( 'items' => array_values( rk_builder_themes_index() ) ) );
+	$active = (string) get_option( 'rk_builder_active_theme', '' );
+	$items  = array();
+	foreach ( rk_builder_themes_index() as $slug => $s ) { $s = rk_builder_kit_public_summary( $s ); $s['active'] = ( $slug === $active ); $items[] = $s; }
+	return rk_builder_no_store( array( 'items' => $items ) );
 }
 
 function rk_builder_themes_body( $req, array $allowed ) {
@@ -156,9 +164,9 @@ function rk_builder_themes_body( $req, array $allowed ) {
 
 /** Save the current site as a theme package. */
 function rk_builder_handle_theme_capture( $req ) {
-	$body = rk_builder_themes_body( $req, array( 'name', 'description', 'version', 'author' ) );
+	$body = rk_builder_themes_body( $req, array( 'name', 'description', 'version', 'author', 'industry', 'license', 'demo' ) );
 	if ( is_wp_error( $body ) ) { return $body; }
-	$meta = rk_builder_theme_meta_clean( $body );
+	$meta = rk_builder_kit_meta_clean( $body );
 	if ( '' === $meta['name'] ) { return rk_builder_invalid( 'rk_invalid_theme', array( array( 'path' => 'name', 'message' => 'Give the theme a name.' ) ) ); }
 	$bundle = rk_builder_build_site_bundle();
 	if ( is_wp_error( $bundle ) ) { return $bundle; }
@@ -192,6 +200,63 @@ function rk_builder_handle_theme_import( $req ) {
 	return is_wp_error( $saved ) ? $saved : rk_builder_no_store( array( 'theme' => $saved, 'check' => $report ) );
 }
 
+/** What a theme put on the site: page, template and post ids (remembered so switching themes can hide them). */
+function rk_builder_theme_items( $slug ) {
+	$i = get_option( 'rk_builder_theme_items_' . $slug, array() );
+	$i = is_array( $i ) ? $i : array();
+	return array(
+		'pages'     => isset( $i['pages'] ) && is_array( $i['pages'] ) ? array_map( 'intval', $i['pages'] ) : array(),
+		'templates' => isset( $i['templates'] ) && is_array( $i['templates'] ) ? array_map( 'intval', $i['templates'] ) : array(),
+		'posts'     => isset( $i['posts'] ) && is_array( $i['posts'] ) ? array_map( 'intval', $i['posts'] ) : array(),
+	);
+}
+
+/**
+ * What switching away from theme $prev would hide: its live pages, templates and content, except what the new theme
+ * (slugs in $bundle) takes over by the same address. Nothing is deleted. With $apply false only the plan is returned.
+ *
+ * @return array{pages:int[],templates:int[],posts:int[]}
+ */
+function rk_builder_theme_hide_old( $prev, array $bundle, $apply ) {
+	$keep_pages = array();
+	foreach ( isset( $bundle['pages'] ) && is_array( $bundle['pages'] ) ? $bundle['pages'] : array() as $p ) { if ( is_array( $p ) && isset( $p['slug'] ) ) { $keep_pages[ (string) $p['slug'] ] = true; } }
+	$keep_tpl = array();
+	foreach ( isset( $bundle['templates'] ) && is_array( $bundle['templates'] ) ? $bundle['templates'] : array() as $t ) { if ( is_array( $t ) && isset( $t['slug'] ) ) { $keep_tpl[ (string) $t['slug'] ] = true; } }
+	$keep_post = array();
+	foreach ( array_merge( isset( $bundle['content'] ) && is_array( $bundle['content'] ) ? $bundle['content'] : array(), isset( $bundle['entries'] ) && is_array( $bundle['entries'] ) ? $bundle['entries'] : array() ) as $c ) {
+		if ( is_array( $c ) && isset( $c['type'], $c['slug'] ) ) { $keep_post[ $c['type'] . '/' . $c['slug'] ] = true; }
+	}
+	$old  = rk_builder_theme_items( $prev );
+	$plan = array( 'pages' => array(), 'templates' => array(), 'posts' => array() );
+	foreach ( $old['pages'] as $id ) {
+		$p = get_post( $id );
+		if ( $p && 'publish' === $p->post_status && empty( $keep_pages[ (string) $p->post_name ] ) ) { $plan['pages'][] = $id; }
+	}
+	foreach ( $old['templates'] as $id ) {
+		$p = get_post( $id );
+		if ( $p && 'publish' === $p->post_status && empty( $keep_tpl[ rk_builder_tpl_slug( $id ) ] ) ) { $plan['templates'][] = $id; }
+	}
+	foreach ( $old['posts'] as $id ) {
+		$p = get_post( $id );
+		if ( $p && 'publish' === $p->post_status && empty( $keep_post[ $p->post_type . '/' . $p->post_name ] ) ) { $plan['posts'][] = $id; }
+	}
+	if ( ! $apply ) { return $plan; }
+	foreach ( array_merge( $plan['pages'], $plan['templates'] ) as $id ) {
+		rk_builder_handle_unpublish( rk_builder_internal_request( 'POST', '/rk/v1/builder/unpublish/' . (int) $id, array( 'id' => (int) $id ), array() ) );
+	}
+	foreach ( $plan['templates'] as $id ) { rk_builder_tpl_set_active( (int) $id, false ); }
+	foreach ( $plan['posts'] as $id ) { wp_update_post( array( 'ID' => (int) $id, 'post_status' => 'draft' ) ); update_post_meta( (int) $id, '_rk_theme_hidden', '1' ); }
+	if ( $plan['pages'] || $plan['templates'] || $plan['posts'] ) { rk_builder_purge_all_public_cache(); }
+	return $plan;
+}
+
+/** A content item that a theme switch hid comes back with the theme that owns it (when that install publishes). */
+function rk_builder_theme_unhide_post( $pid, $status ) {
+	if ( '1' !== (string) get_post_meta( (int) $pid, '_rk_theme_hidden', true ) ) { return; }
+	delete_post_meta( (int) $pid, '_rk_theme_hidden' );
+	if ( 'publish' === $status ) { wp_update_post( array( 'ID' => (int) $pid, 'post_status' => 'publish' ) ); }
+}
+
 /** Internal REST-style request (used to publish pages the same way the editor does). */
 function rk_builder_internal_request( $method, $route, array $params, array $body ) {
 	$r    = new WP_REST_Request( $method, $route );
@@ -207,7 +272,7 @@ function rk_builder_handle_theme_install( $req ) {
 	if ( is_wp_error( $body ) ) { return $body; }
 	$slug = isset( $body['slug'] ) ? $body['slug'] : null;
 	if ( ! rk_builder_theme_slug_ok( $slug ) ) { return rk_builder_invalid( 'rk_invalid_theme', array( array( 'path' => 'slug', 'message' => 'Required' ) ) ); }
-	$o = array( 'dryRun' => false, 'theme' => true, 'content' => true, 'publish' => false, 'frontPage' => false );
+	$o = array( 'dryRun' => false, 'theme' => true, 'content' => true, 'publish' => false, 'frontPage' => false, 'settings' => true, 'redirects' => false, 'siteInfo' => false, 'switch' => true );
 	if ( isset( $body['options'] ) ) {
 		if ( ! is_array( $body['options'] ) ) { return rk_builder_invalid( 'rk_invalid_theme', array( array( 'path' => 'options', 'message' => 'Expected object' ) ) ); }
 		foreach ( $body['options'] as $k => $v ) {
@@ -215,23 +280,63 @@ function rk_builder_handle_theme_install( $req ) {
 			else { return rk_builder_invalid( 'rk_invalid_theme', array( array( 'path' => 'options.' . $k, 'message' => 'Unrecognized or invalid option' ) ) ); }
 		}
 	}
-	$bundle = rk_builder_theme_load( $slug );
+	$kit_path = rk_builder_theme_kit_path( $slug );
+	$kit      = null;
+	if ( '' !== $kit_path ) {
+		$kit = rk_builder_kit_open( $kit_path );
+		if ( is_wp_error( $kit ) ) { return $kit; }
+		$bundle = $kit['bundle'];
+	} else {
+		$bundle = rk_builder_theme_load( $slug );
+	}
 	if ( null === $bundle ) { return rk_builder_theme_not_found(); }
 
+	if ( $o['publish'] && ! $o['dryRun'] ) {
+		// Content this theme put on the site that is a draft now was hidden by a switch: it returns with the theme.
+		foreach ( rk_builder_theme_items( $slug )['posts'] as $pid ) {
+			$p = get_post( $pid );
+			if ( $p && 'draft' === $p->post_status ) { update_post_meta( (int) $pid, '_rk_theme_hidden', '1' ); }
+		}
+	}
 	$result = rk_builder_site_import_run( $bundle, array(
 		'dryRun'        => $o['dryRun'],
 		'theme'         => $o['theme'],
 		'content'       => $o['content'],
 		'contentStatus' => $o['publish'] ? 'publish' : 'draft',
+		'settings'      => $o['settings'],
+		'redirects'     => $o['redirects'],
+		'siteInfo'      => $o['siteInfo'],
+		'kitZip'        => null !== $kit ? $kit['zip'] : null,
 	) );
+	if ( null !== $kit ) { $kit['zip']->close(); }
 	if ( is_wp_error( $result ) ) { return $result; }
 	$report = $result instanceof WP_REST_Response ? $result->get_data() : $result;
 	$report['published'] = 0;
 	$report['frontPage'] = false;
-	if ( $o['dryRun'] ) { return rk_builder_no_store( $report ); }
+	$prev = (string) get_option( 'rk_builder_active_theme', '' );
+	$hide = ( $o['switch'] && '' !== $prev && $prev !== $slug );
+	if ( $o['dryRun'] ) {
+		$plan = $hide ? rk_builder_theme_hide_old( $prev, $bundle, false ) : array( 'pages' => array(), 'templates' => array(), 'posts' => array() );
+		$report['hidden'] = array( 'from' => $hide && isset( rk_builder_themes_index()[ $prev ] ) ? rk_builder_themes_index()[ $prev ]['name'] : '', 'pages' => count( $plan['pages'] ), 'templates' => count( $plan['templates'] ), 'posts' => count( $plan['posts'] ) );
+		unset( $report['touched'] );
+		return rk_builder_no_store( $report );
+	}
+	$mine = array( 'pages' => array(), 'templates' => array(), 'posts' => isset( $report['touched']['posts'] ) ? array_map( 'intval', $report['touched']['posts'] ) : array() );
+	foreach ( isset( $report['pages']['done'] ) ? $report['pages']['done'] : array() as $d ) { $mine['pages'][] = (int) $d['id']; }
+	foreach ( isset( $report['templates']['done'] ) ? $report['templates']['done'] : array() as $d ) { $mine['templates'][] = (int) $d['id']; }
+	update_option( 'rk_builder_theme_items_' . $slug, $mine, false );
+	update_option( 'rk_builder_active_theme', $slug, false );
+	unset( $report['touched'] );
+	$report['hidden'] = array( 'from' => '', 'pages' => 0, 'templates' => 0, 'posts' => 0 );
 
+	if ( $hide ) {
+		// Hide after the new theme is in, so a page both themes share by address is replaced, never unpublished.
+		$gone = rk_builder_theme_hide_old( $prev, $bundle, true );
+		$report['hidden'] = array( 'from' => isset( rk_builder_themes_index()[ $prev ] ) ? rk_builder_themes_index()[ $prev ]['name'] : '', 'pages' => count( $gone['pages'] ), 'templates' => count( $gone['templates'] ), 'posts' => count( $gone['posts'] ) );
+	}
 	if ( $o['publish'] ) {
 		$home_id = 0;
+		$front_slug = isset( $bundle['site']['frontPage'] ) && is_string( $bundle['site']['frontPage'] ) && '' !== $bundle['site']['frontPage'] ? $bundle['site']['frontPage'] : 'home';
 		foreach ( isset( $report['pages']['done'] ) ? $report['pages']['done'] : array() as $d ) {
 			$pub = rk_builder_handle_publish( rk_builder_internal_request( 'POST', '/rk/v1/builder/publish/' . (int) $d['id'], array( 'id' => (int) $d['id'] ), array( 'expectedRevision' => (int) $d['revision'] ) ) );
 			if ( is_wp_error( $pub ) ) {
@@ -239,7 +344,7 @@ function rk_builder_handle_theme_install( $req ) {
 				continue;
 			}
 			$report['published']++;
-			if ( 'home' === $d['slug'] ) { $home_id = (int) $d['id']; }
+			if ( $front_slug === $d['slug'] ) { $home_id = (int) $d['id']; }
 		}
 		$report['publishedTemplates'] = 0;
 		foreach ( isset( $report['templates']['done'] ) ? $report['templates']['done'] : array() as $d ) {
@@ -268,7 +373,13 @@ function rk_builder_handle_theme_install( $req ) {
 }
 
 function rk_builder_handle_theme_export( $req ) {
-	$slug   = (string) $req->get_param( 'slug' );
+	$slug = (string) $req->get_param( 'slug' );
+	$zip  = rk_builder_theme_kit_path( $slug );
+	if ( '' !== $zip ) {
+		$s = rk_builder_themes_index()[ $slug ];
+		rk_builder_kit_stream_once( $req->get_route(), $zip, 'rk-kit-' . $slug . '-' . $s['version'] . '.zip' );
+		return rk_builder_no_store( array( 'file' => $slug . '.zip', 'kit' => true ) );
+	}
 	$bundle = rk_builder_theme_load( $slug );
 	return null === $bundle ? rk_builder_theme_not_found() : rk_builder_no_store( $bundle );
 }
@@ -279,6 +390,9 @@ function rk_builder_handle_theme_delete( $req ) {
 	$slug  = isset( $body['slug'] ) ? $body['slug'] : null;
 	$index = rk_builder_themes_index();
 	if ( ! rk_builder_theme_slug_ok( $slug ) || ! isset( $index[ $slug ] ) ) { return rk_builder_theme_not_found(); }
+	rk_builder_theme_kit_forget( $slug );
+	delete_option( 'rk_builder_theme_items_' . $slug );
+	if ( get_option( 'rk_builder_active_theme', '' ) === $slug ) { delete_option( 'rk_builder_active_theme' ); }
 	unset( $index[ $slug ] );
 	update_option( 'rk_builder_theme_index', $index, false );
 	delete_option( 'rk_builder_theme_pkg_' . $slug );
@@ -304,4 +418,5 @@ function rk_builder_register_theme_routes( $ns ) {
 	register_rest_route( $ns, '/builder/themes/delete', array(
 		'methods' => 'POST', 'callback' => 'rk_builder_handle_theme_delete', 'permission_callback' => $perm,
 	) );
+	rk_builder_register_kit_routes( $ns );
 }

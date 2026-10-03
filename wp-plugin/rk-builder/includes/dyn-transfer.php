@@ -85,6 +85,7 @@ function rk_builder_dyn_export_bundle( array &$refs, array &$media_ids ) {
 				'type' => $t['slug'], 'slug' => '' !== (string) $p->post_name ? (string) $p->post_name : sanitize_title( $p->post_title ), 'title' => rk_builder_plain( get_the_title( $p ) ), 'status' => (string) $p->post_status,
 				'excerpt' => (string) $p->post_excerpt, 'content' => (string) $p->post_content, 'order' => (int) $p->menu_order,
 				'terms' => $terms, 'featured' => $thumb > 0 ? $thumb : null, 'fields' => $fields,
+				'seo' => rk_builder_seo_read( (int) $p->ID ),
 			);
 		}
 	}
@@ -275,6 +276,8 @@ function rk_builder_dyn_import_entries_apply( array $entries, array $maps, $stat
 		if ( is_wp_error( $pid ) || ! $pid ) { $report['warnings'][] = 'Could not import the entry "' . $e['slug'] . '".'; continue; }
 		$pid = (int) $pid;
 		$report['entries'][ $existing ? 'updated' : 'created' ]++;
+		$report['touched']['posts'][] = $pid;
+		if ( $existing ) { rk_builder_theme_unhide_post( $pid, $status ); }
 		$fields = isset( $e['fields'] ) && is_array( $e['fields'] ) ? $e['fields'] : array();
 		foreach ( $def['fields'] as $f ) {
 			if ( ! array_key_exists( $f['key'], $fields ) ) { continue; }
@@ -293,5 +296,6 @@ function rk_builder_dyn_import_entries_apply( array $entries, array $maps, $stat
 			$rec = rk_builder_bundle_lookup( $maps, $e['featured'], null );
 			if ( null !== $rec ) { set_post_thumbnail( $pid, (int) $rec['id'] ); }
 		}
+		if ( isset( $e['seo'] ) ) { rk_builder_seo_write( $pid, rk_builder_seo_remap( rk_builder_seo_clean( $e['seo'] ), $maps ) ); }
 	}
 }

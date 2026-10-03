@@ -3694,3 +3694,7 @@ input[type="checkbox"].row-check:indeterminate::after {
     flex-wrap: wrap;
   }
 }
+
+.theme-active {
+  color: var(--accent, #c6f432);
+}

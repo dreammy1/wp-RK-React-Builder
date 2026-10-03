@@ -135,6 +135,27 @@ with the theme.
    what would change.
 4. To hand it to someone: **Export** downloads one `.json` file.
 
+### Step 9: Ship it as a kit (zip with its own pictures)
+
+A `.json` theme only *points* at its pictures, so it breaks if the original site goes away. A **kit** is one `.zip`
+that carries them:
+
+1. **Themes → Save this site as a theme**: fill the name, version, author, industry, license and demo link, then press
+   **Download kit (.zip)**.
+2. Inside the zip: `manifest.json` (name, version, industry, license, demo link, the plugin version it needs, counts),
+   `site.json` (the site data, in the format of section 4) and `images/` (every picture the site uses, including those
+   inside blog posts, the logo, the favicon and the social-sharing images).
+3. On the buyer's site: **Themes → Import kit or theme file**, choose the zip, then **Install**. Pictures are read from
+   the zip, so nothing depends on your demo site. A picture that is missing from the zip falls back to its old address.
+4. The kit carries pages, reusable blocks, header/footer/404/single/archive/card templates, content types with fields,
+   entries, blog posts, theme colors/font/logo/social, business details, per-page and per-entry SEO, layout settings,
+   site name and tagline, and redirects. It never carries tracking codes, review keys, API keys or users.
+5. At install the buyer picks what to apply. **Layout settings** is on by default; **Site name and tagline** and
+   **Redirects** are off, because they describe your demo, not their business.
+
+Only `manifest.json`, `site.json` and `images/<file>` are accepted in a kit; anything else makes the upload fail.
+A kit needs the PHP zip extension on the server (nearly every host has it).
+
 ---
 
 ## 3. SEO standards for every page and entry
