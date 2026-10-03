@@ -3658,3 +3658,39 @@ input[type="checkbox"].row-check:indeterminate::after {
   justify-content: space-between;
   gap: 8px 14px;
 }
+
+/* AI & MCP on a phone: long lines (the address, setup commands) scroll inside their box instead of widening the page */
+.mcp-steps {
+  grid-template-columns: minmax(0, 1fr);
+}
+.mcp-steps > li,
+.mcp-code,
+.mcp-fresh,
+.mcp-keys li,
+.mcp-group {
+  min-width: 0;
+  max-width: 100%;
+}
+.mcp-steps li {
+  overflow-wrap: anywhere;
+}
+.mcp-code pre {
+  max-width: 100%;
+  overflow-wrap: normal;
+}
+.mcp-steps .form-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
+}
+.mcp-steps .chip-row {
+  flex-wrap: wrap;
+}
+@media (max-width: 760px) {
+  .mcp-log li,
+  .mcp-tool,
+  .mcp-group li {
+    min-width: 0;
+  }
+  .mcp-group li {
+    flex-wrap: wrap;
+  }
+}

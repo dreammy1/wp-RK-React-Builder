@@ -1185,6 +1185,19 @@ test("17 · AI & MCP: off by default, switched on from the dashboard, access lev
   await expect(log.getByText("rkb_create_page")).toBeVisible();
   await expect(log.getByText("refused or failed").first()).toBeVisible();
 
+  // on a phone and a tablet the page must not grow wider than the screen
+  for (const width of [390, 768]) {
+    await page.setViewportSize({ width, height: 800 });
+    const sw = await page.evaluate(() => ({
+      scroll: document.documentElement.scrollWidth,
+      client: document.documentElement.clientWidth,
+    }));
+    expect(sw.scroll, `page width at ${width}px`).toBeLessThanOrEqual(
+      sw.client
+    );
+  }
+  await page.setViewportSize({ width: 1280, height: 800 });
+
   // leave the site as it was
   await access.getByLabel(/Allow AI assistants to connect/).uncheck();
   await expect(page.getByText(/MCP is off/)).toBeVisible();
