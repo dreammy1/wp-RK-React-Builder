@@ -33,6 +33,7 @@ import {
   ThemeInstallReport,
   ThemeList,
   ThemeSaved,
+  UndoResult,
   type ThemeInstallOptions,
   type ThemeMetaInput,
   type KitMetaInput,
@@ -509,6 +510,13 @@ export const api = {
   /** A kit in the library, as the same zip. */
   exportKitFile: (slug: string) =>
     requestBlob(`builder/themes/export?slug=${encodeURIComponent(slug)}`, {
+      timeoutMs: 300_000,
+    }),
+  /** Put the site back as it was before the last theme install. */
+  undoInstall: () =>
+    request("builder/themes/undo", UndoResult, {
+      method: "POST",
+      body: {},
       timeoutMs: 300_000,
     }),
   deleteTheme: (slug: string) =>

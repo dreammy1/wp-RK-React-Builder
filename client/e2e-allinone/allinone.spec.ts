@@ -1331,6 +1331,13 @@ test("18 · site kit: download the whole site as one zip, delete its picture, up
   const card = page.locator(".theme-card", { hasText: "E2E Kit" });
   await expect(card.getByText("Kit ·")).toBeVisible();
   await card.getByRole("button", { name: "Install", exact: true }).click();
+  await expect(page.getByText("Step 1 of 3")).toBeVisible();
+  await page.getByRole("button", { name: "Next", exact: true }).click();
+  await expect(page.getByText("Step 2 of 3")).toBeVisible();
+  await page.getByRole("button", { name: "Next", exact: true }).click();
+  await expect(page.getByText("This is what will happen")).toBeVisible({
+    timeout: 120_000,
+  });
   await page.getByRole("button", { name: "Install theme" }).click();
   await expect(page.getByText(/E2E Kit.* is installed/)).toBeVisible({
     timeout: 180_000,
@@ -1351,4 +1358,13 @@ test("18 · site kit: download the whole site as one zip, delete its picture, up
   expect(hero.bgUrl).not.toContain("assets.example.com");
   const img = await page.request.get(hero.bgUrl);
   expect(img.status()).toBe(200);
+
+  // undo: the page the install brought back goes to the Trash again
+  page.once("dialog", d => void d.accept());
+  await page.getByRole("button", { name: "Undo this install" }).click();
+  await expect(page.getByText(/Undone:/)).toBeVisible({ timeout: 120_000 });
+  const gone = await wpFetch(page, "builder/pages?search=Kit%20Demo");
+  // the install had published it; undo puts it back as it was before (not live)
+  const left = (gone.json as { pages: { status: string }[] }).pages;
+  expect(left.every(p => p.status !== "publish")).toBe(true);
 });

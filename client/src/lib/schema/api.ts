@@ -290,7 +290,27 @@ export const ThemeSummary = z.object({
   demo: z.string().optional(),
 });
 export type ThemeSummary = z.infer<typeof ThemeSummary>;
-export const ThemeList = z.object({ items: z.array(ThemeSummary) });
+export const UndoSummary = z.object({
+  name: z.string(),
+  at: z.string(),
+  counts: z.object({
+    created: z.number(),
+    changed: z.number(),
+    hidden: z.number(),
+  }),
+});
+export type UndoSummary = z.infer<typeof UndoSummary>;
+export const ThemeList = z.object({
+  items: z.array(ThemeSummary),
+  undo: UndoSummary.nullable().optional(),
+});
+export const UndoResult = z.object({
+  undone: z.object({
+    trashed: z.number(),
+    restored: z.number(),
+    shown: z.number(),
+  }),
+});
 export const ThemeSaved = z.object({ theme: ThemeSummary });
 export const ThemeAdded = z.object({
   theme: ThemeSummary,
@@ -298,6 +318,10 @@ export const ThemeAdded = z.object({
 });
 export const ThemeInstallReport = SiteImportReport.extend({
   published: z.number(),
+  suggest: z
+    .array(z.object({ label: z.string(), find: z.string() }))
+    .optional(),
+  undo: UndoSummary.nullable().optional(),
   publishedTemplates: z.number().optional(),
   frontPage: z.boolean(),
 });
@@ -313,6 +337,10 @@ export type ThemeInstallOptions = {
   siteInfo?: boolean;
   /** Hide the active theme's pages, templates and content (default on). */
   switch?: boolean;
+  /** false = design only: no pages or demo content. */
+  pages?: boolean;
+  /** Your own business details instead of the demo's. */
+  replace?: { find: string; with: string }[];
 };
 export type ThemeMetaInput = {
   name: string;

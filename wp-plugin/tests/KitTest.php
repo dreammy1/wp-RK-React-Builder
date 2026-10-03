@@ -338,3 +338,101 @@ rk_test( 'themes: content hidden by a switch comes back when its theme is instal
 	t_ok( rk_post( '/rk/v1/builder/themes/install', array( 'slug' => 'one', 'options' => $o ) ) );
 	t_eq( get_post( $id )->post_status, 'publish', 'back with its theme' );
 } );
+
+rk_test( 'wizard: business details are replaced in wording only, never in addresses, ids or slugs', function () {
+	$pairs = rk_builder_replace_pairs_clean( array( array( 'find' => 'Acme Floors', 'with' => 'Zed Co' ), array( 'find' => '555-0100', 'with' => '555-9999' ), array( 'find' => 'x', 'with' => 'y' ), array( 'find' => 'Same', 'with' => 'Same' ), 'junk' ) );
+	t_eq( $pairs, array( 'Acme Floors' => 'Zed Co', '555-0100' => '555-9999' ) );
+	$b = rk_builder_replace_in_bundle( array(
+		'format' => 'rk-builder-site', 'version' => 1,
+		'pages' => array( array( 'slug' => 'acme-floors', 'title' => 'About Acme Floors', 'layout' => array( 'blocks' => array( array( 'id' => 'Acme Floors', 'type' => 'text', 'props' => array( 'text' => 'Call Acme Floors', 'href' => 'tel:555-0100', 'url' => 'https://acme-floors.example.com/Acme Floors', 'mediaId' => 5 ) ) ) ) ) ),
+		'seo' => array( 'organization' => array( 'name' => 'Acme Floors', 'telephone' => '555-0100' ) ),
+		'site' => array( 'title' => 'Acme Floors' ),
+		'media' => array( array( 'url' => 'https://x.example.com/Acme Floors.jpg' ) ),
+	), $pairs );
+	$blk = $b['pages'][0]['layout']['blocks'][0];
+	t_eq( $b['pages'][0]['slug'], 'acme-floors' );
+	t_eq( $b['pages'][0]['title'], 'About Zed Co' );
+	t_eq( $blk['id'], 'Acme Floors' );
+	t_eq( $blk['props']['text'], 'Call Zed Co' );
+	t_eq( $blk['props']['href'], 'tel:555-9999' );
+	t_eq( $blk['props']['url'], 'https://acme-floors.example.com/Acme Floors' );
+	t_eq( $b['seo']['organization']['name'], 'Zed Co' );
+	t_eq( $b['seo']['organization']['telephone'], '555-9999' );
+	t_eq( $b['site']['title'], 'Zed Co' );
+	t_eq( $b['media'][0]['url'], 'https://x.example.com/Acme Floors.jpg' );
+	$sug = rk_builder_replace_suggestions( array( 'seo' => array( 'organization' => array( 'name' => 'Acme Floors', 'telephone' => '555-0100', 'email' => '', 'city' => 'Peoria' ) ) ) );
+	t_eq( array_column( $sug, 'label' ), array( 'Business name', 'Phone', 'City' ) );
+} );
+
+rk_test( 'wizard: install with your own details; design-only skips pages; undo puts everything back', function () {
+	rk_test_login( 'admin' );
+	$blk = function ( $t ) { return array( 'version' => 1, 'blocks' => array( array( 'id' => 'a', 'type' => 'text', 'props' => array( 'text' => $t ) ) ) ); };
+	// the live site before: a Home page the install will replace, a name, a layout setting
+	t_ok( rk_post( '/rk/v1/builder/site-import', array( 'options' => array( 'dryRun' => false ), 'bundle' => rk_bundle( array( 'media' => array(), 'pages' => array( array( 'slug' => 'home', 'title' => 'My Home', 'wasPublished' => true, 'layout' => $blk( 'my own text' ) ) ) ) ) ) ) );
+	$home = rk_builder_find_page_by_slug( 'home' );
+	t_ok( rk_post( '/rk/v1/builder/publish/' . $home, array( 'expectedRevision' => rk_builder_get_revision( $home ) ) ) );
+	update_option( 'blogname', 'My Site' );
+	$before_layout = rk_builder_get_draft_layout( $home );
+
+	$bundle = rk_bundle( array( 'media' => array(), 'pages' => array(
+		array( 'slug' => 'home', 'title' => 'Demo Home', 'wasPublished' => true, 'layout' => $blk( 'Welcome to Acme Floors' ) ),
+		array( 'slug' => 'brand-new', 'title' => 'Brand New', 'wasPublished' => true, 'layout' => $blk( 'New page' ) ),
+	), 'site' => array( 'title' => 'Acme Floors', 'tagline' => 'Demo' ), 'global' => array( 'layout_width' => 1500 ), 'seo' => array( 'organization' => array( 'name' => 'Acme Floors', 'telephone' => '555-0100' ) ) ) );
+	t_ok( rk_post( '/rk/v1/builder/themes/import', array( 'bundle' => $bundle, 'name' => 'Wizard Kit' ) ) );
+
+	// the wizard first asks the dry run what to offer
+	$plan = t_ok( rk_post( '/rk/v1/builder/themes/install', array( 'slug' => 'wizard-kit', 'options' => array( 'dryRun' => true ) ) ) );
+	t_eq( array_column( $plan['suggest'], 'find' ), array( 'Acme Floors', '555-0100' ) );
+	t_eq( get_post( $home )->post_title, 'My Home', 'a dry run changes nothing' );
+
+	$opts = array( 'publish' => true, 'frontPage' => false, 'siteInfo' => true, 'settings' => true, 'replace' => array( array( 'find' => 'Acme Floors', 'with' => 'Zed Co' ), array( 'find' => '555-0100', 'with' => '555-9999' ) ) );
+	$r = t_ok( rk_post( '/rk/v1/builder/themes/install', array( 'slug' => 'wizard-kit', 'options' => $opts ) ) );
+	t_eq( $r['undo']['counts']['created'], 1 );
+	t_eq( $r['undo']['counts']['changed'], 1 );
+	t_eq( get_option( 'blogname' ), 'Zed Co', 'your name replaced the demo name' );
+	t_eq( rk_builder_get_draft_layout( $home )['blocks'][0]['props']['text'], 'Welcome to Zed Co' );
+	t_eq( rk_builder_seo_organization()['telephone'], '555-9999' );
+	t_eq( rk_builder_global()['layout_width'], 1500 );
+	$new = rk_builder_find_page_by_slug( 'brand-new' );
+	t_assert( $new > 0 );
+	t_eq( t_ok( rk_get( '/rk/v1/builder/themes' ) )['undo']['name'], 'Wizard Kit' );
+
+	$u = t_ok( rk_post( '/rk/v1/builder/themes/undo', array() ) );
+	t_eq( $u['undone']['trashed'], 1 );
+	t_eq( $u['undone']['restored'], 1 );
+	t_eq( get_post( $new )->post_status, 'trash', 'the page the install added is in the trash, not deleted' );
+	t_eq( get_post( $home )->post_title, 'My Home' );
+	t_eq( get_post( $home )->post_status, 'publish' );
+	t_deep( rk_builder_get_draft_layout( $home ), $before_layout, 'the layout is exactly as it was' );
+	t_eq( get_option( 'blogname' ), 'My Site' );
+	t_eq( rk_builder_global()['layout_width'], 1144 );
+	t_eq( get_option( 'rk_builder_active_theme', '' ), '' );
+	t_eq( t_ok( rk_get( '/rk/v1/builder/themes' ) )['undo'], null );
+	t_err( rk_post( '/rk/v1/builder/themes/undo', array() ), 'rk_nothing_to_undo', 404 );
+
+	// design only: no pages come with it
+	$d = t_ok( rk_post( '/rk/v1/builder/themes/install', array( 'slug' => 'wizard-kit', 'options' => array( 'pages' => false, 'publish' => true ) ) ) );
+	t_eq( $d['pages']['create'] + $d['pages']['update'], 0 );
+	t_eq( get_post( $home )->post_title, 'My Home' );
+} );
+
+rk_test( 'wizard: undo also reverses a switch (the hidden theme comes back) and is admin-only', function () {
+	rk_test_login( 'admin' );
+	$blk = array( 'version' => 1, 'blocks' => array( array( 'id' => 'a', 'type' => 'text', 'props' => array( 'text' => 'x' ) ) ) );
+	$mk  = function ( array $slugs ) use ( $blk ) { return rk_bundle( array( 'media' => array(), 'pages' => array_map( function ( $s ) use ( $blk ) { return array( 'slug' => $s, 'title' => ucfirst( $s ), 'wasPublished' => true, 'layout' => $blk ); }, $slugs ) ) ); };
+	t_ok( rk_post( '/rk/v1/builder/themes/import', array( 'bundle' => $mk( array( 'home', 'only-a' ) ), 'name' => 'Alpha' ) ) );
+	t_ok( rk_post( '/rk/v1/builder/themes/import', array( 'bundle' => $mk( array( 'home', 'only-b' ) ), 'name' => 'Beta' ) ) );
+	$pub = array( 'publish' => true, 'frontPage' => false );
+	t_ok( rk_post( '/rk/v1/builder/themes/install', array( 'slug' => 'alpha', 'options' => $pub ) ) );
+	t_ok( rk_post( '/rk/v1/builder/themes/install', array( 'slug' => 'beta', 'options' => $pub ) ) );
+	$a = rk_builder_find_page_by_slug( 'only-a' );
+	$b = rk_builder_find_page_by_slug( 'only-b' );
+	t_eq( get_post( $a )->post_status, 'draft' );
+	rk_test_login( 'editor' );
+	t_err( rk_post( '/rk/v1/builder/themes/undo', array() ), 'rk_forbidden', 403 );
+	rk_test_login( 'admin' );
+	t_ok( rk_post( '/rk/v1/builder/themes/undo', array() ) );
+	t_eq( get_post( $a )->post_status, 'publish', 'Alpha is live again' );
+	t_eq( get_post( $b )->post_status, 'trash', 'Beta page it added is gone to the trash' );
+	t_eq( get_option( 'rk_builder_active_theme', '' ), 'alpha' );
+} );

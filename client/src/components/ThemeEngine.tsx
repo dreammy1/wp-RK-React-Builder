@@ -6,6 +6,7 @@ import type {
   ThemeInstallOptions,
   ThemeInstallReport,
   ThemeSummary,
+  UndoSummary,
 } from "@/lib/schema/api";
 import { SubPage } from "./SubPage";
 import { Summary } from "./SiteTransfer";
@@ -65,6 +66,33 @@ function hiddenNote(r: ThemeInstallReport, future: boolean) {
   return `${future ? "Will hide" : "Hid"} ${parts.join(", ")} of “${h.from}” (kept as drafts, not deleted).`;
 }
 
+type Row = { label: string; find: string; with: string };
+
+function Mode({
+  checked,
+  title,
+  text,
+  onPick,
+}: {
+  checked: boolean;
+  title: string;
+  text: string;
+  onPick: () => void;
+}) {
+  return (
+    <label className={`kind-card${checked ? " on" : ""}`}>
+      <input
+        type="radio"
+        name="install-mode"
+        checked={checked}
+        onChange={onPick}
+      />
+      <strong>{title}</strong>
+      <span className="muted">{text}</span>
+    </label>
+  );
+}
+
 function InstallPanel({
   theme,
   activeName,
@@ -76,6 +104,8 @@ function InstallPanel({
   onBack: () => void;
   onDone: (r: ThemeInstallReport) => void;
 }) {
+  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [design, setDesign] = useState(false);
   const [o, setO] = useState<ThemeInstallOptions>({
     dryRun: false,
     theme: true,
@@ -84,124 +114,239 @@ function InstallPanel({
     frontPage: true,
     settings: true,
     redirects: false,
-    siteInfo: false,
+    siteInfo: true,
     switch: true,
   });
+  const [rows, setRows] = useState<Row[]>([]);
   const [phase, setPhase] = useState<
     "idle" | "checking" | "installing" | { error: string }
   >("idle");
   const [check, setCheck] = useState<ThemeInstallReport | null>(null);
   const busy = phase === "checking" || phase === "installing";
 
-  const run = (dryRun: boolean) => {
+  const options = (dryRun: boolean): ThemeInstallOptions => ({
+    ...o,
+    dryRun,
+    pages: !design,
+    content: o.content && !design,
+    replace: rows
+      .filter(r => r.find.trim() !== "" && r.with.trim() !== "")
+      .map(r => ({ find: r.find.trim(), with: r.with.trim() })),
+  });
+
+  const run = (dryRun: boolean, then?: (r: ThemeInstallReport) => void) => {
     setPhase(dryRun ? "checking" : "installing");
     api
-      .installTheme(theme.slug, { ...o, dryRun })
+      .installTheme(theme.slug, options(dryRun))
       .then(r => {
         setPhase("idle");
-        if (dryRun) setCheck(r);
+        if (then) then(r);
+        else if (dryRun) setCheck(r);
         else onDone(r);
       })
       .catch(e => setPhase({ error: describeError(e) }));
   };
 
+  const toBusiness = () => {
+    setStep(2);
+    if (rows.length === 0)
+      run(true, r =>
+        setRows(
+          (r.suggest ?? []).map(s => ({
+            label: s.label,
+            find: s.find,
+            with: "",
+          }))
+        )
+      );
+  };
+  const toReview = () => {
+    setStep(3);
+    setCheck(null);
+    run(true);
+  };
+  const setRow = (i: number, patch: Partial<Row>) =>
+    setRows(rows.map((r, j) => (j === i ? { ...r, ...patch } : r)));
+
   return (
     <>
       <p className="muted">
-        Install <strong>{theme.name}</strong> {theme.version} on this site:{" "}
-        {theme.pages} page{theme.pages === 1 ? "" : "s"}, {theme.reusables}{" "}
-        reusable block{theme.reusables === 1 ? "" : "s"}, {theme.media} image
-        {theme.media === 1 ? "" : "s"}
-        {theme.kit && " (the pictures are inside the kit)"}
-        {(theme.templates ?? 0) > 0 &&
-          `, ${theme.templates} template${theme.templates === 1 ? "" : "s"}`}
-        . Pages with the same address are <strong>replaced</strong> by the
-        theme&apos;s version; other pages are left alone.
+        Step {step} of 3 · <strong>{theme.name}</strong> {theme.version}
+        {theme.kit && " (kit: the pictures are inside)"}
       </p>
-      <fieldset className="field" disabled={busy}>
-        <legend>What to install</legend>
-        <Toggle
-          label="Theme settings"
-          hint="colors, fonts, logo, header and footer"
-          checked={o.theme}
-          onChange={v => setO({ ...o, theme: v })}
-        />
-        <Toggle
-          label="Services and projects"
-          checked={o.content}
-          disabled={theme.content === 0}
-          onChange={v => setO({ ...o, content: v })}
-        />
-        <Toggle
-          label="Layout settings"
-          hint="content width and side spacing"
-          checked={o.settings ?? false}
-          onChange={v => setO({ ...o, settings: v })}
-        />
-        <Toggle
-          label="Site name and tagline"
-          hint="replaces yours with the kit's"
-          checked={o.siteInfo ?? false}
-          onChange={v => setO({ ...o, siteInfo: v })}
-        />
-        <Toggle
-          label="Redirects"
-          hint="adds the kit's rules to yours"
-          checked={o.redirects ?? false}
-          onChange={v => setO({ ...o, redirects: v })}
-        />
-        {activeName && (
-          <Toggle
-            label={`Switch from “${activeName}”`}
-            hint="hides its pages, templates and content (nothing is deleted)"
-            checked={o.switch ?? false}
-            onChange={v => setO({ ...o, switch: v })}
-          />
-        )}
-        <Toggle
-          label="Publish the pages right away"
-          hint="otherwise they arrive as drafts"
-          checked={o.publish}
-          onChange={v =>
-            setO({ ...o, publish: v, frontPage: v && o.frontPage })
-          }
-        />
-        <Toggle
-          label="Use its Home page as the site front page"
-          checked={o.frontPage && o.publish}
-          disabled={!o.publish}
-          onChange={v => setO({ ...o, frontPage: v })}
-        />
-      </fieldset>
+      {step === 1 && (
+        <>
+          <fieldset className="field kind-pick" disabled={busy}>
+            <legend>What do you want?</legend>
+            <Mode
+              checked={!design}
+              title="Everything"
+              text={`${theme.pages} page${theme.pages === 1 ? "" : "s"}, demo content, design and templates. Pages at the same address are replaced.`}
+              onPick={() => setDesign(false)}
+            />
+            <Mode
+              checked={design}
+              title="Design only"
+              text="Colors, fonts, header, footer, templates and blocks. No pages and no demo content."
+              onPick={() => setDesign(true)}
+            />
+          </fieldset>
+          <fieldset className="field" disabled={busy}>
+            <legend>Include</legend>
+            <Toggle
+              label="Theme settings"
+              hint="colors, fonts, logo, header and footer"
+              checked={o.theme}
+              onChange={v => setO({ ...o, theme: v })}
+            />
+            <Toggle
+              label="Layout settings"
+              hint="content width and side spacing"
+              checked={o.settings ?? false}
+              onChange={v => setO({ ...o, settings: v })}
+            />
+            <Toggle
+              label="Site name and tagline"
+              hint="the ones in the kit, or your own from the next step"
+              checked={o.siteInfo ?? false}
+              onChange={v => setO({ ...o, siteInfo: v })}
+            />
+            <Toggle
+              label="Redirects"
+              hint="adds the kit's rules to yours"
+              checked={o.redirects ?? false}
+              onChange={v => setO({ ...o, redirects: v })}
+            />
+            {activeName && (
+              <Toggle
+                label={`Switch from “${activeName}”`}
+                hint="hides its pages, templates and content (nothing is deleted)"
+                checked={o.switch ?? false}
+                onChange={v => setO({ ...o, switch: v })}
+              />
+            )}
+            <Toggle
+              label="Publish right away"
+              hint="otherwise pages arrive as drafts"
+              checked={o.publish}
+              disabled={design}
+              onChange={v =>
+                setO({ ...o, publish: v, frontPage: v && o.frontPage })
+              }
+            />
+            <Toggle
+              label="Use its Home page as the site front page"
+              checked={o.frontPage && o.publish && !design}
+              disabled={!o.publish || design}
+              onChange={v => setO({ ...o, frontPage: v })}
+            />
+          </fieldset>
+        </>
+      )}
+      {step === 2 && (
+        <>
+          <p>
+            <strong>Your business.</strong> The kit is written for a demo
+            business. Type your own details next to each one and they replace
+            the demo&apos;s everywhere (text, links, SEO). Leave a box empty to
+            keep the kit&apos;s wording.
+          </p>
+          {phase === "checking" && <p className="muted">Reading the kit…</p>}
+          <div className="theme-form">
+            {rows.map((r, i) => (
+              <div key={i} className="field theme-wide">
+                <label htmlFor={`rep-${i}`}>
+                  <span>
+                    {r.label || "Replace"}{" "}
+                    <small className="muted">
+                      {r.label ? `(kit: ${r.find})` : ""}
+                    </small>
+                  </span>
+                </label>
+                {!r.label && (
+                  <input
+                    type="text"
+                    aria-label="Text to find"
+                    placeholder="Text in the kit"
+                    maxLength={200}
+                    value={r.find}
+                    onChange={e => setRow(i, { find: e.target.value })}
+                  />
+                )}
+                <input
+                  id={`rep-${i}`}
+                  type="text"
+                  maxLength={300}
+                  value={r.with}
+                  placeholder="Your value"
+                  onChange={e => setRow(i, { with: e.target.value })}
+                />
+              </div>
+            ))}
+          </div>
+          {rows.length < 10 && (
+            <button
+              className="top-btn"
+              disabled={busy}
+              onClick={() =>
+                setRows([...rows, { label: "", find: "", with: "" }])
+              }
+            >
+              Add another replacement
+            </button>
+          )}
+        </>
+      )}
+      {step === 3 && (
+        <div role="status" aria-live="polite">
+          <h3>This is what will happen</h3>
+          {check && hiddenNote(check, true) && <p>{hiddenNote(check, true)}</p>}
+          {check && <Summary r={check} />}
+          {phase === "checking" && <p className="muted">Checking…</p>}
+          <p className="muted">
+            Before anything changes, the site is saved so you can{" "}
+            <strong>undo this install</strong> with one click. Pictures that are
+            copied stay in your Media library.
+          </p>
+        </div>
+      )}
       {typeof phase === "object" && (
         <p className="form-error" role="alert">
           {phase.error}
         </p>
       )}
-      {check && (
-        <div role="status" aria-live="polite">
-          <h3>This is what will happen</h3>
-          {hiddenNote(check, true) && <p>{hiddenNote(check, true)}</p>}
-          <Summary r={check} />
-        </div>
-      )}
-      {busy && (
+      {phase === "installing" && (
         <p className="muted" role="status">
-          {phase === "checking"
-            ? "Checking…"
-            : "Installing — copying images can take a minute…"}
+          Installing — copying images can take a minute…
         </p>
       )}
       <div className="dialog-actions">
-        <button className="top-btn" disabled={busy} onClick={onBack}>
+        <button
+          className="top-btn"
+          disabled={busy}
+          onClick={() => (step === 1 ? onBack() : setStep(step === 2 ? 1 : 2))}
+        >
           Back
         </button>
-        <button className="top-btn" disabled={busy} onClick={() => run(true)}>
-          Check first
-        </button>
-        <button className="save-btn" disabled={busy} onClick={() => run(false)}>
-          Install theme
-        </button>
+        {step === 1 && (
+          <button className="save-btn" disabled={busy} onClick={toBusiness}>
+            Next
+          </button>
+        )}
+        {step === 2 && (
+          <button className="save-btn" disabled={busy} onClick={toReview}>
+            Next
+          </button>
+        )}
+        {step === 3 && (
+          <button
+            className="save-btn"
+            disabled={busy || check === null}
+            onClick={() => run(false)}
+          >
+            Install theme
+          </button>
+        )}
       </div>
     </>
   );
@@ -231,6 +376,7 @@ export function ThemeEngine({
   onClose?: () => void;
 }) {
   const [items, setItems] = useState<ThemeSummary[] | null>(null);
+  const [undo, setUndo] = useState<UndoSummary | null>(null);
   const [view, setView] = useState<View>({ kind: "library" });
   const [error, setError] = useState("");
   const [note, setNote] = useState("");
@@ -248,7 +394,10 @@ export function ThemeEngine({
   const load = useCallback(() => {
     api
       .listThemes()
-      .then(r => setItems(r.items))
+      .then(r => {
+        setItems(r.items);
+        setUndo(r.undo ?? null);
+      })
       .catch(e => {
         setItems([]);
         setError(describeError(e));
@@ -315,6 +464,24 @@ export function ThemeEngine({
     });
   };
 
+  const undoInstall = () => {
+    if (
+      !window.confirm(
+        `Undo the install of “${undo?.name ?? "this theme"}”? Pages it added go to the Trash, pages and settings it changed are put back as they were, and anything it hid is shown again. Edits you made to those pages since then are lost.`
+      )
+    )
+      return;
+    guard(async () => {
+      const r = await api.undoInstall();
+      setView({ kind: "library" });
+      setNote(
+        `Undone: ${r.undone.restored} restored, ${r.undone.trashed} moved to the Trash, ${r.undone.shown} shown again.`
+      );
+      load();
+      onInstalled();
+    });
+  };
+
   const remove = (t: ThemeSummary) => {
     if (
       !window.confirm(
@@ -353,6 +520,7 @@ export function ThemeEngine({
           onDone={report => {
             setView({ kind: "done", theme: view.theme, report });
             onInstalled();
+            load();
           }}
         />
       )}
@@ -370,7 +538,20 @@ export function ThemeEngine({
             <p>{hiddenNote(view.report, false)}</p>
           )}
           <Summary r={view.report} />
+          {view.report.undo && (
+            <p className="muted">
+              Not what you wanted? <strong>Undo this install</strong> puts the
+              site back as it was ({view.report.undo.counts.created} added,{" "}
+              {view.report.undo.counts.changed} changed,{" "}
+              {view.report.undo.counts.hidden} hidden).
+            </p>
+          )}
           <div className="dialog-actions">
+            {view.report.undo && (
+              <button className="top-btn" disabled={busy} onClick={undoInstall}>
+                Undo this install
+              </button>
+            )}
             <button
               className="save-btn"
               onClick={() =>
@@ -394,6 +575,16 @@ export function ThemeEngine({
           {error && (
             <p className="form-error" role="alert">
               {error}
+            </p>
+          )}
+          {undo && (
+            <p className="notice info inline" role="status">
+              Last install: <strong>{undo.name}</strong> ({undo.counts.created}{" "}
+              added, {undo.counts.changed} changed, {undo.counts.hidden}{" "}
+              hidden).{" "}
+              <button className="top-btn" disabled={busy} onClick={undoInstall}>
+                Undo
+              </button>
             </p>
           )}
           {note && (

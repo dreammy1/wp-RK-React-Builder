@@ -153,6 +153,10 @@ that carries them:
 5. At install the buyer picks what to apply. **Layout settings** is on by default; **Site name and tagline** and
    **Redirects** are off, because they describe your demo, not their business.
 
+6. The buyer's **Install** is a three-step wizard (what to install, _your business_ find-and-replace for the demo's name,
+   phone, email and address, then a check). Write the demo's business name, phone and email in **Site & SEO** before you
+   export: those are the values the wizard offers to replace. After installing, **Undo this install** restores the site.
+
 Only `manifest.json`, `site.json` and `images/<file>` are accepted in a kit; anything else makes the upload fail.
 A kit needs the PHP zip extension on the server (nearly every host has it).
 
