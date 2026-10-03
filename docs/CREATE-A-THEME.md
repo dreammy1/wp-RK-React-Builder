@@ -137,7 +137,7 @@ with the theme.
 
 ### Step 9: Ship it as a kit (zip with its own pictures)
 
-A `.json` theme only *points* at its pictures, so it breaks if the original site goes away. A **kit** is one `.zip`
+A `.json` theme only _points_ at its pictures, so it breaks if the original site goes away. A **kit** is one `.zip`
 that carries them:
 
 1. **Themes → Save this site as a theme**: fill the name, version, author, industry, license and demo link, then press
