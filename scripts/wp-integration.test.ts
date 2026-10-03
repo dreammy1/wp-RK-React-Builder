@@ -328,5 +328,5 @@ describe.skipIf(!run)("client + proxy + real WordPress plugin", () => {
       },
       { timeout: 15_000, interval: 500 }
     );
-  });
+  }, 30_000); // the purge wait above is up to 15s: the test needs more than vitest's default 5s
 });
