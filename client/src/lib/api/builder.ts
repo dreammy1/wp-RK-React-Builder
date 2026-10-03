@@ -243,8 +243,11 @@ export const api = {
       body: {},
     }).then(r => r.deleted),
 
-  listReusables: () =>
-    request("builder/reusables", ReusableListResponse).then(r => r.items),
+  listReusables: (withUses = false) =>
+    request(
+      `builder/reusables${withUses ? "?uses=1" : ""}`,
+      ReusableListResponse
+    ).then(r => r.items),
   createReusable: (name: string, block: ReusableItem["block"]) =>
     request("builder/reusables", ReusableResponse, {
       method: "POST",

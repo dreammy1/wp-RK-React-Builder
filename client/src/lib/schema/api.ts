@@ -174,6 +174,8 @@ export const ReusableItem = z.object({
     type: z.enum(BLOCK_TYPES).exclude(["reusable"]),
     props: z.unknown(),
   }),
+  /** Pages that use it; only on the dashboard's library list. */
+  uses: z.number().int().optional(),
 });
 export type ReusableItem = z.infer<typeof ReusableItem>;
 export const ReusableListResponse = z.object({ items: z.array(ReusableItem) });

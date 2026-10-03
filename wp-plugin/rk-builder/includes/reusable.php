@@ -178,7 +178,11 @@ function rk_builder_reusable_item( array $r ) {
 }
 
 function rk_builder_handle_list_reusables( $req ) {
-	return rk_builder_no_store( array( 'items' => array_map( 'rk_builder_reusable_item', rk_builder_reusable_list() ) ) );
+	$items = array_map( 'rk_builder_reusable_item', rk_builder_reusable_list() );
+	if ( $req->get_param( 'uses' ) ) { // the dashboard's library screen: how many pages use each block
+		foreach ( $items as $i => $it ) { $items[ $i ]['uses'] = count( rk_builder_reusable_pages_using( (int) $it['id'] ) ); }
+	}
+	return rk_builder_no_store( array( 'items' => $items ) );
 }
 
 function rk_builder_reusable_body( $req, $need_all ) {

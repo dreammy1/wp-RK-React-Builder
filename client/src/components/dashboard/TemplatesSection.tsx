@@ -5,6 +5,7 @@ import { describeIssues } from "@/lib/api/errors";
 import { pageHref } from "@/lib/router";
 import type { ContentType, TemplateItem } from "@/lib/schema/api";
 import { SubPage } from "../SubPage";
+import { ReusableLibrary } from "./ReusableLibrary";
 import { BulkBar, RowCheck, runEach, useSelection } from "./Bulk";
 import { fmtWhen } from "./Overview";
 
@@ -408,6 +409,7 @@ export function TemplatesSection({
           </section>
         );
       })}
+      <ReusableLibrary />
       {creating && (
         <NewTemplate
           types={types}

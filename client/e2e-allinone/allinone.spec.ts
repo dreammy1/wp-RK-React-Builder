@@ -1006,3 +1006,34 @@ test("15 · media screen: edit alt, title, caption and description; bulk-fill al
     0
   );
 });
+
+test("16 · reusable library: rename a block, see where it is used, delete the unused one", async ({
+  page,
+}) => {
+  await login(page, AIO.admin, AIO.adminPass);
+  await page.goto(builderUrl());
+  const j = async (path: string, json: unknown) => {
+    const r = await wpFetch(page, path, { method: "POST", json });
+    expect(r.status, `${path}: ${JSON.stringify(r.json)}`).toBeLessThan(300);
+    return r.json as { item: { id: number } };
+  };
+  const block = {
+    type: "cta",
+    props: { heading: "Lib", cta: "Go", ctaHref: "/contact" },
+  };
+  await j("builder/reusables", { name: "Library one", block });
+  await page
+    .getByRole("complementary", { name: "Dashboard" })
+    .getByRole("button", { name: "Templates", exact: true })
+    .click();
+  const lib = page.getByRole("region", { name: "Reusable blocks" });
+  const row = lib.locator("li", { hasText: "Library one" });
+  await expect(row).toContainText("not used");
+  await row.getByRole("button", { name: "Rename" }).click();
+  await lib.getByLabel("Name", { exact: true }).fill("Library renamed");
+  await lib.getByLabel("Name", { exact: true }).press("Enter");
+  await expect(lib.getByText("Library renamed")).toBeVisible();
+  page.once("dialog", d => void d.accept());
+  await lib.getByRole("button", { name: "Delete Library renamed" }).click();
+  await expect(lib.getByText("Library renamed")).toHaveCount(0);
+});

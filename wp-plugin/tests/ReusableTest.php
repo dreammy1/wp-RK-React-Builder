@@ -97,3 +97,13 @@ rk_test( 'reusable: public page payload carries the resolved reusables', functio
 	$d = t_ok( rk_get( '/rk/v1/public/page/home' ) );
 	t_eq( $d['reusables'][ (string) $id ]['block']['type'], 'cta' );
 } );
+
+rk_test( 'reusable: the dashboard list can include how many pages use each block; the editor list keeps its shape', function () {
+	$id   = rk_make_reusable();
+	$page = rk_test_page( 'draft', 'about' );
+	rk_test_login( 'editor' );
+	t_eq( isset( t_ok( rk_get( '/rk/v1/builder/reusables' ) )['items'][0]['uses'] ), false );
+	t_eq( t_ok( rk_get( '/rk/v1/builder/reusables', array( 'uses' => '1' ) ) )['items'][0]['uses'], 0, 'unused' );
+	t_ok( rk_save( $page, rk_reusable_layout( $id ), 0 ) );
+	t_eq( t_ok( rk_get( '/rk/v1/builder/reusables', array( 'uses' => '1' ) ) )['items'][0]['uses'], 1, 'one page' );
+} );
