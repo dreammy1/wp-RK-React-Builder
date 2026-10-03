@@ -15,6 +15,7 @@ import { api } from "@/lib/api/builder";
 import { describeError } from "@/lib/api/errors";
 import { pageHref } from "@/lib/router";
 import type { PageRow } from "@/lib/schema/api";
+import { BulkBar, RowCheck, runEach, useSelection } from "./Bulk";
 import { NewPageDialog, RenameDialog, SeoDialog } from "./PageDialogs";
 import { fmtWhen } from "./Overview";
 
@@ -38,6 +39,8 @@ export function PagesSection({ navigate }: { navigate: (to: string) => void }) {
   const [dialog, setDialog] = useState<Dialog>(null);
   const [busyId, setBusyId] = useState<number | null>(null);
   const [siteName, setSiteName] = useState("");
+  const pick = useSelection(rows.map(r => r.id));
+  const [bulkBusy, setBulkBusy] = useState(false);
 
   useEffect(() => {
     api
@@ -102,6 +105,30 @@ export function PagesSection({ navigate }: { navigate: (to: string) => void }) {
 
   const open = (p: PageRow) => navigate(pageHref(p.id));
 
+  const bulk = (
+    list: PageRow[],
+    fn: (p: PageRow) => Promise<unknown>,
+    verb: string
+  ) => {
+    if (list.length === 0) {
+      setNote("");
+      setError("Nothing to do for the pages you picked.");
+      return;
+    }
+    setBulkBusy(true);
+    setNote("");
+    setError("");
+    runEach(list, fn, verb, "page")
+      .then(r => {
+        setNote(r.note);
+        setError(r.error);
+        pick.clear();
+        reload();
+      })
+      .finally(() => setBulkBusy(false));
+  };
+  const picked = rows.filter(r => pick.has(r.id));
+
   return (
     <>
       <header className="dash-head">
@@ -152,6 +179,53 @@ export function PagesSection({ navigate }: { navigate: (to: string) => void }) {
         </div>
       </div>
 
+      <BulkBar
+        noun="pages"
+        count={pick.count}
+        total={rows.length}
+        all={pick.all}
+        onToggleAll={pick.toggleAll}
+        onClear={pick.clear}
+        busy={bulkBusy}
+        actions={[
+          {
+            label: "Publish",
+            icon: <Globe size={14} aria-hidden="true" />,
+            onClick: () =>
+              bulk(
+                picked.filter(p => p.status !== "publish"),
+                p => api.publish(p.id, p.revision),
+                "Published"
+              ),
+          },
+          {
+            label: "Unpublish",
+            icon: <Undo2 size={14} aria-hidden="true" />,
+            onClick: () =>
+              bulk(
+                picked.filter(p => p.status === "publish" && !p.isFront),
+                p => api.unpublish(p.id),
+                "Unpublished"
+              ),
+          },
+          {
+            label: "Move to trash",
+            icon: <Trash2 size={14} aria-hidden="true" />,
+            danger: true,
+            onClick: () => {
+              const list = picked.filter(p => !p.isFront);
+              if (
+                list.length > 0 &&
+                window.confirm(
+                  `Move ${list.length} page${list.length === 1 ? "" : "s"} to the trash? You can restore them from WordPress.`
+                )
+              )
+                bulk(list, p => api.trashPage(p.id), "Moved to the trash:");
+            },
+          },
+        ]}
+      />
+
       {note && (
         <p className="notice info inline" role="status">
           {note}
@@ -179,7 +253,15 @@ export function PagesSection({ navigate }: { navigate: (to: string) => void }) {
             p.publishedRevision != null &&
             p.revision > p.publishedRevision;
           return (
-            <li key={p.id} className={busyId === p.id ? "busy" : ""}>
+            <li
+              key={p.id}
+              className={`selectable${busyId === p.id ? " busy" : ""}${pick.has(p.id) ? " picked" : ""}`}
+            >
+              <RowCheck
+                checked={pick.has(p.id)}
+                onChange={() => pick.toggle(p.id)}
+                label={`Select ${p.title || `page ${p.id}`}`}
+              />
               <div className="dash-page-main">
                 <a
                   href={pageHref(p.id)}

@@ -899,3 +899,110 @@ test("13 · theme builder: content type with fields, entries, templates; single,
     page.getByRole("button", { name: "Add Dynamic text block" })
   ).toHaveCount(0);
 });
+
+test("14 · page schema: choose FAQ, Article and a page type under Search & sharing; the live page prints exactly that JSON-LD", async ({
+  page,
+  request,
+}) => {
+  await login(page, AIO.admin, AIO.adminPass);
+  await page.goto(builderUrl());
+  await page
+    .getByRole("complementary", { name: "Dashboard" })
+    .getByRole("button", { name: "Pages", exact: true })
+    .click();
+  const row = page.locator(".dash-pages li", { hasText: "/smoke" });
+  await row.getByRole("button", { name: /More actions/ }).click();
+  await row.getByRole("menuitem", { name: /Search & sharing/ }).click();
+  const panel = page.getByRole("region", { name: /Search & sharing/ });
+  await panel.getByLabel("Page type").selectOption("AboutPage");
+  await panel.getByLabel("Breadcrumb trail").uncheck();
+  await panel.getByLabel("Article", { exact: true }).check();
+  await panel.getByLabel("Kind of article").selectOption("BlogPosting");
+  await panel.getByLabel("FAQ", { exact: true }).check();
+  await panel
+    .getByLabel("Questions and answers")
+    .fill("Is it free? | Yes.\nHow long? | A day.");
+  await expect(
+    panel.getByRole("link", { name: "Validate Schema" })
+  ).toHaveAttribute("href", /validator\.schema\.org\/#url=/);
+  await panel.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(panel).toBeHidden();
+
+  const html = await (await request.get(`${AIO.wp}/smoke/`)).text();
+  const m = html.match(/<script type="application\/ld\+json">(.+?)<\/script>/s);
+  expect(m, "JSON-LD is printed").not.toBeNull();
+  const graph = JSON.parse(m![1]!)["@graph"] as { "@type": string }[];
+  const types = graph.map(n => n["@type"]);
+  expect(types).toContain("AboutPage");
+  expect(types).toContain("BlogPosting");
+  expect(types).toContain("FAQPage");
+  expect(types).not.toContain("BreadcrumbList");
+
+  // and the choices are still there when the panel is opened again
+  await row.getByRole("button", { name: /More actions/ }).click();
+  await row.getByRole("menuitem", { name: /Search & sharing/ }).click();
+  const again = page.getByRole("region", { name: /Search & sharing/ });
+  await expect(again.getByLabel("Page type")).toHaveValue("AboutPage");
+  await expect(again.getByLabel("FAQ", { exact: true })).toBeChecked();
+  await expect(again.getByLabel("Questions and answers")).toHaveValue(
+    /Is it free\?/
+  );
+});
+
+test("15 · media screen: edit alt, title, caption and description; bulk-fill alt text; delete", async ({
+  page,
+}) => {
+  await login(page, AIO.admin, AIO.adminPass);
+  await page.goto(builderUrl());
+  const dash = page.getByRole("complementary", { name: "Dashboard" });
+  await dash.getByRole("button", { name: "Media", exact: true }).click();
+  await page.locator('.media-upload input[type="file"]').setInputFiles([
+    { name: "Bulk-One.png", mimeType: "image/png", buffer: PNG_1X1 },
+    { name: "Bulk-Two.png", mimeType: "image/png", buffer: PNG_1X1 },
+  ]);
+  await expect(page.getByText(/Uploaded 2 images/)).toBeVisible();
+
+  // one image: the four fields save and come back
+  await page.getByRole("button", { name: /Open Bulk-One/ }).click();
+  const panel = page.getByRole("region", { name: /Bulk-One/ });
+  await panel.getByLabel("Alt text").fill("A single white pixel");
+  await panel.getByLabel("Title").fill("White pixel");
+  await panel.getByLabel("Caption").fill("A caption");
+  await panel.getByLabel("Description").fill("A longer description");
+  await panel.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(page.getByText(/Saved “White pixel”/)).toBeVisible();
+  await page.getByRole("button", { name: /Open White pixel/ }).click();
+  const again = page.getByRole("region", { name: /White pixel/ });
+  await expect(again.getByLabel("Caption")).toHaveValue("A caption");
+  await expect(again.getByLabel("Alt text")).toHaveValue(
+    "A single white pixel"
+  );
+  await again.getByRole("button", { name: "Back" }).click();
+
+  // bulk: the one without alt text gets one from its title
+  await page.getByRole("button", { name: "Missing alt text" }).click();
+  await page.getByLabel(/Select Bulk-Two/).check();
+  await page
+    .getByRole("button", { name: "Fill empty alt text from the title" })
+    .click();
+  await expect(page.getByText(/Added alt text to 1 image/)).toBeVisible();
+  await page.getByRole("button", { name: "All images" }).click();
+  const two = page.getByRole("button", { name: /Open Bulk-Two/ });
+  await expect(two).toBeVisible();
+  await expect(two.locator(".media-flag")).toHaveCount(0); // the list has reloaded
+  await two.click();
+  await expect(
+    page.getByRole("region", { name: /Bulk-Two/ }).getByLabel("Alt text")
+  ).toHaveValue("Bulk Two");
+  await page.getByRole("button", { name: "Back" }).click();
+
+  // delete both through the bulk bar (after the confirmation)
+  page.once("dialog", d => void d.accept());
+  await page.getByLabel(/Select White pixel/).check();
+  await page.getByLabel(/Select Bulk-Two/).check();
+  await page.getByRole("button", { name: "Delete", exact: true }).click();
+  await expect(page.getByText(/Deleted 2 images/)).toBeVisible();
+  await expect(page.getByRole("button", { name: /Open Bulk-Two/ })).toHaveCount(
+    0
+  );
+});

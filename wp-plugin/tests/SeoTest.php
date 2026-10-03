@@ -127,3 +127,64 @@ rk_test( 'seo: per-page title, description, image, noindex and the schema graph'
 	rk_builder_seo_write( $id, array() );
 	t_eq( rk_builder_seo_read( $id ), array(), 'cleared' );
 } );
+
+function rk_seo_graph_for( $id ) {
+	$head = rk_seo_head( $id );
+	t_assert( preg_match( '#<script type="application/ld\+json">(.+?)</script>#s', $head, $m ) === 1, 'JSON-LD printed' );
+	return json_decode( $m[1], true )['@graph'];
+}
+function rk_seo_types( array $graph ) { return array_map( function ( $n ) { return $n['@type']; }, $graph ); }
+
+rk_test( 'schema: a page that never opened the panel is unchanged; defaults store nothing', function () {
+	$id = rk_seo_page( array( rk_test_block( 'spacer', array( 'h' => 8 ) ) ), array( 'post_title' => 'About', 'post_excerpt' => 'Excerpt' ) );
+	t_eq( rk_seo_types( rk_seo_graph_for( $id ) ), array( 'Organization', 'WebSite', 'WebPage', 'BreadcrumbList' ) );
+	t_eq( rk_builder_schema_encode( rk_builder_schema_defaults() ), '', 'all defaults: nothing stored' );
+	t_eq( rk_builder_seo_clean( array( 'schema' => array( 'pageType' => 'WebPage' ) ) ), array(), 'a default schema adds no field' );
+} );
+
+rk_test( 'schema: page type, breadcrumb off, article, service, product, FAQ and rating build one valid graph', function () {
+	$id = rk_seo_page( array( rk_test_block( 'spacer', array( 'h' => 8 ) ) ), array( 'post_title' => 'Guide', 'post_excerpt' => 'A guide' ) );
+	rk_builder_seo_write( $id, rk_builder_seo_clean( array( 'schema' => array(
+		'pageType' => 'AboutPage', 'breadcrumb' => false,
+		'article' => array( 'on' => true, 'type' => 'BlogPosting' ),
+		'service' => array( 'on' => true, 'name' => 'Deck care' ),
+		'product' => array( 'on' => true, 'price' => '49.5', 'currency' => 'usd', 'availability' => 'InStock', 'brand' => 'Acme' ),
+		'faq' => array( 'on' => true, 'items' => "Is it durable?|Yes, very.\nbroken line\nHow long?|Two days." ),
+		'review' => array( 'on' => true, 'rating' => '4.8', 'count' => '120' ),
+		'bogus' => array( 'on' => true ),
+	) ) ) );
+	$g = rk_seo_graph_for( $id );
+	t_eq( rk_seo_types( $g ), array( 'Organization', 'WebSite', 'AboutPage', 'BlogPosting', 'Service', 'Product', 'FAQPage' ), 'no breadcrumb; each requested node once' );
+	$by = array();
+	foreach ( $g as $n ) { $by[ $n['@type'] ] = $n; }
+	t_eq( $by['Product']['offers']['priceCurrency'], 'USD' );
+	t_eq( $by['Product']['offers']['availability'], 'https://schema.org/InStock' );
+	t_eq( $by['Product']['brand']['name'], 'Acme' );
+	t_eq( $by['Product']['aggregateRating']['ratingValue'], '4.8', 'rating sits on the product' );
+	t_eq( isset( $by['Service']['aggregateRating'] ), false, 'one rating only' );
+	t_eq( $by['Service']['name'], 'Deck care' );
+	t_eq( count( $by['FAQPage']['mainEntity'] ), 2, 'a line without an answer is skipped' );
+	t_eq( $by['BlogPosting']['mainEntityOfPage']['@id'], $by['AboutPage']['@id'] );
+	t_eq( $by['BlogPosting']['headline'], 'Guide' );
+} );
+
+rk_test( 'schema: unsafe or incomplete values never reach the output', function () {
+	$c = rk_builder_schema_sanitize( array( 'pageType' => 'Evil', 'product' => array( 'on' => true, 'price' => '<b>9</b>', 'currency' => 'dollars' ), 'review' => array( 'on' => true, 'rating' => '9', 'count' => '-3' ), 'article' => array( 'type' => 'Hack' ) ) );
+	t_eq( $c['pageType'], 'WebPage' );
+	t_eq( $c['product']['price'], '', 'price must be a plain number' );
+	t_eq( $c['product']['currency'], 'USD' );
+	t_eq( $c['review']['rating'], '' );
+	t_eq( $c['review']['count'], '' );
+	t_eq( $c['article']['type'], 'Article' );
+	$id = rk_seo_page( array( rk_test_block( 'spacer', array( 'h' => 8 ) ) ), array( 'post_title' => 'Shop' ) );
+	rk_builder_seo_write( $id, rk_builder_seo_clean( array( 'schema' => array( 'product' => array( 'on' => true ), 'review' => array( 'on' => true, 'rating' => '5', 'count' => '3' ), 'faq' => array( 'on' => true, 'items' => '' ) ) ) ) );
+	t_eq( rk_seo_types( rk_seo_graph_for( $id ) ), array( 'Organization', 'WebSite', 'WebPage', 'BreadcrumbList' ), 'a product without a price, an empty FAQ and an orphan rating output nothing' );
+} );
+
+rk_test( 'schema: the legacy service text still outputs a Service; custom types plug in by filter', function () {
+	$id = rk_seo_page( array( rk_test_block( 'spacer', array( 'h' => 8 ) ) ), array( 'post_title' => 'Decks' ) );
+	rk_builder_seo_write( $id, rk_builder_seo_clean( array( 'service' => 'Deck staining' ) ) );
+	t_eq( rk_seo_types( rk_seo_graph_for( $id ) ), array( 'Organization', 'WebSite', 'WebPage', 'Service', 'BreadcrumbList' ) );
+	add_filter( 'rk_builder_schema_types', function ( $t ) { $t['event'] = array( 'label' => 'Event', 'help' => '', 'build' => function ( $c, $ctx ) { return array( '@type' => 'Event', 'name' => $ctx['name'] ); } ); return $t; } );
+	t_eq( array_keys( rk_builder_schema_types() ), array( 'article', 'service', 'product', 'faq', 'event' ) );
+} );

@@ -2,7 +2,9 @@ import { z } from "zod";
 import {
   ContentListResponse,
   LoadResponse,
+  MediaDeleteResponse,
   MediaListResponse,
+  type MediaItem,
   MediaUploadResponse,
   ReusableListResponse,
   ReusableResponse,
@@ -209,12 +211,37 @@ export const api = {
       method: "POST",
       body: theme,
     }),
-  listMedia: (search: string, signal?: AbortSignal, page = 1) =>
+  listMedia: (
+    search: string,
+    signal?: AbortSignal,
+    page = 1,
+    opts: { missingAlt?: boolean; detail?: boolean } = {}
+  ) =>
     request(
-      `builder/media?${new URLSearchParams({ search, per_page: "24", page: String(page) })}`,
+      `builder/media?${new URLSearchParams({
+        search,
+        per_page: "24",
+        page: String(page),
+        ...(opts.missingAlt ? { missing_alt: "1" } : {}),
+        ...(opts.detail ? { detail: "1" } : {}),
+      })}`,
       MediaListResponse,
       { signal }
     ),
+  updateMedia: (
+    id: number,
+    patch: Partial<Pick<MediaItem, "alt" | "title" | "caption" | "description">>
+  ) =>
+    request(`builder/media/${id}`, MediaUploadResponse, {
+      method: "POST",
+      body: patch,
+    }).then(r => r.item),
+  /** Removes the file for good; the screen asks first. */
+  deleteMedia: (id: number) =>
+    request(`builder/media/${id}/delete`, MediaDeleteResponse, {
+      method: "POST",
+      body: {},
+    }).then(r => r.deleted),
 
   listReusables: () =>
     request("builder/reusables", ReusableListResponse).then(r => r.items),

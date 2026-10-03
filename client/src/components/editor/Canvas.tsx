@@ -6,6 +6,8 @@ import type { BlockType } from "@/lib/schema/primitives";
 import { BlockRenderer } from "@/render/BlockRenderer";
 
 type Props = {
+  /** Set when a header template is being edited: the live header is never transparent, so the canvas shows it solid. */
+  solidHeader?: boolean;
   layout: LayoutDocument;
   selectedId: string | null;
   errors: Map<string, Record<string, string>>;
@@ -49,7 +51,9 @@ export function Canvas(p: Props) {
   );
 
   return (
-    <div className="site-root site-canvas editor-canvas">
+    <div
+      className={`site-root site-canvas editor-canvas${p.solidHeader ? " solid-header" : ""}`}
+    >
       {blocks.length === 0 && (
         <div className="empty-canvas">
           <span aria-hidden="true">+</span>

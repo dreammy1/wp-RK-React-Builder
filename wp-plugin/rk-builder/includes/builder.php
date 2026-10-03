@@ -300,7 +300,8 @@ function rk_builder_handle_preview_token( $req ) {
  * ------------------------------------------------------------------ */
 
 /** The picker's view of one attachment (post object or ID), or null when it has no image source. */
-function rk_builder_media_item( $attachment ) {
+/** @param bool $detail also the caption, description and file facts the dashboard's Media screen shows */
+function rk_builder_media_item( $attachment, $detail = false ) {
 	$att = is_object( $attachment ) ? $attachment : get_post( (int) $attachment );
 	$src = $att ? wp_get_attachment_image_src( (int) $att->ID, 'full' ) : false;
 	if ( ! $att || ! $src ) { return null; }
@@ -310,11 +311,21 @@ function rk_builder_media_item( $attachment ) {
 		'alt'   => rk_builder_plain( get_post_meta( $att->ID, '_wp_attachment_image_alt', true ) ),
 		'title' => rk_builder_plain( $att->post_title ),
 	);
+	$extra = array();
+	if ( $detail ) {
+		$extra['caption']     = rk_builder_plain( isset( $att->post_excerpt ) ? $att->post_excerpt : '' );
+		$extra['description'] = rk_builder_plain( isset( $att->post_content ) ? $att->post_content : '' );
+		$file = function_exists( 'get_attached_file' ) ? (string) get_attached_file( (int) $att->ID ) : '';
+		$extra['filename'] = '' !== $file ? basename( $file ) : basename( (string) $src[0] );
+		if ( ! empty( $att->post_mime_type ) ) { $extra['mime'] = (string) $att->post_mime_type; }
+		if ( '' !== $file && is_readable( $file ) ) { $extra['bytes'] = (int) filesize( $file ); }
+		if ( ! empty( $att->post_date_gmt ) ) { $extra['date'] = (string) $att->post_date_gmt; }
+	}
 	if ( ! empty( $src[1] ) ) { $item['width'] = (int) $src[1]; }
 	if ( ! empty( $src[2] ) ) { $item['height'] = (int) $src[2]; }
 	$srcset = wp_get_attachment_image_srcset( $att->ID, 'full' );
 	if ( is_string( $srcset ) && '' !== $srcset ) { $item['srcset'] = $srcset; }
-	return $item;
+	return $detail ? array_merge( $item, $extra ) : $item;
 }
 
 function rk_builder_handle_media( $req ) {
@@ -331,9 +342,12 @@ function rk_builder_handle_media( $req ) {
 	);
 	$search = $req->get_param( 'search' );
 	if ( is_string( $search ) && '' !== trim( $search ) ) { $args['s'] = trim( $search ); }
+	if ( $req->get_param( 'missing_alt' ) ) {
+		$args['meta_query'] = array( 'relation' => 'OR', array( 'key' => '_wp_attachment_image_alt', 'compare' => 'NOT EXISTS' ), array( 'key' => '_wp_attachment_image_alt', 'value' => '' ) ); // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- an admin filter, one page at a time
+	}
 	$items = array();
 	foreach ( get_posts( $args ) as $att ) {
-		$item = rk_builder_media_item( $att );
+		$item = rk_builder_media_item( $att, (bool) $req->get_param( 'detail' ) );
 		if ( null !== $item ) { $items[] = $item; }
 	}
 	return rk_builder_no_store( array( 'items' => $items ) );

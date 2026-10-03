@@ -178,6 +178,15 @@ related posts.
 
 ---
 
+### Schema markup per page
+
+Under **Pages → Search & sharing → Schema markup (JSON-LD)** each page picks what it tells search engines: a page type
+(WebPage, AboutPage, ContactPage, CollectionPage, ProfilePage), the breadcrumb trail, Article (Article, BlogPosting,
+NewsArticle), Service, Product (needs a price), FAQ (`Question | Answer` per line) and an average rating. Title, address,
+description, image, dates, author and the business come from the page and Site & SEO. A page that never opens the panel
+keeps the standard output (WebPage and breadcrumbs). Add your own type with the `rk_builder_schema_types` filter (see
+`includes/schema.php`). Use the **Validate Schema** link after publishing.
+
 ## 4. Writing a theme by hand (the file format)
 
 A theme file is a normal site export plus a `themeMeta` block, so it also works with **Import site**.

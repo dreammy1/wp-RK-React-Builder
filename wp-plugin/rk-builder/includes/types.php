@@ -670,7 +670,7 @@ function rk_builder_dyn_save_entry( $req, $type, $post_id ) {
 	if ( isset( $body['seo'] ) && is_array( $body['seo'] ) ) {
 		$seo = rk_builder_seo_clean( array_intersect_key( $body['seo'], array_flip( array( 'title', 'description', 'image', 'noindex' ) ) ) );
 		$keep = rk_builder_seo_read( $id );
-		foreach ( array( 'service', 'parent' ) as $k ) { if ( isset( $keep[ $k ] ) ) { $seo[ $k ] = $keep[ $k ]; } }
+		foreach ( array( 'service', 'parent', 'schema' ) as $k ) { if ( isset( $keep[ $k ] ) ) { $seo[ $k ] = $keep[ $k ]; } }
 		rk_builder_seo_write( $id, $seo );
 	}
 	if ( isset( $body['terms'] ) && is_array( $body['terms'] ) ) {

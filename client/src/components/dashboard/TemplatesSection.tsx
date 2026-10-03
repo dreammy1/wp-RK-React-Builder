@@ -5,6 +5,7 @@ import { describeIssues } from "@/lib/api/errors";
 import { pageHref } from "@/lib/router";
 import type { ContentType, TemplateItem } from "@/lib/schema/api";
 import { SubPage } from "../SubPage";
+import { BulkBar, RowCheck, runEach, useSelection } from "./Bulk";
 import { fmtWhen } from "./Overview";
 
 const KINDS = [
@@ -190,6 +191,7 @@ export function TemplatesSection({
   const [error, setError] = useState("");
   const [dialogError, setDialogError] = useState("");
   const [note, setNote] = useState("");
+  const pick = useSelection((items ?? []).map(t => t.id));
 
   const load = () =>
     Promise.all([api.listTemplates(), api.getTypes()])
@@ -223,6 +225,25 @@ export function TemplatesSection({
       <p className="muted">Loading…</p>
     );
 
+  const chosen = items.filter(t => pick.has(t.id));
+  const bulk = (
+    list: TemplateItem[],
+    fn: (t: TemplateItem) => Promise<unknown>,
+    verb: string
+  ) => {
+    setBusy(true);
+    setError("");
+    setNote("");
+    runEach(list, fn, verb, "template")
+      .then(r => {
+        setNote(r.note);
+        setError(r.error);
+        pick.clear();
+        return load();
+      })
+      .finally(() => setBusy(false));
+  };
+
   const typeName = (slug: string) =>
     types.find(t => t.slug === slug)?.plural ?? slug;
 
@@ -253,6 +274,39 @@ export function TemplatesSection({
           {error}
         </p>
       )}
+      <BulkBar
+        noun="templates"
+        count={pick.count}
+        total={items.length}
+        all={pick.all}
+        onToggleAll={pick.toggleAll}
+        onClear={pick.clear}
+        busy={busy}
+        actions={[
+          {
+            label: "Switch off",
+            onClick: () =>
+              bulk(
+                chosen.filter(t => t.kind !== "loop" && t.active),
+                t => api.updateTemplate(t.id, { active: false }),
+                "Switched off"
+              ),
+          },
+          {
+            label: "Delete",
+            icon: <Trash2 size={14} aria-hidden="true" />,
+            danger: true,
+            onClick: () => {
+              if (
+                window.confirm(
+                  `Delete ${chosen.length} template${chosen.length === 1 ? "" : "s"}? This cannot be undone.`
+                )
+              )
+                bulk(chosen, t => api.deleteTemplate(t.id), "Deleted");
+            },
+          },
+        ]}
+      />
       {KINDS.map(k => {
         const list = items.filter(i => i.kind === k.id);
         return (
@@ -264,7 +318,15 @@ export function TemplatesSection({
             ) : (
               <ul className="dash-pages">
                 {list.map(t => (
-                  <li key={t.id} className={busy ? "busy" : ""}>
+                  <li
+                    key={t.id}
+                    className={`selectable${busy ? " busy" : ""}${pick.has(t.id) ? " picked" : ""}`}
+                  >
+                    <RowCheck
+                      checked={pick.has(t.id)}
+                      onChange={() => pick.toggle(t.id)}
+                      label={`Select ${t.title}`}
+                    />
                     <LayoutTemplate
                       size={18}
                       aria-hidden="true"

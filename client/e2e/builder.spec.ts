@@ -237,6 +237,28 @@ test.describe("editing round trip", () => {
     );
     await expect(page.locator(".block-handle")).toHaveCount(0);
   });
+  test("preview at phone width answers to the frame, not the window", async ({
+    page,
+  }) => {
+    await openEditor(page, 42);
+    await page.getByRole("button", { name: "Preview", exact: true }).click();
+    await page.getByRole("button", { name: "Phone" }).click();
+    const frame = page.frameLocator('iframe[title="phone preview"]');
+    await expect(frame.locator(".preview-canvas")).toContainText(
+      "Powering what’s next"
+    );
+    const w = await page
+      .locator('iframe[title="phone preview"]')
+      .evaluate(el => el.getBoundingClientRect().width);
+    expect(w).toBeLessThanOrEqual(390);
+    // the page's own breakpoint kicked in: the menu is folded away on a phone
+    const innerW = await frame
+      .locator("body")
+      .evaluate(el => el.ownerDocument.defaultView?.innerWidth);
+    expect(innerW).toBeLessThanOrEqual(390);
+    await page.getByRole("button", { name: "Desktop" }).click();
+    await expect(page.locator(".preview-canvas")).toBeVisible();
+  });
   test("theme edits save and apply as CSS variables", async ({ page }) => {
     await openEditor(page, 42);
     await page.getByRole("tab", { name: "Theme" }).click();

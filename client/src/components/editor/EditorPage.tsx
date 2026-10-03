@@ -7,6 +7,7 @@ import {
   Eye,
   History,
   Layers3,
+  Monitor,
   MoreHorizontal,
   Palette,
   Plus,
@@ -15,6 +16,8 @@ import {
   Save,
   Send,
   SlidersHorizontal,
+  Smartphone,
+  Tablet,
   Undo2,
   X,
 } from "lucide-react";
@@ -37,6 +40,7 @@ import { ReusableContext } from "@/render/reusable";
 import { LoginForm } from "../Login";
 import { Modal } from "../Modal";
 import { Canvas } from "./Canvas";
+import { PreviewFrame } from "./PreviewFrame";
 import {
   ConflictDialog,
   ExportDialog,
@@ -76,6 +80,9 @@ export function EditorPage({
   const library = useReusables();
   const dynData = useDynData();
   const [mode, setMode] = useState<"edit" | "preview">("edit");
+  const [device, setDevice] = useState<"desktop" | "tablet" | "phone">(
+    "desktop"
+  );
   const [tab, setTab] = useState<Tab>("insert");
   // Small screens show the side panel as a bottom sheet over the canvas.
   const [sheet, setSheet] = useState(false);
@@ -252,6 +259,19 @@ export function EditorPage({
           </span>
           {demo && <span className="badge warn">demo content</span>}
         </div>
+        <div className={`statusbar ${tone}`}>
+          <span role="status" aria-live="polite" data-testid="save-status">
+            {STATUS_LABEL[s.status]}
+          </span>
+          {invalidCount > 0 && (
+            <span>
+              {" "}
+              · {invalidCount} block{invalidCount === 1 ? "" : "s"} need
+              attention
+            </span>
+          )}
+          {s.offline && <span> · Offline draft</span>}
+        </div>
         <div className="top-actions">
           <div className="mode-switch" role="group" aria-label="Editor mode">
             <button
@@ -288,19 +308,34 @@ export function EditorPage({
           >
             <Redo2 size={15} aria-hidden="true" />
           </button>
-          <button className="top-btn" onClick={() => setDialog("revisions")}>
-            <History size={14} aria-hidden="true" /> History
+          <button
+            className="top-btn"
+            aria-label="History"
+            title="History"
+            onClick={() => setDialog("revisions")}
+          >
+            <History size={14} aria-hidden="true" />{" "}
+            <span className="lbl">History</span>
           </button>
-          <button className="top-btn" onClick={() => setDialog("export")}>
-            <Download size={14} aria-hidden="true" /> Export
+          <button
+            className="top-btn"
+            aria-label="Export"
+            title="Export"
+            onClick={() => setDialog("export")}
+          >
+            <Download size={14} aria-hidden="true" />{" "}
+            <span className="lbl">Export</span>
           </button>
           {!template && (
             <button
               className="top-btn"
+              aria-label="Preview link"
+              title="Preview link"
               onClick={openDraftPreview}
               disabled={s.offline}
             >
-              <ExternalLink size={14} aria-hidden="true" /> Preview link
+              <ExternalLink size={14} aria-hidden="true" />{" "}
+              <span className="lbl">Preview link</span>
             </button>
           )}
           <button
@@ -328,18 +363,6 @@ export function EditorPage({
         </div>
       </header>
 
-      <div className={`statusbar ${tone}`}>
-        <span role="status" aria-live="polite" data-testid="save-status">
-          {STATUS_LABEL[s.status]}
-        </span>
-        {invalidCount > 0 && (
-          <span>
-            {" "}
-            · {invalidCount} block{invalidCount === 1 ? "" : "s"} need attention
-          </span>
-        )}
-        {s.offline && <span> · Offline draft</span>}
-      </div>
       {s.status === "invalid" && s.issues.length > 0 && (
         <div className="notice error inline" role="alert">
           <AlertCircle size={15} aria-hidden="true" />{" "}
@@ -383,16 +406,60 @@ export function EditorPage({
                     <Eye size={14} aria-hidden="true" /> Preview (unsaved edits
                     included)
                   </span>
+                  <div
+                    className="device-switch"
+                    role="group"
+                    aria-label="Preview width"
+                  >
+                    {(
+                      [
+                        ["desktop", Monitor, "Desktop"],
+                        ["tablet", Tablet, "Tablet"],
+                        ["phone", Smartphone, "Phone"],
+                      ] as const
+                    ).map(([id, Icon, label]) => (
+                      <button
+                        key={id}
+                        aria-pressed={device === id}
+                        aria-label={label}
+                        title={label}
+                        className={device === id ? "on" : ""}
+                        onClick={() => setDevice(id)}
+                      >
+                        <Icon size={15} aria-hidden="true" />
+                      </button>
+                    ))}
+                  </div>
                   <button onClick={() => setMode("edit")}>
                     Return to editor <RotateCcw size={14} aria-hidden="true" />
                   </button>
                 </div>
-                <div className="site-root preview-canvas" style={themeVars}>
-                  <LayoutRenderer layout={state.layout} mode="public" />
-                  <footer className="site-footer">
-                    <span>{s.page?.title}</span>
-                    <span>Layout v{state.layout.version}</span>
-                  </footer>
+                <div className={`preview-device ${device}`}>
+                  {(() => {
+                    const page = (
+                      <div
+                        className={`site-root preview-canvas${template?.kind === "header" ? " solid-header" : ""}`}
+                        style={themeVars}
+                      >
+                        <LayoutRenderer layout={state.layout} mode="public" />
+                        {template && SITEWIDE.includes(template.kind) && (
+                          <div className="preview-sample" aria-hidden="true">
+                            <i />
+                            <i />
+                            <i />
+                          </div>
+                        )}
+                      </div>
+                    );
+                    // Tablet and phone widths need their own viewport for the page's media queries.
+                    return device === "desktop" ? (
+                      page
+                    ) : (
+                      <PreviewFrame key={device} title={`${device} preview`}>
+                        {page}
+                      </PreviewFrame>
+                    );
+                  })()}
                 </div>
               </main>
             ) : (
@@ -593,6 +660,7 @@ export function EditorPage({
                   </div>
                   <div className="canvas-frame">
                     <Canvas
+                      solidHeader={template?.kind === "header"}
                       layout={state.layout}
                       selectedId={state.selectedId}
                       errors={s.blockErrors}

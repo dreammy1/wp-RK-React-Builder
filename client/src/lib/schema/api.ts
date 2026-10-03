@@ -157,6 +157,13 @@ export const MediaItem = z.object({
   width: z.number().int().optional(),
   height: z.number().int().optional(),
   srcset: z.string().optional(),
+  // only on the dashboard's list (?detail=1)
+  caption: z.string().optional(),
+  description: z.string().optional(),
+  filename: z.string().optional(),
+  mime: z.string().optional(),
+  bytes: z.number().int().optional(),
+  date: z.string().optional(),
 });
 export type MediaItem = z.infer<typeof MediaItem>;
 export const MediaListResponse = z.object({ items: z.array(MediaItem) });
@@ -172,6 +179,7 @@ export type ReusableItem = z.infer<typeof ReusableItem>;
 export const ReusableListResponse = z.object({ items: z.array(ReusableItem) });
 export const ReusableResponse = z.object({ item: ReusableItem });
 export const MediaUploadResponse = z.object({ item: MediaItem });
+export const MediaDeleteResponse = z.object({ deleted: z.number().int() });
 
 /** Whole-site export file. Contents are validated by the server on import; the client only checks the envelope. */
 export const SiteBundle = z
@@ -364,12 +372,37 @@ export const Overview = z.object({
 });
 export type Overview = z.infer<typeof Overview>;
 
+/** What a page asks for in its JSON-LD (the server fills every field, so none is optional here). */
+export const PageSchema = z.object({
+  pageType: z.string(),
+  breadcrumb: z.boolean(),
+  business: z.boolean(),
+  article: z.object({ on: z.boolean(), type: z.string() }),
+  service: z.object({
+    on: z.boolean(),
+    name: z.string(),
+    description: z.string(),
+  }),
+  product: z.object({
+    on: z.boolean(),
+    name: z.string(),
+    price: z.string(),
+    currency: z.string(),
+    availability: z.string(),
+    brand: z.string(),
+  }),
+  faq: z.object({ on: z.boolean(), items: z.string() }),
+  review: z.object({ on: z.boolean(), rating: z.string(), count: z.string() }),
+});
+export type PageSchemaSettings = z.infer<typeof PageSchema>;
+
 export const PageSeo = z.object({
   seo: z.object({
     title: z.string(),
     description: z.string(),
     image: z.string(),
     noindex: z.boolean(),
+    schema: PageSchema,
     pageTitle: z.string(),
   }),
 });

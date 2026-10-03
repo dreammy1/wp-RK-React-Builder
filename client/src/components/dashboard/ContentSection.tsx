@@ -22,6 +22,7 @@ import { getBoot } from "@/lib/boot";
 import { MediaPicker } from "../editor/MediaPicker";
 import { ImageField } from "./ImageField";
 import { fmtWhen } from "./Overview";
+import { BulkBar, RowCheck, runEach, useSelection } from "./Bulk";
 import { FieldInput, blankValue, toPayload } from "./EntryFields";
 
 /** Words in simple HTML or plain text. */
@@ -586,6 +587,8 @@ export function ContentSection({ initialType }: { initialType?: string }) {
   const [busy, setBusy] = useState(0);
   const [error, setError] = useState("");
   const [note, setNote] = useState("");
+  const pick = useSelection(rows.map(r => r.id));
+  const [bulkBusy, setBulkBusy] = useState(false);
 
   useEffect(() => {
     api
@@ -635,6 +638,21 @@ export function ContentSection({ initialType }: { initialType?: string }) {
     })
       .catch(e => setError(describeError(e)))
       .finally(() => setBusy(b => b - 1));
+  };
+
+  const bulk = (fn: (r: EntryRow) => Promise<unknown>, verb: string) => {
+    const list = rows.filter(r => pick.has(r.id));
+    setBulkBusy(true);
+    setNote("");
+    setError("");
+    runEach(list, fn, verb, "entry")
+      .then(r => {
+        setNote(r.note);
+        setError(r.error);
+        pick.clear();
+        load();
+      })
+      .finally(() => setBulkBusy(false));
   };
 
   if (!types)
@@ -729,6 +747,35 @@ export function ContentSection({ initialType }: { initialType?: string }) {
           />
         </div>
       </div>
+      <BulkBar
+        noun={type?.plural.toLowerCase() ?? "entries"}
+        count={pick.count}
+        total={rows.length}
+        all={pick.all}
+        onToggleAll={pick.toggleAll}
+        onClear={pick.clear}
+        busy={bulkBusy}
+        actions={[
+          {
+            label: "Duplicate",
+            icon: <Copy size={14} aria-hidden="true" />,
+            onClick: () => bulk(r => api.duplicateEntry(r.id), "Duplicated"),
+          },
+          {
+            label: "Move to trash",
+            icon: <Trash2 size={14} aria-hidden="true" />,
+            danger: true,
+            onClick: () => {
+              if (
+                window.confirm(
+                  `Move ${pick.count} ${pick.count === 1 ? "entry" : "entries"} to the trash?`
+                )
+              )
+                bulk(r => api.trashEntry(r.id), "Moved to the trash:");
+            },
+          },
+        ]}
+      />
       {rows.length === 0 ? (
         <section className="dash-card">
           <p className="muted">
@@ -740,7 +787,15 @@ export function ContentSection({ initialType }: { initialType?: string }) {
       ) : (
         <ul className="dash-pages">
           {rows.map(r => (
-            <li key={r.id} className={busy > 0 ? "busy" : ""}>
+            <li
+              key={r.id}
+              className={`selectable${busy > 0 ? " busy" : ""}${pick.has(r.id) ? " picked" : ""}`}
+            >
+              <RowCheck
+                checked={pick.has(r.id)}
+                onChange={() => pick.toggle(r.id)}
+                label={`Select ${r.title || "entry"}`}
+              />
               {r.image ? (
                 <img className="entry-row-thumb" src={r.image} alt="" />
               ) : (

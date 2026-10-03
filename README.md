@@ -232,7 +232,7 @@ New to themes? Read **[docs/CREATE-A-THEME.md](docs/CREATE-A-THEME.md)**: buildi
 Inside WordPress the builder opens on its own dashboard, so day-to-day work does not need wp-admin:
 
 - **Overview**: pages live/draft, images, services and projects, themes, visualizer status, recently edited pages and what needs attention (live pages with unpublished changes or no search description).
-- **Pages**: search and filter, **New page** (optionally starting with the site header and footer), rename or change the address, **Search & sharing** (title, description, social image, noindex with a live preview), duplicate, publish or unpublish, make front page, move to the trash.
+- **Pages**: search and filter, **New page** (optionally starting with the site header and footer), rename or change the address, **Search & sharing** (title, description, social image, noindex with a live preview, and **Schema markup (JSON-LD)**: page type, breadcrumbs, Article, Service, Product, FAQ and rating, each a switch, with links to the Schema validator and Google's Rich Results Test), duplicate, publish or unpublish, make front page, move to the trash.
 - **Media**: upload and browse images, copy an image address.
 - **Themes**: the theme engine, plus site export and import.
 - **Site & SEO**: site title, tagline, front page, search-engine visibility and the business details used in the structured data.

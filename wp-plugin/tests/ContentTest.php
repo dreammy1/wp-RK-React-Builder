@@ -179,3 +179,27 @@ rk_test( 'admin boot: nonce only printed for logged-in users with edit_pages; JS
 	add_filter( 'rk_builder_app_url', function () { return 'https://a.example/</script><script>alert(1)'; } );
 	t_assert( false === strpos( rk_builder_standalone_document(), '</script><script>alert' ) );
 } );
+
+rk_test( 'media: alt, title, caption and description are edited with limits; the list can show details and only images missing alt text; delete needs the right and removes the file', function () {
+	$GLOBALS['RK']['attachments'][920] = array( 'url' => 'https://cms.example.com/u/n.jpg', 'w' => 600, 'h' => 400, 'title' => 'n' );
+	$GLOBALS['RK']['posts'][920] = (object) array( 'ID' => 920, 'post_type' => 'attachment', 'post_title' => 'n', 'post_excerpt' => '', 'post_content' => '', 'post_status' => 'inherit', 'post_mime_type' => 'image/jpeg' );
+	rk_test_login( 'editor' );
+	$u = t_ok( rk_post( '/rk/v1/builder/media/920', array( 'alt' => 'Sanded <b>oak</b> floor', 'title' => 'Oak floor', 'caption' => 'After refinishing', 'description' => 'A   long description.' ) ) )['item'];
+	t_eq( $u['alt'], 'Sanded oak floor', 'tags stripped' );
+	t_eq( $u['title'], 'Oak floor' );
+	t_eq( $u['caption'], 'After refinishing' );
+	t_eq( $u['description'], 'A long description.', 'whitespace collapsed' );
+	t_eq( $GLOBALS['RK']['meta'][920]['_wp_attachment_image_alt'], 'Sanded oak floor' );
+	t_eq( isset( t_ok( rk_get( '/rk/v1/builder/media' ) )['items'][0]['caption'] ), false, 'the picker keeps the documented shape' );
+	t_eq( t_ok( rk_get( '/rk/v1/builder/media', array( 'detail' => '1' ) ) )['items'][0]['caption'], 'After refinishing', 'details on request' );
+	t_err( rk_post( '/rk/v1/builder/media/920', array( 'alt' => array( 'x' ) ) ), 'rk_invalid_media', 400 );
+	t_err( rk_post( '/rk/v1/builder/media/920', array( 'bogus' => 'x' ) ), 'rk_invalid_media', 400 );
+	t_ok( rk_post( '/rk/v1/builder/media/920', array( 'alt' => '' ) ) );
+	t_eq( isset( $GLOBALS['RK']['meta'][920]['_wp_attachment_image_alt'] ), false, 'empty alt clears the meta' );
+	t_err( rk_post( '/rk/v1/builder/media/9999', array( 'alt' => 'x' ) ), 'rk_not_found', 404 );
+	$d = t_ok( rk_post( '/rk/v1/builder/media/920/delete', array() ) );
+	t_eq( $d['deleted'], 920 );
+	t_eq( isset( $GLOBALS['RK']['posts'][920] ), false, 'gone' );
+	rk_test_login( 'subscriber' );
+	t_err( rk_post( '/rk/v1/builder/media/910', array( 'alt' => 'x' ) ), 'rk_forbidden', 403 );
+} );

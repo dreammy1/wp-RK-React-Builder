@@ -256,18 +256,21 @@ function rk_builder_handle_get_page_seo( $req ) {
 		'description' => isset( $seo['description'] ) ? $seo['description'] : '',
 		'image'       => isset( $seo['image'] ) ? $seo['image'] : '',
 		'noindex'     => ! empty( $seo['noindex'] ),
+		'schema'      => rk_builder_schema_from_seo( $seo ),
 		'pageTitle'   => rk_builder_plain( get_the_title( $page ) ),
 	) ) );
 }
 
 function rk_builder_handle_set_page_seo( $req ) {
 	$page = rk_builder_get_page( $req['id'] );
-	$body = rk_builder_dash_body( $req, array( 'title', 'description', 'image', 'noindex' ), 'rk_invalid_seo' );
+	$body = rk_builder_dash_body( $req, array( 'title', 'description', 'image', 'noindex', 'schema' ), 'rk_invalid_seo' );
 	if ( is_wp_error( $body ) ) { return $body; }
+	if ( array_key_exists( 'schema', $body ) && ! is_array( $body['schema'] ) ) { return rk_builder_invalid( 'rk_invalid_seo', array( array( 'path' => 'schema', 'message' => 'Expected an object' ) ) ); }
 	$seo = rk_builder_seo_clean( $body );
 	// The service / parent fields are managed by theme packages, not by this form.
 	$old = rk_builder_seo_read( (int) $page->ID );
 	foreach ( array( 'service', 'parent' ) as $keep ) { if ( isset( $old[ $keep ] ) ) { $seo[ $keep ] = $old[ $keep ]; } }
+	if ( ! array_key_exists( 'schema', $body ) && isset( $old['schema'] ) ) { $seo['schema'] = $old['schema']; }
 	rk_builder_seo_write( (int) $page->ID, $seo );
 	rk_builder_revalidate( 'publish', (int) $page->ID, (string) $page->post_name );
 	rk_builder_layout_changed( (int) $page->ID, 'publish' );
@@ -385,10 +388,63 @@ function rk_builder_handle_delete_viz_leads( $req ) {
 }
 
 /** Routes (called from rk_builder_register_routes()). */
+/* ------------------------------------------------------------------ *
+ * Media: the fields search engines read (alt, title, caption, description), and removal
+ * ------------------------------------------------------------------ */
+
+function rk_builder_perm_media_item( $req ) { return rk_builder_authorize_media( $req, 'edit_post' ); }
+function rk_builder_perm_media_delete( $req ) { return rk_builder_authorize_media( $req, 'delete_post' ); }
+
+function rk_builder_authorize_media( $req, $cap ) {
+	$gate = rk_builder_authorize_caps( array( 'upload_files' ) );
+	if ( true !== $gate ) { return $gate; }
+	$att = get_post( isset( $req['id'] ) ? (int) $req['id'] : 0 );
+	if ( ! $att || 'attachment' !== $att->post_type ) { return rk_builder_not_found( 'Image not found.' ); }
+	return current_user_can( $cap, $att->ID ) ? true : rk_builder_forbidden();
+}
+
+function rk_builder_handle_update_media( $req ) {
+	$att  = get_post( (int) $req['id'] );
+	$body = rk_builder_dash_body( $req, array( 'alt', 'title', 'caption', 'description' ), 'rk_invalid_media' );
+	if ( is_wp_error( $body ) ) { return $body; }
+	$limits = array( 'alt' => 400, 'title' => 200, 'caption' => 500, 'description' => 2000 );
+	$issues = array();
+	foreach ( $limits as $k => $max ) {
+		if ( array_key_exists( $k, $body ) && ! is_string( $body[ $k ] ) ) { rk_builder_add_issue( $issues, $k, 'Expected text' ); }
+	}
+	if ( $issues ) { return rk_builder_invalid( 'rk_invalid_media', $issues ); }
+	$clean = function ( $k ) use ( $body, $limits ) { return rk_builder_substr( trim( (string) preg_replace( '/\s+/u', ' ', wp_strip_all_tags( $body[ $k ] ) ) ), 0, $limits[ $k ] ); };
+	$post  = array( 'ID' => (int) $att->ID );
+	if ( array_key_exists( 'title', $body ) ) { $post['post_title'] = $clean( 'title' ); }
+	if ( array_key_exists( 'caption', $body ) ) { $post['post_excerpt'] = $clean( 'caption' ); }
+	if ( array_key_exists( 'description', $body ) ) { $post['post_content'] = $clean( 'description' ); }
+	if ( count( $post ) > 1 && ! wp_update_post( wp_slash( $post ) ) ) { return rk_builder_error( 'rk_server_error', 'Could not save the image.', 500 ); }
+	if ( array_key_exists( 'alt', $body ) ) {
+		$alt = $clean( 'alt' );
+		if ( '' === $alt ) { delete_post_meta( (int) $att->ID, '_wp_attachment_image_alt' ); } else { update_post_meta( (int) $att->ID, '_wp_attachment_image_alt', wp_slash( $alt ) ); }
+	}
+	rk_builder_purge_all_public_cache_if_any();
+	return rk_builder_no_store( array( 'item' => rk_builder_media_item( (int) $att->ID, true ) ) );
+}
+
+/** Removes the file and its sizes for good (WordPress has no trash for media unless MEDIA_TRASH is set). */
+function rk_builder_handle_delete_media( $req ) {
+	$att = get_post( (int) $req['id'] );
+	if ( ! wp_delete_attachment( (int) $att->ID, true ) ) { return rk_builder_error( 'rk_server_error', 'Could not delete the image.', 500 ); }
+	rk_builder_purge_all_public_cache_if_any();
+	return rk_builder_no_store( array( 'deleted' => (int) $att->ID ) );
+}
+
+function rk_builder_purge_all_public_cache_if_any() {
+	if ( function_exists( 'rk_builder_purge_all_public_cache' ) ) { rk_builder_purge_all_public_cache(); }
+}
+
 function rk_builder_register_dashboard_routes( $ns ) {
 	$id    = array( 'id' => array( 'type' => 'integer', 'required' => true ) );
 	$admin = 'rk_builder_perm_theme_write';
 	$edit  = 'rk_builder_perm_edit_real_page';
+	register_rest_route( $ns, '/builder/media/(?P<id>\\d+)', array( 'methods' => 'POST', 'callback' => 'rk_builder_handle_update_media', 'permission_callback' => 'rk_builder_perm_media_item', 'args' => $id ) );
+	register_rest_route( $ns, '/builder/media/(?P<id>\\d+)/delete', array( 'methods' => 'POST', 'callback' => 'rk_builder_handle_delete_media', 'permission_callback' => 'rk_builder_perm_media_delete', 'args' => $id ) );
 	register_rest_route( $ns, '/builder/overview', array( 'methods' => 'GET', 'callback' => 'rk_builder_handle_overview', 'permission_callback' => 'rk_builder_perm_list_pages' ) );
 	register_rest_route( $ns, '/builder/pages/new', array( 'methods' => 'POST', 'callback' => 'rk_builder_handle_create_page', 'permission_callback' => 'rk_builder_perm_list_pages' ) );
 	register_rest_route( $ns, '/builder/pages/(?P<id>\d+)/update', array( 'methods' => 'POST', 'callback' => 'rk_builder_handle_update_page_meta', 'permission_callback' => $edit, 'args' => $id ) );

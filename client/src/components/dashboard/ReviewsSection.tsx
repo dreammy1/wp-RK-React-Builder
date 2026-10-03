@@ -5,6 +5,7 @@ import { describeError } from "@/lib/api/errors";
 import { resetReviewsCache } from "@/lib/reviews";
 import type { ReviewItem, ReviewsAdmin } from "@/lib/schema/api";
 import { fmtWhen } from "./Overview";
+import { BulkBar, RowCheck, useSelection } from "./Bulk";
 
 function StarsInput({
   value,
@@ -55,6 +56,7 @@ export function ReviewsSection() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [note, setNote] = useState("");
+  const pick = useSelection((data?.items ?? []).map(r => r.id));
 
   const apply = (r: ReviewsAdmin) => {
     setData(r);
@@ -359,11 +361,71 @@ export function ReviewsSection() {
           </p>
         ) : (
           <div>
+            <BulkBar
+              noun="reviews"
+              count={pick.count}
+              total={data.items.length}
+              all={pick.all}
+              onToggleAll={pick.toggleAll}
+              onClear={pick.clear}
+              busy={busy}
+              actions={[
+                {
+                  label: "Hide",
+                  icon: <EyeOff size={14} aria-hidden="true" />,
+                  onClick: () => {
+                    setItems(
+                      data.items.map(x =>
+                        pick.has(x.id) ? { ...x, hidden: true } : x
+                      ),
+                      `Hid ${pick.count} review${pick.count === 1 ? "" : "s"}.`
+                    );
+                    pick.clear();
+                  },
+                },
+                {
+                  label: "Show",
+                  icon: <Eye size={14} aria-hidden="true" />,
+                  onClick: () => {
+                    setItems(
+                      data.items.map(x =>
+                        pick.has(x.id) ? { ...x, hidden: false } : x
+                      ),
+                      `Showing ${pick.count} review${pick.count === 1 ? "" : "s"}.`
+                    );
+                    pick.clear();
+                  },
+                },
+                {
+                  label: "Delete",
+                  icon: <Trash2 size={14} aria-hidden="true" />,
+                  danger: true,
+                  onClick: () => {
+                    if (
+                      window.confirm(
+                        `Delete ${pick.count} review${pick.count === 1 ? "" : "s"}?`
+                      )
+                    ) {
+                      setItems(
+                        data.items.filter(x => !pick.has(x.id)),
+                        `Deleted ${pick.count} review${pick.count === 1 ? "" : "s"}.`
+                      );
+                      pick.clear();
+                    }
+                  },
+                },
+              ]}
+            />
             {data.items.map(r => (
               <div
                 key={r.id}
-                className={`review-row${r.hidden ? " hidden" : ""}`}
+                className={`review-row selectable${r.hidden ? " hidden" : ""}${pick.has(r.id) ? " picked" : ""}`}
               >
+                <RowCheck
+                  checked={pick.has(r.id)}
+                  onChange={() => pick.toggle(r.id)}
+                  label={`Select review by ${r.author}`}
+                />
                 <div>
                   <strong>{r.author}</strong>{" "}
                   <span className="muted">

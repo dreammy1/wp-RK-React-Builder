@@ -3,6 +3,7 @@ import { Trash2 } from "lucide-react";
 import { api } from "@/lib/api/builder";
 import { describeError } from "@/lib/api/errors";
 import type { RedirectRule } from "@/lib/schema/api";
+import { BulkBar, RowCheck, useSelection } from "./Bulk";
 
 export function RedirectsSection() {
   const [items, setItems] = useState<RedirectRule[] | null>(null);
@@ -15,6 +16,7 @@ export function RedirectsSection() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [note, setNote] = useState("");
+  const pick = useSelection((items ?? []).map(r => r.from));
 
   useEffect(() => {
     api
@@ -34,6 +36,7 @@ export function RedirectsSection() {
         setNote(msg);
         setDraft({ from: "", to: "", code: 301 });
         setBulk("");
+        pick.clear();
       })
       .catch(e => setError(describeError(e)))
       .finally(() => setBusy(false));
@@ -147,28 +150,65 @@ export function RedirectsSection() {
         {items.length === 0 ? (
           <p className="muted">No redirects yet.</p>
         ) : (
-          <ul className="dash-list">
-            {items.map(r => (
-              <li key={r.from}>
-                <code>{r.from}</code>
-                <span aria-hidden="true">→</span>
-                <code>{r.to}</code>
-                <small className="muted">{r.code}</small>
-                <button
-                  className="icon-btn danger"
-                  aria-label={`Delete redirect from ${r.from}`}
-                  onClick={() =>
-                    persist(
-                      items.filter(x => x.from !== r.from),
-                      "Redirect removed."
+          <>
+            <BulkBar
+              noun="redirects"
+              count={pick.count}
+              total={items.length}
+              all={pick.all}
+              onToggleAll={pick.toggleAll}
+              onClear={pick.clear}
+              busy={busy}
+              actions={[
+                {
+                  label: "Delete",
+                  icon: <Trash2 size={14} aria-hidden="true" />,
+                  danger: true,
+                  onClick: () => {
+                    if (
+                      window.confirm(
+                        `Delete ${pick.count} redirect${pick.count === 1 ? "" : "s"}?`
+                      )
                     )
-                  }
+                      persist(
+                        items.filter(x => !pick.has(x.from)),
+                        `Removed ${pick.count} redirect${pick.count === 1 ? "" : "s"}.`
+                      );
+                  },
+                },
+              ]}
+            />
+            <ul className="dash-list">
+              {items.map(r => (
+                <li
+                  key={r.from}
+                  className={`selectable${pick.has(r.from) ? " picked" : ""}`}
                 >
-                  <Trash2 size={14} aria-hidden="true" />
-                </button>
-              </li>
-            ))}
-          </ul>
+                  <RowCheck
+                    checked={pick.has(r.from)}
+                    onChange={() => pick.toggle(r.from)}
+                    label={`Select redirect from ${r.from}`}
+                  />
+                  <code>{r.from}</code>
+                  <span aria-hidden="true">→</span>
+                  <code>{r.to}</code>
+                  <small className="muted">{r.code}</small>
+                  <button
+                    className="icon-btn danger"
+                    aria-label={`Delete redirect from ${r.from}`}
+                    onClick={() =>
+                      persist(
+                        items.filter(x => x.from !== r.from),
+                        "Redirect removed."
+                      )
+                    }
+                  >
+                    <Trash2 size={14} aria-hidden="true" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </>
         )}
       </section>
     </>

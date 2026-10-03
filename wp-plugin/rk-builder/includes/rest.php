@@ -185,6 +185,8 @@ function rk_builder_register_routes() {
 				'search'   => array( 'type' => 'string', 'validate_callback' => 'rk_builder_validate_short_string' ),
 				'per_page' => array( 'type' => 'integer', 'default' => 20, 'validate_callback' => 'rk_builder_validate_per_page_50' ),
 				'page'     => array( 'type' => 'integer', 'default' => 1, 'validate_callback' => 'rk_builder_validate_positive_int' ),
+				'missing_alt' => array( 'type' => 'boolean' ),
+				'detail'      => array( 'type' => 'boolean' ),
 			),
 		),
 		array(

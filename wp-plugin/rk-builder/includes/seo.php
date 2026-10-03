@@ -47,6 +47,7 @@ function rk_builder_seo_meta_keys() {
 		'noindex'     => '_rk_seo_noindex',
 		'service'     => '_rk_builder_seo_service',
 		'parent'      => '_rk_builder_seo_parent',
+		'schema'      => '_rk_builder_schema',
 	);
 }
 
@@ -77,6 +78,10 @@ function rk_builder_seo_clean( $in ) {
 		if ( '' !== $u ) { $out['image'] = $u; }
 	}
 	if ( ! empty( $in['noindex'] ) ) { $out['noindex'] = true; }
+	if ( isset( $in['schema'] ) && ( is_array( $in['schema'] ) || is_string( $in['schema'] ) ) ) {
+		$j = rk_builder_schema_encode( $in['schema'] );
+		if ( '' !== $j ) { $out['schema'] = $j; }
+	}
 	return $out;
 }
 
@@ -85,7 +90,7 @@ function rk_builder_seo_write( $id, array $seo ) {
 	foreach ( rk_builder_seo_meta_keys() as $field => $key ) {
 		$v = isset( $seo[ $field ] ) ? $seo[ $field ] : '';
 		if ( 'noindex' === $field ) { $v = ! empty( $seo['noindex'] ) ? '1' : ''; }
-		if ( '' === $v ) { delete_post_meta( (int) $id, $key ); } else { update_post_meta( (int) $id, $key, $v ); }
+		if ( '' === $v ) { delete_post_meta( (int) $id, $key ); } else { update_post_meta( (int) $id, $key, wp_slash( $v ) ); } // update_post_meta() unslashes: JSON keeps its backslashes
 	}
 }
 
@@ -281,16 +286,30 @@ function rk_builder_seo_graph( $page, array $d ) {
 	$home  = $nodes['ids']['home'];
 	$org_id = $nodes['ids']['org'];
 	$site_id = $nodes['ids']['site'];
-	$wp = array( '@type' => 'WebPage', '@id' => $url . '#webpage', 'url' => $url, 'name' => $d['title'] );
+	$seo = rk_builder_seo_read( (int) $page->ID );
+	$cfg = rk_builder_schema_from_seo( $seo );
+	$wp = array( '@type' => $cfg['pageType'], '@id' => $url . '#webpage', 'url' => $url, 'name' => $d['title'] );
 	if ( '' !== $d['description'] ) { $wp['description'] = $d['description']; }
 	$wp['isPartOf'] = array( '@id' => $site_id );
 	$wp['about']    = array( '@id' => $org_id );
-	$graph[] = $wp;
-	$seo = rk_builder_seo_read( (int) $page->ID );
-	if ( isset( $seo['service'] ) ) {
-		$graph[] = array( '@type' => 'Service', '@id' => $url . '#service', 'name' => rk_builder_plain( get_the_title( $page ) ), 'description' => $seo['service'], 'url' => $url, 'provider' => array( '@id' => $org_id ), 'mainEntityOfPage' => array( '@id' => $url . '#webpage' ) );
+	if ( $cfg['business'] ) {
+		foreach ( $graph as $n ) { if ( isset( $n['@id'] ) && $home . '#localbusiness' === $n['@id'] ) { $wp['about'] = array( '@id' => $n['@id'] ); } }
 	}
-	if ( ! is_front_page() ) {
+	$graph[] = $wp;
+	$ctx = array(
+		'url'            => $url,
+		'name'           => rk_builder_plain( get_the_title( $page ) ),
+		'description'    => $d['description'],
+		'image'          => $d['image'],
+		'site_name'      => $d['site_name'],
+		'home'           => $home,
+		'org_id'         => $org_id,
+		'site_id'        => $site_id,
+		'webpage_id'     => $url . '#webpage',
+		'legacy_service' => isset( $seo['service'] ) ? $seo['service'] : '',
+	);
+	foreach ( rk_builder_schema_nodes( $cfg, $ctx, $page ) as $n ) { $graph[] = $n; }
+	if ( $cfg['breadcrumb'] && ! is_front_page() ) {
 		$crumbs = array( array( 'Home', $home ) );
 		if ( isset( $seo['parent'] ) ) {
 			$pr = rk_builder_parse_rows_plain( $seo['parent'] );
@@ -301,6 +320,7 @@ function rk_builder_seo_graph( $page, array $d ) {
 		foreach ( $crumbs as $i => $c ) { $items[] = array( '@type' => 'ListItem', 'position' => $i + 1, 'name' => $c[0], 'item' => $c[1] ); }
 		$graph[] = array( '@type' => 'BreadcrumbList', '@id' => $url . '#breadcrumb', 'itemListElement' => $items );
 	}
+	$graph = rk_builder_schema_attach_rating( $graph, $cfg );
 	return array( '@context' => 'https://schema.org', '@graph' => $graph );
 }
 

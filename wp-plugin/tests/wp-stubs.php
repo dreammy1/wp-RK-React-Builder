@@ -235,6 +235,7 @@ function wp_update_post( $arr, $err = false ) {
 	if ( 'publish' === $p->post_status && '' === $p->post_name ) { $p->post_name = 'page-' . $p->ID; }
 	return $p->ID;
 }
+function wp_delete_attachment( $id, $force = false ) { if ( empty( $GLOBALS['RK']['posts'][ (int) $id ] ) ) { return false; } $p = $GLOBALS['RK']['posts'][ (int) $id ]; unset( $GLOBALS['RK']['posts'][ (int) $id ], $GLOBALS['RK']['attachments'][ (int) $id ] ); return $p; }
 function wp_trash_post( $id ) { $p = get_post( $id ); if ( ! $p ) { return false; } $p->post_status = 'trash'; return $p; }
 function get_post_meta( $id, $key = '', $single = false ) {
 	$v = isset( $GLOBALS['RK']['meta'][ $id ][ $key ] ) ? $GLOBALS['RK']['meta'][ $id ][ $key ] : null;

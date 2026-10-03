@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api/builder";
 import { describeError } from "@/lib/api/errors";
-import type { PageRow } from "@/lib/schema/api";
+import type { PageRow, PageSchemaSettings } from "@/lib/schema/api";
 import { SubPage } from "../SubPage";
 import { ImageField } from "./ImageField";
+import { SchemaPanel } from "./SchemaPanel";
 
 const slugify = (s: string) =>
   s
@@ -223,6 +224,7 @@ export function SeoDialog({
     description: string;
     image: string;
     noindex: boolean;
+    schema: PageSchemaSettings;
   }>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -236,6 +238,7 @@ export function SeoDialog({
           description: s.description,
           image: s.image,
           noindex: s.noindex,
+          schema: s.schema,
         })
       )
       .catch(e => setError(describeError(e)));
@@ -329,6 +332,11 @@ export function SeoDialog({
             label="Hide this page from search engines (noindex)"
             checked={f.noindex}
             onChange={v => setF({ ...f, noindex: v })}
+          />
+          <SchemaPanel
+            value={f.schema}
+            onChange={schema => setF({ ...f, schema })}
+            pageUrl={page.status === "publish" ? (page.link ?? null) : null}
           />
         </>
       )}
