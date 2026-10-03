@@ -2865,10 +2865,17 @@ button.stat-card:hover {
   border-radius: 10px;
   cursor: pointer;
 }
-.kind-card input {
+.kind-card {
+  position: relative;
+}
+.kind-card input[type="radio"] {
   position: absolute;
   opacity: 0;
   pointer-events: none;
+  width: 1px;
+  height: 1px;
+  min-width: 0;
+  margin: 0;
 }
 .kind-card.on {
   border-color: #c7f36b;
