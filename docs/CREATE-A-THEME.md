@@ -52,6 +52,10 @@ Open any page in the editor and use the **Theme** tab (administrators only):
 
 Pick colours with enough contrast: body text on the background should be at least **4.5 : 1**.
 
+### Step 2b: Layout and global settings (Global settings)
+
+Open **Global settings** in the dashboard. **Content width** (default 1144 px) and the **side space** set the column every page, the header and the footer share, so a theme can be narrow and editorial or wide and open without touching a single block. Pick the toolbar style while you work (_RK Builder only_ keeps the black WordPress bar to the site name, your account and the Edit with RK Builder shortcuts), and use the speed switches to drop WordPress scripts the theme does not need.
+
 ### Step 3: Header and footer (Templates)
 
 Go to **Templates → New template → Header** and again for **Footer**.

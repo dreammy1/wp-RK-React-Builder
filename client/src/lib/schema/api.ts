@@ -631,3 +631,17 @@ export const DynRender = z.object({
   valid: z.boolean(),
 });
 export type DynRender = z.infer<typeof DynRender>;
+
+export const GlobalSettings = z.object({
+  layout_width: z.number().int(),
+  gutter: z.number().int(),
+  gutter_mobile: z.number().int(),
+  admin_bar: z.enum(["default", "builder", "hidden"]),
+  theme_styles: z.boolean(),
+  no_emojis: z.boolean(),
+  no_embeds: z.boolean(),
+  no_block_css: z.boolean(),
+  no_head_clutter: z.boolean(),
+});
+export type GlobalSettings = z.infer<typeof GlobalSettings>;
+export const GlobalResponse = z.object({ global: GlobalSettings });

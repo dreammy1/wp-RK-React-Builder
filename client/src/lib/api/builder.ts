@@ -18,6 +18,8 @@ import {
   PageSeo,
   type PageSeoFields,
   SiteSettingsResponse,
+  GlobalResponse,
+  type GlobalSettings,
   type SiteSettings,
   VizAdmin,
   SiteBundle,
@@ -299,6 +301,9 @@ export const api = {
       method: "POST",
       body: patch,
     }),
+  getGlobal: () => request("builder/global", GlobalResponse),
+  setGlobal: (patch: Partial<GlobalSettings>) =>
+    request("builder/global", GlobalResponse, { method: "POST", body: patch }),
   getViz: () => request("builder/visualizer-admin", VizAdmin),
   setViz: (settings: Record<string, unknown>) =>
     request("builder/visualizer-admin", VizAdmin, {

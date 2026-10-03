@@ -194,7 +194,7 @@ function rk_builder_enqueue_public_assets( array $theme ) {
 	wp_register_script( 'rk-builder-site', false, array(), RK_BUILDER_VERSION, true );
 	wp_enqueue_script( 'rk-builder-site' );
 	wp_add_inline_script( 'rk-builder-site', rk_builder_site_script() );
-	wp_add_inline_style( 'rk-builder-site', rk_builder_theme_css( $theme ) );
+	wp_add_inline_style( 'rk-builder-site', rk_builder_theme_css( $theme ) . rk_builder_global_css() );
 	if ( apply_filters( 'rk_builder_load_google_fonts', false ) ) {
 		wp_enqueue_style( 'rk-builder-fonts', RK_BUILDER_GOOGLE_FONTS_URL, array(), null );
 	}

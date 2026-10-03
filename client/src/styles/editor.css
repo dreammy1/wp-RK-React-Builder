@@ -3077,3 +3077,32 @@ input[type="checkbox"] {
 .kind-card small {
   display: block;
 }
+
+.width-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+.width-presets .top-btn.on {
+  border-color: #c7f36b;
+  color: #c7f36b;
+}
+.width-preview {
+  height: 36px;
+  margin-top: 8px;
+  background: #11161d;
+  border: 1px solid #2c333c;
+  display: flex;
+  justify-content: center;
+}
+.width-preview-col {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  background: #1d2a1a;
+  border-inline: 1px solid #c7f36b;
+  color: #c7f36b;
+  font-size: 12px;
+  min-width: 48px;
+}

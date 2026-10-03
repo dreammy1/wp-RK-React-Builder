@@ -438,7 +438,10 @@
   justify-content: space-between;
   gap: 24px;
   --pf-pt: 22px;
-  --pf-px: max(28px, calc((100% - 1144px) / 2));
+  --pf-px: max(
+    var(--site-gutter, 28px),
+    calc((100% - var(--site-container, 1144px)) / 2)
+  );
   padding: var(--pf-pt) var(--pf-px);
   background: var(--site-bg);
   color: var(--site-ink);
@@ -554,9 +557,9 @@
 .pf-hero-body {
   position: relative;
   width: 100%;
-  max-width: 1200px;
+  max-width: calc(var(--site-container, 1144px) + 2 * var(--site-gutter, 28px));
   margin: 0 auto;
-  padding: 120px 28px 64px;
+  padding: 120px var(--site-gutter, 28px) 64px;
 }
 .pf-eyebrow {
   margin: 0 0 20px;
@@ -624,9 +627,9 @@
   display: grid;
   grid-template-columns: 1.3fr 1fr 1fr 1.2fr;
   gap: 48px;
-  max-width: 1200px;
+  max-width: calc(var(--site-container, 1144px) + 2 * var(--site-gutter, 28px));
   margin: 0 auto;
-  padding: 64px 28px 32px;
+  padding: 64px var(--site-gutter, 28px) 32px;
 }
 .pf-foot-brand {
   display: block;
@@ -670,8 +673,8 @@
   flex-wrap: wrap;
   justify-content: space-between;
   gap: 12px;
-  max-width: 1144px;
-  width: calc(100% - 56px);
+  max-width: var(--site-container, 1144px);
+  width: calc(100% - 2 * var(--site-gutter, 28px));
   margin: 0 auto;
   padding: 24px 0 32px;
   border-top: 1px solid rgba(255, 255, 255, 0.15);
@@ -694,7 +697,7 @@
 @media (max-width: 560px) {
   .pf-nav {
     --pf-pt: 16px;
-    --pf-px: 16px;
+    --pf-px: var(--site-gutter-m, 16px);
   }
   .pf-foot-grid {
     grid-template-columns: 1fr;
@@ -723,9 +726,9 @@
   background: #f3f3f3;
 }
 .pf-wrap {
-  max-width: 1200px;
+  max-width: calc(var(--site-container, 1144px) + 2 * var(--site-gutter, 28px));
   margin: 0 auto;
-  padding: 0 28px;
+  padding: 0 var(--site-gutter, 28px);
 }
 .pf-kicker {
   display: flex;
@@ -845,7 +848,10 @@
 
 /* ---- Editorial skin: ordinary blocks on a page that carries the marketing header ---- */
 .site-root:has(.pf-nav) {
-  --pf-gutter: max(28px, calc((100% - 1144px) / 2));
+  --pf-gutter: max(
+    var(--site-gutter, 28px),
+    calc((100% - var(--site-container, 1144px)) / 2)
+  );
   --pf-ink: #131313;
   --pf-accent: #a97c50;
   font-family:
@@ -1873,7 +1879,7 @@
     top: 100%;
     left: 0;
     right: 0;
-    padding: 8px max(28px, calc((100% - 1144px) / 2)) 28px;
+    padding: 8px var(--pf-px) 28px;
     background: #fff;
     color: #131313;
     border-bottom: 1px solid #e5e5e5;
@@ -3777,6 +3783,12 @@ body.rk-standalone.admin-bar .pf-nav {
 @media (max-width: 782px) {
   body.rk-standalone.admin-bar .pf-nav {
     top: 46px;
+  }
+}
+@media (max-width: 600px) {
+  /* the admin bar is not fixed on phones: leave no gap above the header once it scrolls away */
+  body.rk-standalone.admin-bar .pf-nav {
+    top: 0;
   }
 }
 @media (max-width: 560px) {

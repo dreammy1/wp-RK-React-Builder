@@ -231,7 +231,7 @@ rk_test( 'public (theme mode): published page content is replaced once, wrapped,
 	$s = $GLOBALS['RK']['styles']['rk-builder-site'];
 	t_eq( $s['src'], RK_BUILDER_URL . 'assets/site.css' );
 	t_eq( $s['ver'], RK_BUILDER_VERSION );
-	t_eq( $s['inline'][0], rk_builder_theme_css( rk_builder_default_theme() ) );
+	t_eq( $s['inline'][0], rk_builder_theme_css( rk_builder_default_theme() ) . rk_builder_global_css() );
 	t_assert( ! isset( $GLOBALS['RK']['styles']['rk-builder-fonts'] ), 'no external fonts by default' );
 	add_filter( 'rk_builder_load_google_fonts', '__return_true' );
 	do_action( 'wp_enqueue_scripts' );

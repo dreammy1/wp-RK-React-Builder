@@ -575,7 +575,9 @@ function EntryEditor({
 /** Entries of every content type: list, create, edit, duplicate, trash. No wp-admin needed. */
 export function ContentSection({ initialType }: { initialType?: string }) {
   const [types, setTypes] = useState<ContentType[] | null>(null);
-  const [slug, setSlug] = useState(initialType ?? "");
+  const [slug, setSlug] = useState(
+    initialType ?? new URLSearchParams(location.search).get("type") ?? ""
+  );
   const [rows, setRows] = useState<EntryRow[]>([]);
   const [total, setTotal] = useState(0);
   const [pageNo, setPageNo] = useState(1);

@@ -14,10 +14,12 @@ import {
   Database,
   Boxes,
   LayoutTemplate,
+  SlidersHorizontal,
 } from "lucide-react";
 import { api } from "@/lib/api/builder";
 import { getBoot } from "@/lib/boot";
 import { CodeSection } from "./CodeSection";
+import { GlobalSection } from "./GlobalSection";
 import { ContentSection } from "./ContentSection";
 import { TemplatesSection } from "./TemplatesSection";
 import { TypesSection } from "./TypesSection";
@@ -40,6 +42,7 @@ export type DashView =
   | "types"
   | "themes"
   | "site"
+  | "global"
   | "reviews"
   | "code"
   | "redirects"
@@ -56,6 +59,7 @@ const NAV: { id: DashView; label: string; icon: Icon }[] = [
   { id: "types", label: "Types & fields", icon: Boxes },
   { id: "themes", label: "Themes", icon: Package },
   { id: "site", label: "Site & SEO", icon: Settings },
+  { id: "global", label: "Global settings", icon: SlidersHorizontal },
   { id: "reviews", label: "Reviews", icon: Star },
   { id: "code", label: "Code & tracking", icon: CodeXml },
   { id: "redirects", label: "Redirects", icon: Shuffle },
@@ -76,6 +80,7 @@ const ADMIN_ONLY = new Set<DashView>([
   "types",
   "themes",
   "site",
+  "global",
   "reviews",
   "code",
   "redirects",
@@ -130,6 +135,7 @@ export function Dashboard({ navigate }: { navigate: (to: string) => void }) {
     ),
     themes: <ThemesSection />,
     site: <SiteSection />,
+    global: <GlobalSection />,
     reviews: <ReviewsSection />,
     code: <CodeSection />,
     redirects: <RedirectsSection />,
@@ -145,6 +151,7 @@ export function Dashboard({ navigate }: { navigate: (to: string) => void }) {
         "types",
         "themes",
         "site",
+        "global",
         "reviews",
         "code",
         "redirects",

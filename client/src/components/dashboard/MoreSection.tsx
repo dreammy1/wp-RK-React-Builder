@@ -5,6 +5,7 @@ import {
   Package,
   ExternalLink,
   Settings,
+  SlidersHorizontal,
   Shuffle,
   Sparkles,
   Star,
@@ -40,6 +41,9 @@ export function MoreSection({
             </button>
             <button className="more-item" onClick={() => go("site")}>
               <Settings size={16} aria-hidden="true" /> Site &amp; SEO
+            </button>
+            <button className="more-item" onClick={() => go("global")}>
+              <SlidersHorizontal size={16} aria-hidden="true" /> Global settings
             </button>
             <button className="more-item" onClick={() => go("reviews")}>
               <Star size={16} aria-hidden="true" /> Reviews

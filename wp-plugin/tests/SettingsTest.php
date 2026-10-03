@@ -192,3 +192,42 @@ rk_test( 'diagnostics: tolerates a corrupt last render error and missing data', 
 	t_eq( rk_builder_diagnostics()['last_render_error'], null );
 	t_eq( rk_builder_diagnostics()['last_migration'], null );
 } );
+
+/* ---------------- global settings ---------------- */
+
+rk_test( 'global settings: defaults, clamping, validation, admin-only REST', function () {
+	rk_test_reset();
+	$d = rk_builder_global();
+	t_eq( $d['layout_width'], 1144 );
+	t_eq( $d['admin_bar'], 'default' );
+	t_eq( $d['theme_styles'], true );
+	t_eq( rk_builder_global_css(), '.rk-root{--site-container:1144px;--site-gutter:28px;--site-gutter-m:16px}' );
+	rk_test_login( 'editor' );
+	t_err( rk_get( '/rk/v1/builder/global' ), 'rk_forbidden', 403 );
+	rk_test_login( 'admin' );
+	$r = t_ok( rk_post( '/rk/v1/builder/global', array( 'layout_width' => 1320, 'gutter' => 40, 'admin_bar' => 'builder', 'no_emojis' => true, 'theme_styles' => false ) ) );
+	t_eq( $r['global']['layout_width'], 1320 );
+	t_eq( $r['global']['admin_bar'], 'builder' );
+	t_eq( $r['global']['theme_styles'], false );
+	t_eq( $r['global']['gutter_mobile'], 16, 'keys not sent are kept' );
+	t_eq( rk_builder_global_css(), '.rk-root{--site-container:1320px;--site-gutter:40px;--site-gutter-m:16px}' );
+	t_err( rk_post( '/rk/v1/builder/global', array( 'layout_width' => 100 ) ), 'rk_invalid_global', 400 );
+	t_err( rk_post( '/rk/v1/builder/global', array( 'layout_width' => 'wide' ) ), 'rk_invalid_global', 400 );
+	t_err( rk_post( '/rk/v1/builder/global', array( 'admin_bar' => 'neon' ) ), 'rk_invalid_global', 400 );
+	t_err( rk_post( '/rk/v1/builder/global', array( 'no_emojis' => 'yes' ) ), 'rk_invalid_global', 400 );
+	t_err( rk_post( '/rk/v1/builder/global', array( 'surprise' => 1 ) ), 'rk_invalid_global', 400 );
+	t_eq( rk_builder_global()['layout_width'], 1320, 'a bad request changes nothing' );
+	// stored garbage falls back to defaults
+	update_option( 'rk_builder_global', array( 'layout_width' => 'x', 'admin_bar' => '<script>', 'gutter' => 9999 ) );
+	t_eq( rk_builder_global()['layout_width'], 1144 );
+	t_eq( rk_builder_global()['admin_bar'], 'default' );
+} );
+
+rk_test( 'global settings: which toolbar items the builder style keeps', function () {
+	foreach ( array( array( 'site-name', 'root-default' ), array( 'view-site', 'site-name' ), array( 'my-account', 'top-secondary' ), array( 'logout', 'user-actions' ), array( 'rk-edit', '' ), array( 'rk-dashboard', '' ) ) as $k ) {
+		t_assert( rk_builder_adminbar_keeps( $k[0], $k[1] ), 'keeps ' . $k[0] );
+	}
+	foreach ( array( array( 'customize', '' ), array( 'comments', '' ), array( 'new-content', '' ), array( 'edit', '' ), array( 'updates', '' ), array( 'wp-logo', '' ), array( 'hostinger-menu', '' ) ) as $k ) {
+		t_assert( ! rk_builder_adminbar_keeps( $k[0], $k[1] ), 'drops ' . $k[0] );
+	}
+} );
