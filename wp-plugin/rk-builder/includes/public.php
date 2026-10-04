@@ -266,11 +266,14 @@ function rk_builder_filter_the_content( $content ) {
 	$rk = rk_builder_current_request_page();
 	if ( null === $rk || (int) get_the_ID() !== (int) $rk['page']->ID ) { return $content; }
 	rk_builder_content_rendered( true );
-	return rk_builder_render_public_html( $rk['layout'], array( 'page_id' => (int) $rk['page']->ID, 'preview' => false ) );
+	return rk_builder_render_public_html( $rk['layout'], array( 'page_id' => (int) $rk['page']->ID, 'preview' => false, 'rk_live' => true ) );
 }
 
 function rk_builder_filter_template_include( $template ) {
-	if ( 'standalone' !== rk_builder_rendering_mode() || null === rk_builder_current_request_page() ) { return $template; }
+	$rk = rk_builder_current_request_page();
+	if ( null === $rk ) { return $template; }
+	// A full-screen sign-in page has no site header or footer, so it always uses the standalone template.
+	if ( 'standalone' !== rk_builder_rendering_mode() && ! ( rk_builder_login_enabled() && rk_builder_login_fullscreen_layout( $rk['layout'] ) ) ) { return $template; }
 	if ( function_exists( 'add_theme_support' ) ) { add_theme_support( 'title-tag' ); } // so wp_head() prints <title>
 	return RK_BUILDER_DIR . 'templates/public-layout.php';
 }

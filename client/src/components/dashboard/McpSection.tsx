@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Check, Copy, ExternalLink, KeyRound, Trash2 } from "lucide-react";
 import { api } from "@/lib/api/builder";
 import { describeIssues } from "@/lib/api/errors";
-import type { McpAdmin, McpLevel } from "@/lib/schema/api";
+import type { AiBrief, McpAdmin, McpLevel } from "@/lib/schema/api";
 import { fmtWhen } from "./Overview";
 
 const LEVELS: { id: McpLevel; name: string; help: string }[] = [
@@ -106,13 +106,35 @@ export function McpSection() {
   const [keyName, setKeyName] = useState("Claude");
   const [keyLevel, setKeyLevel] = useState<McpLevel>("write");
   const [fresh, setFresh] = useState<string | null>(null);
+  const [brief, setBrief] = useState<AiBrief | null>(null);
 
   useEffect(() => {
     api
       .getMcp()
-      .then(setD)
+      .then(r => {
+        setD(r);
+        setBrief(r.brief ?? null);
+      })
       .catch(e => setError(describeIssues(e)));
   }, []);
+
+  const saveBrief = () => {
+    if (!brief) return;
+    setBusy(true);
+    setError("");
+    setNote("");
+    api
+      .saveAiBrief(brief)
+      .then(r => {
+        setBrief(r.brief);
+        setD(prev =>
+          prev ? { ...prev, brief: r.brief, prompt: r.prompt } : prev
+        );
+        setNote("Saved. The prompt below now includes your notes.");
+      })
+      .catch(e => setError(describeIssues(e)))
+      .finally(() => setBusy(false));
+  };
 
   const save = (
     patch: { enabled?: boolean; level?: McpLevel; clearLog?: boolean },
@@ -410,6 +432,73 @@ export function McpSection() {
           </div>
         </details>
       </section>
+
+      {d.prompt !== undefined && brief && (
+        <section className="dash-card" aria-labelledby="mcp-copy">
+          <h2 id="mcp-copy">Rewrite your site&apos;s wording with AI</h2>
+          <p className="muted">
+            Installed a kit? Its text is about the demo business. Tell the
+            assistant who you are, then give it the prompt below: it reads every
+            page, header, footer and block, rewrites the wording for your
+            business, and saves the result as <strong>drafts</strong>. Your live
+            site does not change until you review and publish. Links, pictures
+            and the design are never touched.
+          </p>
+          <div className="theme-form">
+            {(
+              [
+                [
+                  "about",
+                  "About your business",
+                  "What you do, where, since when",
+                ],
+                ["offers", "Services or products", "What you sell or offer"],
+                ["audience", "Your customers", "Who you want to reach"],
+                [
+                  "tone",
+                  "Tone of voice",
+                  "For example warm, premium, plain-spoken",
+                ],
+                ["notes", "Anything else", "Facts to use, words to avoid"],
+              ] as const
+            ).map(([k, label, ph]) => (
+              <div
+                key={k}
+                className={`field${k === "tone" ? "" : " theme-wide"}`}
+              >
+                <label htmlFor={`brief-${k}`}>
+                  <span>{label}</span>
+                </label>
+                <textarea
+                  id={`brief-${k}`}
+                  rows={k === "tone" ? 1 : 2}
+                  maxLength={k === "tone" ? 120 : k === "audience" ? 300 : 600}
+                  value={brief[k]}
+                  placeholder={ph}
+                  onChange={e => setBrief({ ...brief, [k]: e.target.value })}
+                />
+              </div>
+            ))}
+          </div>
+          <div className="dialog-actions">
+            <button className="save-btn" disabled={busy} onClick={saveBrief}>
+              Save notes
+            </button>
+          </div>
+          <h3>Prompt for your assistant</h3>
+          <CopyBlock
+            text={d.prompt}
+            label="Prompt for rewriting the site's wording"
+          />
+          <p className="muted">
+            Assistants that support MCP prompts also list it as{" "}
+            <strong>Rewrite this site for my business</strong>. It needs the
+            &quot;Read and write&quot; access level, and it works with the tools{" "}
+            <code>rkb_ai_brief</code>, <code>rkb_copy_extract</code> and{" "}
+            <code>rkb_copy_apply</code>.
+          </p>
+        </section>
+      )}
 
       <section className="dash-card" aria-labelledby="mcp-tools">
         <h2 id="mcp-tools">What it can do ({d.tools.length} tools)</h2>

@@ -8,6 +8,7 @@ import {
   Minus,
   MoveVertical,
   Library,
+  LogIn,
   PanelTop,
   PanelBottom,
   Columns2,
@@ -72,6 +73,9 @@ import { testimonialFields } from "./testimonial/Editor";
 import { contactDefaults, contactProps } from "./contact/schema";
 import { ContactView } from "./contact/View";
 import { contactFields } from "./contact/Editor";
+import { loginDefaults, loginProps } from "./login/schema";
+import { LoginView } from "./login/View";
+import { loginFields } from "./login/Editor";
 import { navbarDefaults, navbarProps } from "./navbar/schema";
 import { NavbarView } from "./navbar/View";
 import { navbarFields } from "./navbar/Editor";
@@ -274,6 +278,16 @@ export const registry: Registry = {
     schema: contactProps,
     View: ContactView,
     fields: contactFields,
+  },
+  login: {
+    type: "login",
+    label: "Sign-in form",
+    icon: LogIn,
+    description: "A branded login that signs people in to WordPress",
+    defaults: loginDefaults,
+    schema: loginProps,
+    View: LoginView,
+    fields: loginFields,
   },
   navbar: {
     type: "navbar",
@@ -523,6 +537,7 @@ export const PALETTE_ORDER: BlockType[] = [
   "divider",
   "testimonial",
   "contact",
+  "login",
   "navbar",
   "coverhero",
   "sitefooter",

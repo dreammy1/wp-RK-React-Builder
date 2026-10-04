@@ -1,0 +1,54 @@
+{
+  "kind": "layout",
+  "description": "Sign-in form: every option, and the defaults (remember me and forgot password shown)",
+  "document": {
+    "version": 1,
+    "blocks": [
+      {
+        "id": "login-1",
+        "type": "login",
+        "props": {
+          "heading": "Welcome back",
+          "intro": "Sign in to manage your site.",
+          "button": "Log in",
+          "remember": false,
+          "forgot": false
+        }
+      },
+      {
+        "id": "login-2",
+        "type": "login",
+        "props": {
+          "heading": "Sign in",
+          "intro": "",
+          "button": "Sign in"
+        }
+      },
+      {
+        "id": "login-3",
+        "type": "login",
+        "props": {
+          "heading": "Welcome back",
+          "intro": "Sign in to continue.",
+          "button": "Sign in",
+          "layout": "split",
+          "side": "right",
+          "imageUrl": "https://cms.example.com/uploads/side.jpg",
+          "imageAlt": "Our showroom",
+          "showBrand": true,
+          "showDetails": true
+        }
+      },
+      {
+        "id": "login-4",
+        "type": "login",
+        "props": {
+          "heading": "Sign in",
+          "intro": "",
+          "button": "Sign in",
+          "layout": "split"
+        }
+      }
+    ]
+  }
+}

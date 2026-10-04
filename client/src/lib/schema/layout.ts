@@ -10,6 +10,7 @@ import { spacerProps } from "@/blocks/spacer/schema";
 import { dividerProps } from "@/blocks/divider/schema";
 import { testimonialProps } from "@/blocks/testimonial/schema";
 import { contactProps } from "@/blocks/contact/schema";
+import { loginProps } from "@/blocks/login/schema";
 import { navbarProps } from "@/blocks/navbar/schema";
 import { coverheroProps } from "@/blocks/coverhero/schema";
 import { sitefooterProps } from "@/blocks/sitefooter/schema";
@@ -51,6 +52,7 @@ export const BlockSchema = z.discriminatedUnion("type", [
   b("divider", dividerProps),
   b("testimonial", testimonialProps),
   b("contact", contactProps),
+  b("login", loginProps),
   b("navbar", navbarProps),
   b("coverhero", coverheroProps),
   b("sitefooter", sitefooterProps),

@@ -509,6 +509,11 @@ export const SiteSettings = z.object({
   tagline: z.string(),
   searchVisible: z.boolean(),
   frontPageId: z.number(),
+  loginPageId: z.number(),
+  loginEnabled: z.boolean(),
+  loginImage: z.string(),
+  loginUrl: z.string(),
+  loginLink: z.string(),
   organization: z.object({
     name: z.string(),
     telephone: z.string(),
@@ -533,6 +538,7 @@ export type SiteSettings = z.infer<typeof SiteSettings>;
 export const SiteSettingsResponse = z.object({
   site: SiteSettings,
   pages: z.array(z.object({ id: z.number(), title: z.string() })),
+  loginPages: z.array(z.object({ id: z.number(), title: z.string() })),
 });
 
 export const VizLead = z.object({
@@ -815,5 +821,27 @@ export const McpAdmin = z.object({
   passwordsOk: z.boolean(),
   profileUrl: z.string(),
   username: z.string(),
+  /** What the owner tells the assistant about the business (used when it rewrites the site's wording). */
+  brief: z
+    .object({
+      about: z.string(),
+      audience: z.string(),
+      tone: z.string(),
+      offers: z.string(),
+      notes: z.string(),
+    })
+    .optional(),
+  prompt: z.string().optional(),
 });
 export type McpAdmin = z.infer<typeof McpAdmin>;
+export type AiBrief = NonNullable<McpAdmin["brief"]>;
+export const AiBriefSaved = z.object({
+  brief: z.object({
+    about: z.string(),
+    audience: z.string(),
+    tone: z.string(),
+    offers: z.string(),
+    notes: z.string(),
+  }),
+  prompt: z.string(),
+});

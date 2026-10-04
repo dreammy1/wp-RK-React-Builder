@@ -33,6 +33,7 @@ require_once __DIR__ . '/render/spacer.php';
 require_once __DIR__ . '/render/divider.php';
 require_once __DIR__ . '/render/testimonial.php';
 require_once __DIR__ . '/render/contact.php';
+require_once __DIR__ . '/render/login.php';
 require_once __DIR__ . '/render/dynamic.php';
 require_once __DIR__ . '/reusable.php';
 
@@ -152,6 +153,7 @@ function rk_builder_block_renderers() {
 		'divider'   => 'rk_builder_render_divider',
 		'testimonial' => 'rk_builder_render_testimonial',
 		'contact'   => 'rk_builder_render_contact',
+		'login'     => 'rk_builder_render_login',
 		'navbar'    => 'rk_builder_render_navbar',
 		'coverhero' => 'rk_builder_render_coverhero',
 		'sitefooter' => 'rk_builder_render_sitefooter',

@@ -28,6 +28,7 @@ type FieldVariant =
       label: string;
       options: { value: string | number; label: string }[];
       numeric?: boolean;
+      help?: string;
     }
   | {
       kind: "checkbox";

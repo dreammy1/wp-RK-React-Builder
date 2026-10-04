@@ -36,6 +36,9 @@ const TYPES = [
 export function SiteSection() {
   const [s, setS] = useState<SiteSettings | null>(null);
   const [pages, setPages] = useState<{ id: number; title: string }[]>([]);
+  const [loginPages, setLoginPages] = useState<{ id: number; title: string }[]>(
+    []
+  );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [note, setNote] = useState("");
@@ -46,6 +49,7 @@ export function SiteSection() {
       .then(r => {
         setS(r.site);
         setPages(r.pages);
+        setLoginPages(r.loginPages);
       })
       .catch(e => setError(describeError(e)));
   }, []);
@@ -94,12 +98,34 @@ export function SiteSection() {
         tagline: s.tagline,
         searchVisible: s.searchVisible,
         frontPageId: s.frontPageId,
+        loginPageId: s.loginPageId,
+        loginEnabled: s.loginEnabled,
+        loginImage: s.loginImage,
         organization: org,
       })
       .then(r => {
         setS(r.site);
         setPages(r.pages);
+        setLoginPages(r.loginPages);
         setNote("Saved. Public pages will refresh in a moment.");
+      })
+      .catch(e => setError(describeError(e)))
+      .finally(() => setBusy(false));
+  };
+
+  const createLogin = () => {
+    setBusy(true);
+    setError("");
+    setNote("");
+    api
+      .createLoginPage()
+      .then(r => {
+        setS(r.site);
+        setPages(r.pages);
+        setLoginPages(r.loginPages);
+        setNote(
+          "Sign-in page created and switched on. Edit it like any page, then try it in a private window."
+        );
       })
       .catch(e => setError(describeError(e)))
       .finally(() => setBusy(false));
@@ -131,6 +157,87 @@ export function SiteSection() {
           {error}
         </p>
       )}
+
+      <section className="dash-card">
+        <h2>Sign-in page</h2>
+        <p className="muted">
+          Use one of your own pages instead of the standard WordPress login.
+          WordPress still checks the password, so security and two-step plugins
+          keep working. Add the “Sign-in form” block to a page to use it here.
+        </p>
+        <div className="field check">
+          <label>
+            <input
+              type="checkbox"
+              checked={s.loginEnabled}
+              disabled={s.loginPageId === 0}
+              onChange={e => setS({ ...s, loginEnabled: e.target.checked })}
+            />{" "}
+            <span>Use the custom sign-in page</span>
+          </label>
+          <small className="muted">
+            {s.loginPageId === 0
+              ? "Choose or create a page below first."
+              : s.loginEnabled
+                ? "On: visitors are sent to your page instead of the WordPress login."
+                : "Off: the standard WordPress login is used. Your page is kept for later."}
+          </small>
+        </div>
+        <div className="form-grid">
+          <div className="field">
+            <label htmlFor="st-login">
+              <span>Login page</span>
+            </label>
+            <select
+              id="st-login"
+              value={s.loginPageId}
+              onChange={e => {
+                const id = Number(e.target.value);
+                setS({
+                  ...s,
+                  loginPageId: id,
+                  loginEnabled: id === 0 ? false : s.loginEnabled,
+                });
+              }}
+            >
+              <option value={0}>WordPress default</option>
+              {loginPages.map(p => (
+                <option key={p.id} value={p.id}>
+                  {p.title || `(untitled ${p.id})`}
+                </option>
+              ))}
+            </select>
+            <small className="muted">
+              Only published pages with the Sign-in form block are listed. Press
+              Save changes after switching it on or off.
+            </small>
+          </div>
+        </div>
+        <ImageField
+          id="st-login-img"
+          label="Sign-in picture"
+          value={s.loginImage}
+          onChange={loginImage => setS({ ...s, loginImage })}
+          help="Shown beside the form in the full-screen layout. A picture set on the block itself is used instead. Use a tall or square photo, at least 1200 px high."
+        />
+        <div className="dash-actions">
+          <button className="top-btn" onClick={createLogin} disabled={busy}>
+            Create a sign-in page
+          </button>
+          {s.loginLink && (
+            <a href={s.loginLink} target="_blank" rel="noreferrer">
+              View the sign-in page
+            </a>
+          )}
+        </div>
+        <small className="muted">
+          Locked out? Open{" "}
+          <code style={{ textTransform: "none" }}>
+            /wp-login.php?rk_login=0
+          </code>{" "}
+          on your site to get the standard WordPress login back.
+        </small>
+      </section>
 
       <section className="dash-card">
         <h2>General</h2>

@@ -214,6 +214,12 @@ function rk_builder_ai_tools() {
 	$add( 'rkb_get_reviews', 'Get reviews', 'Site', 'read', 'Google reviews settings and the reviews shown on the site.', 'GET', '/builder/reviews-admin' );
 	$add( 'rkb_set_review_items', 'Save review list', 'Site', 'write', 'Replace the review list: items [{id, author, rating, text, hidden, ...}].', 'POST', '/builder/reviews-admin/items', array( 'items' => array( 'type' => 'array' ) ), array( 'items' ) );
 
+	// Copy: make the wording about the owner's business
+	$arr = array( 'type' => 'array' );
+	$add( 'rkb_ai_brief', 'Business brief', 'Copy', 'read', 'Who the business is: site name, business details and the owner\'s own notes (about, customers, tone, services). Read this before rewriting any wording.', 'LOCAL', '', array(), array(), 'rk_builder_ai_brief_tool' );
+	$add( 'rkb_copy_extract', 'Read the site wording', 'Copy', 'read', 'Every editable text of the pages, templates (header, footer) and reusable blocks, with each text\'s limit. scope: all|pages|templates|reusables; id + kind for one document; includeSeo adds each page\'s search title and description; offset/limit page through (next tells where to continue).', 'LOCAL', '', array( 'scope' => $str, 'kind' => $str, 'id' => $int, 'includeSeo' => $bool, 'offset' => $int, 'limit' => $int ), array(), 'rk_builder_copy_extract' );
+	$add( 'rkb_copy_apply', 'Write rewritten wording (drafts)', 'Copy', 'write', 'Save rewritten texts as DRAFTS (the live site does not change). edits: [{kind: page|template|reusable, id, blockId, prop, text}]; seo: [{id, title, description}]. Use dryRun first. Texts are checked against their limits; list-style texts must keep their lines and every link, address and colour. Skipped edits come back with the reason.', 'LOCAL', '', array( 'edits' => $arr, 'seo' => $arr, 'dryRun' => $bool ), array(), 'rk_builder_copy_apply' );
+
 	$T = apply_filters( 'rk_builder_mcp_tools', $T );
 	return is_array( $T ) ? $T : array();
 }
@@ -327,6 +333,7 @@ function rk_builder_ai_rpc_error( $id, $code, $message ) { return array( 'jsonrp
 function rk_builder_ai_instructions() {
 	return "RK Builder manages a WordPress site made of pages (each a layout of blocks), content types and entries, templates, media, reusable blocks and site settings.\n"
 		. "Start with rkb_overview. To build or change a page: rkb_block_catalog (what blocks exist), rkb_get_layout (current draft and revision), then rkb_save_layout with status \"draft\" and expectedRevision, then rkb_publish with the revision you saved. A save that returns a conflict means someone else changed the page: read it again and redo your edit.\n"
+		. "To make a site's wording about the owner's business (for example after installing a kit): rkb_ai_brief, rkb_copy_extract, then rkb_copy_apply (dryRun first). It saves drafts only; the owner reviews and publishes. The prompt \"rewrite-site-copy\" has the full steps.\n"
 		. "Read before you write, change one thing at a time, and tell the user what you changed. Deleting is only available at the full access level.";
 }
 
@@ -341,7 +348,7 @@ function rk_builder_ai_dispatch( $msg ) {
 			$proto = isset( $params['protocolVersion'] ) && is_string( $params['protocolVersion'] ) && '' !== $params['protocolVersion'] ? $params['protocolVersion'] : RK_BUILDER_MCP_PROTO;
 			return rk_builder_ai_rpc_result( $id, array(
 				'protocolVersion' => $proto,
-				'capabilities'    => array( 'tools' => array( 'listChanged' => false ) ),
+				'capabilities'    => array( 'tools' => array( 'listChanged' => false ), 'prompts' => array( 'listChanged' => false ) ),
 				'serverInfo'      => array( 'name' => 'rk-builder', 'version' => defined( 'RK_BUILDER_VERSION' ) ? RK_BUILDER_VERSION : '1' ),
 				'instructions'    => rk_builder_ai_instructions(),
 			) );
@@ -354,7 +361,14 @@ function rk_builder_ai_dispatch( $msg ) {
 				if ( rk_builder_ai_tool_allowed( $tool, $level ) ) { $list[] = rk_builder_ai_describe( $name, $tool ); }
 			}
 			return rk_builder_ai_rpc_result( $id, array( 'tools' => $list ) );
-		case 'tools/call':
+		case 'prompts/list':
+				return rk_builder_ai_rpc_result( $id, array( 'prompts' => rk_builder_ai_prompts() ) );
+			case 'prompts/get':
+				$pname = isset( $params['name'] ) ? (string) $params['name'] : '';
+				if ( 'rewrite-site-copy' !== $pname ) { return rk_builder_ai_rpc_error( $id, -32602, 'Unknown prompt: ' . $pname ); }
+				$pargs = isset( $params['arguments'] ) && is_array( $params['arguments'] ) ? $params['arguments'] : array();
+				return rk_builder_ai_rpc_result( $id, array( 'description' => 'Rewrite this site for your business', 'messages' => array( array( 'role' => 'user', 'content' => array( 'type' => 'text', 'text' => rk_builder_ai_rewrite_prompt( $pargs ) ) ) ) ) );
+			case 'tools/call':
 			$name = isset( $params['name'] ) ? (string) $params['name'] : '';
 			$args = isset( $params['arguments'] ) && is_array( $params['arguments'] ) ? $params['arguments'] : array();
 			$r    = rk_builder_ai_run( $name, $args );
@@ -431,7 +445,24 @@ function rk_builder_ai_payload() {
 		'passwordsOk'   => function_exists( 'wp_is_application_passwords_available' ) ? (bool) wp_is_application_passwords_available() : false,
 		'profileUrl'    => admin_url( 'profile.php#application-passwords-section' ),
 		'username'      => $u && isset( $u->user_login ) ? (string) $u->user_login : '',
+		'brief'         => rk_builder_ai_brief(),
+		'prompt'        => rk_builder_ai_rewrite_prompt(),
 	);
+}
+
+function rk_builder_handle_set_ai_brief( $req ) {
+	$too_big = rk_builder_check_payload( $req );
+	if ( $too_big ) { return $too_big; }
+	$body = rk_builder_json_body( $req, 'rk_invalid_brief' );
+	if ( is_wp_error( $body ) ) { return $body; }
+	$issues = array();
+	foreach ( $body as $k => $v ) {
+		if ( ! isset( rk_builder_ai_brief_fields()[ (string) $k ] ) ) { rk_builder_add_issue( $issues, (string) $k, 'Unrecognized key "' . $k . '"' ); }
+		elseif ( ! is_string( $v ) || rk_builder_strlen( $v ) > rk_builder_ai_brief_fields()[ $k ] ) { rk_builder_add_issue( $issues, (string) $k, 'Up to ' . rk_builder_ai_brief_fields()[ $k ] . ' characters' ); }
+	}
+	if ( $issues ) { return rk_builder_invalid( 'rk_invalid_brief', $issues ); }
+	$brief = rk_builder_ai_brief_save( $body );
+	return rk_builder_no_store( array( 'brief' => $brief, 'prompt' => rk_builder_ai_rewrite_prompt() ) );
 }
 
 function rk_builder_handle_get_mcp( $req ) { return rk_builder_no_store( rk_builder_ai_payload() ); }
@@ -479,6 +510,7 @@ function rk_builder_handle_revoke_mcp_key( $req ) {
 }
 
 function rk_builder_register_mcp_routes( $ns ) {
+	register_rest_route( $ns, '/builder/mcp/brief', array( 'methods' => 'POST', 'callback' => 'rk_builder_handle_set_ai_brief', 'permission_callback' => 'rk_builder_perm_theme_write' ) );
 	register_rest_route( $ns, '/builder/mcp/keys', array( 'methods' => 'POST', 'callback' => 'rk_builder_handle_create_mcp_key', 'permission_callback' => 'rk_builder_perm_theme_write' ) );
 	register_rest_route( $ns, '/builder/mcp/keys/(?P<id>[a-f0-9]{10})/revoke', array( 'methods' => 'POST', 'callback' => 'rk_builder_handle_revoke_mcp_key', 'permission_callback' => 'rk_builder_perm_theme_write' ) );
 	register_rest_route( $ns, '/builder-mcp', array(

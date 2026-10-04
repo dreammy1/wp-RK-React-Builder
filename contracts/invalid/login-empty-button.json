@@ -1,0 +1,14 @@
+{
+  "kind": "layout",
+  "description": "Sign-in form needs a button label",
+  "document": {
+    "version": 1,
+    "blocks": [
+      {
+        "id": "login-1",
+        "type": "login",
+        "props": { "heading": "Sign in", "intro": "", "button": "" }
+      }
+    ]
+  }
+}

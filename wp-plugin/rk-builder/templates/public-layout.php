@@ -11,9 +11,10 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 
 $rk_page  = rk_builder_current_request_page();
 $rk_theme = rk_builder_get_theme();
-$rk_ctx   = $rk_page ? array( 'page_id' => (int) $rk_page['page']->ID, 'preview' => false ) : array();
+$rk_ctx   = $rk_page ? array( 'page_id' => (int) $rk_page['page']->ID, 'preview' => false, 'rk_live' => true ) : array();
 // A live header / footer template (Templates > Header, Footer) replaces the page's own navbar / footer blocks.
-$rk_parts = $rk_page ? rk_builder_tpl_apply_parts( $rk_page['layout'], $rk_ctx ) : array( 'layout' => array(), 'ctx' => $rk_ctx, 'header' => '', 'footer' => '', 'has_header' => false, 'has_footer' => false );
+$rk_full  = $rk_page && function_exists( 'rk_builder_login_fullscreen_layout' ) && rk_builder_login_enabled() && rk_builder_login_fullscreen_layout( $rk_page['layout'] );
+$rk_parts = $rk_page && ! $rk_full ? rk_builder_tpl_apply_parts( $rk_page['layout'], $rk_ctx ) : array( 'layout' => $rk_page ? $rk_page['layout'] : array(), 'ctx' => $rk_ctx, 'header' => '', 'footer' => '', 'has_header' => false, 'has_footer' => false );
 $rk_html  = $rk_page ? rk_builder_render_layout( $rk_parts['layout'], $rk_parts['ctx'] ) : '';
 // A layout that brings its own header / footer blocks (navbar, sitefooter, or a reusable that holds one) replaces the default chrome.
 $rk_has = function ( $type ) use ( $rk_page ) {
@@ -40,9 +41,9 @@ $rk_has = function ( $type ) use ( $rk_page ) {
 if ( function_exists( 'wp_body_open' ) ) { wp_body_open(); }
 // All fragments below are escaped by the renderer (see includes/renderer.php).
 echo '<div class="site-root rk-root">';
-if ( $rk_parts['has_header'] ) { echo $rk_parts['header']; } elseif ( ! $rk_has( 'navbar' ) ) { echo rk_builder_site_header_html( $rk_theme ); } // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+if ( $rk_full ) { echo ''; } elseif ( $rk_parts['has_header'] ) { echo $rk_parts['header']; } elseif ( ! $rk_has( 'navbar' ) ) { echo rk_builder_site_header_html( $rk_theme ); } // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 echo '<main id="main">' . $rk_html . '</main>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-if ( $rk_parts['has_footer'] ) { echo $rk_parts['footer']; } elseif ( ! $rk_has( 'sitefooter' ) ) { echo rk_builder_site_footer_html( $rk_theme ); } // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+if ( $rk_full ) { echo ''; } elseif ( $rk_parts['has_footer'] ) { echo $rk_parts['footer']; } elseif ( ! $rk_has( 'sitefooter' ) ) { echo rk_builder_site_footer_html( $rk_theme ); } // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 echo '</div>';
 wp_footer();
 ?>

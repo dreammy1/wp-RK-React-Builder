@@ -1642,3 +1642,298 @@ test("21 · gallery: the live page honours columns, shape, captions, filters and
   await page.keyboard.press("Escape");
   await expect(box).toBeHidden();
 });
+
+test("22 · AI copy rewriting: save a brief, read the wording, write drafts through MCP; the live page stays as it was", async ({
+  page,
+}) => {
+  await login(page, AIO.admin, AIO.adminPass);
+  await page.goto(builderUrl());
+  const rpc = async (method: string, params: unknown = {}) => {
+    const r = await wpFetch(page, "builder-mcp", {
+      method: "POST",
+      json: { jsonrpc: "2.0", id: 1, method, params },
+    });
+    return r as { status: number; json: any }; // eslint-disable-line @typescript-eslint/no-explicit-any
+  };
+  const call = async (name: string, args: unknown = {}) => {
+    const r = await rpc("tools/call", { name, arguments: args });
+    return JSON.parse(r.json.result.content[0].text);
+  };
+
+  // a published page with wording about the "demo" business
+  const made = await wpFetch(page, "builder/site-import", {
+    method: "POST",
+    json: {
+      options: { dryRun: false },
+      bundle: {
+        format: "rk-builder-site",
+        version: 1,
+        source: { url: "https://old.example.com/" },
+        theme: null,
+        content: [],
+        media: [],
+        pages: [
+          {
+            slug: "copy-check",
+            title: "Copy Check",
+            wasPublished: true,
+            layout: {
+              version: 1,
+              blocks: [
+                {
+                  id: "hero-1",
+                  type: "hero",
+                  props: {
+                    heading: "Welcome to Demo Floors",
+                    sub: "Hardwood since 1999",
+                    cta: "Call now",
+                    ctaHref: "/contact",
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  });
+  expect(made.status).toBe(200);
+  const list = await wpFetch(page, "builder/pages?search=Copy%20Check");
+  const pg = (list.json as { pages: { id: number; revision: number }[] })
+    .pages[0]!;
+  await wpFetch(page, `builder/publish/${pg.id}`, {
+    method: "POST",
+    json: { expectedRevision: pg.revision },
+  });
+
+  // switch MCP on (write level) and save the brief from the dashboard
+  await wpFetch(page, "builder/mcp", {
+    method: "POST",
+    json: { enabled: true, level: "write" },
+  });
+  await page.reload();
+  await page
+    .getByRole("complementary", { name: "Dashboard" })
+    .getByRole("button", { name: "AI & MCP", exact: true })
+    .click();
+  const sec = page.getByRole("region", {
+    name: /Rewrite your site.s wording with AI/,
+  });
+  await sec
+    .getByLabel("About your business")
+    .fill("A family flooring company in Peoria");
+  await sec.getByLabel("Tone of voice").fill("warm and plain-spoken");
+  await sec.getByRole("button", { name: "Save notes" }).click();
+  await expect(page.getByText(/Saved\. The prompt below/)).toBeVisible();
+  await expect(
+    sec.getByLabel("Prompt for rewriting the site's wording")
+  ).toContainText("A family flooring company in Peoria");
+
+  // the assistant: prompt, brief, read, dry run, write
+  const prompts = await rpc("prompts/list");
+  expect(prompts.json.result.prompts[0].name).toBe("rewrite-site-copy");
+  const brief = await call("rkb_ai_brief");
+  expect(brief.brief.tone).toBe("warm and plain-spoken");
+  const ex = await call("rkb_copy_extract", {
+    scope: "pages",
+    includeSeo: true,
+  });
+  const doc = ex.documents.find((d: { id: number }) => d.id === pg.id);
+  expect(
+    doc.blocks[0].fields.some(
+      (f: { prop: string; text: string }) =>
+        f.prop === "heading" && f.text === "Welcome to Demo Floors"
+    )
+  ).toBe(true);
+  expect(
+    doc.blocks[0].fields.some((f: { prop: string }) => f.prop === "ctaHref")
+  ).toBe(false);
+
+  const edits = [
+    {
+      kind: "page",
+      id: pg.id,
+      blockId: "hero-1",
+      prop: "heading",
+      text: "Welcome to Zed Floors",
+    },
+    {
+      kind: "page",
+      id: pg.id,
+      blockId: "hero-1",
+      prop: "ctaHref",
+      text: "https://evil.example/",
+    },
+  ];
+  const dry = await call("rkb_copy_apply", { edits, dryRun: true });
+  expect(dry.applied).toBe(1);
+  expect(dry.skipped).toHaveLength(1);
+  const done = await call("rkb_copy_apply", {
+    edits,
+    seo: [
+      {
+        id: pg.id,
+        title: "Zed Floors",
+        description: "Hardwood floors in Peoria",
+      },
+    ],
+  });
+  expect(done.applied).toBe(3);
+  expect(done.documents[0].saved).toBe(true);
+
+  // the draft changed; the link did not; the live page is still the old wording
+  const lay = await wpFetch(page, `builder/layout/${pg.id}`);
+  const props = (
+    lay.json as { layout: { blocks: { props: Record<string, string> }[] } }
+  ).layout.blocks[0]!.props;
+  expect(props.heading).toBe("Welcome to Zed Floors");
+  expect(props.ctaHref).toBe("/contact");
+  await page.goto(`${AIO.wp}/?page_id=${pg.id}`);
+  await expect(page.locator(".site-root h1").first()).toContainText(
+    "Demo Floors"
+  );
+
+  // the search text was saved too
+  await page.goto(builderUrl());
+  const seo = await wpFetch(page, `builder/pages/${pg.id}/seo`);
+  expect((seo.json as { seo: { title: string } }).seo.title).toBe("Zed Floors");
+});
+
+test("23 · custom sign-in page: wp-login.php sends people to it, a wrong password comes back with a message, a right one gets in; ?rk_login=0 keeps the WordPress login", async ({
+  page,
+  browser,
+}) => {
+  await login(page, AIO.admin, AIO.adminPass);
+  await page.goto(builderUrl());
+  try {
+    await wpFetch(page, "builder/site", {
+      method: "POST",
+      json: {
+        loginImage: `${AIO.wp}/wp-content/uploads/sign-in-side.png`,
+        organization: {
+          name: "Demo Floors",
+          telephone: "+1 555 0100",
+          street: "1 Main St",
+          city: "Peoria",
+          region: "IL",
+        },
+      },
+    });
+    // create the page from Site & SEO
+    await page
+      .getByRole("complementary", { name: "Dashboard" })
+      .getByRole("button", { name: "Site & SEO", exact: true })
+      .click();
+    await page.getByRole("button", { name: "Create a sign-in page" }).click();
+    await expect(
+      page.getByText(/Sign-in page created and switched on/)
+    ).toBeVisible();
+    await expect(page.locator("#st-login")).not.toHaveValue("0");
+
+    // a visitor opening wp-login.php lands on the branded page
+    const anon = await (await browser.newContext()).newPage();
+    await anon.goto("/wp-login.php");
+    await expect(anon).toHaveURL(/\/sign-in\/?(\?|$)/);
+    await expect(anon.locator("form.site-login-form")).toBeVisible();
+    const resp = await anon.request.get(anon.url());
+    expect(resp.headers()["x-robots-tag"]).toMatch(/noindex/);
+    expect(resp.headers()["cache-control"]).toMatch(/no-cache|no-store/);
+    const serious = (
+      await new AxeBuilder({ page: anon }).include(".site-login").analyze()
+    ).violations.filter(v => v.impact === "serious" || v.impact === "critical");
+    expect(
+      serious.map(v => `${v.id}: ${v.nodes[0]?.target.join(" ")}`)
+    ).toEqual([]);
+
+    // full screen: a picture side and a form side, the site's logo or name, no theme header or footer
+    await expect(anon.locator(".site-login.is-split")).toBeVisible();
+    await expect(anon.locator(".site-login-media")).toBeVisible();
+    await expect(anon.locator(".site-login-media img")).toHaveAttribute(
+      "src",
+      /sign-in-side\.png/
+    );
+    await expect(anon.locator(".site-login-brand")).toBeVisible();
+    await expect(anon.locator(".site-login-details")).toContainText("Peoria");
+    await expect(anon.locator(".site-login-details")).toContainText("555");
+    const box = await anon.locator(".site-login").boundingBox();
+    expect(box!.height).toBeGreaterThanOrEqual(anon.viewportSize()!.height - 1);
+    const cols = await anon.evaluate(
+      () =>
+        getComputedStyle(
+          document.querySelector(".site-login")!
+        ).gridTemplateColumns.split(" ").length
+    );
+    expect(cols).toBe(2);
+    await expect(anon.locator("header")).toHaveCount(0);
+    await expect(anon.locator("footer")).toHaveCount(0);
+
+    // wrong password: back on the branded page with one fixed message
+    await anon.locator('input[name="log"]').fill(AIO.admin);
+    await anon.locator('input[name="pwd"]').fill("definitely-wrong");
+    await anon.locator(".site-login-btn").click();
+    await expect(anon).toHaveURL(/\/sign-in\/?\?.*rk_login_error=1/);
+    await expect(anon.locator(".site-login-msg.is-error")).toBeVisible();
+    await expect(anon.locator(".site-login-msg")).not.toContainText(AIO.admin);
+
+    // the standard WordPress login is still there on request, and its other screens carry the site's colours
+    await anon.goto("/wp-login.php?rk_login=0");
+    await expect(anon.locator("#loginform")).toBeVisible();
+    await anon.goto("/wp-login.php?action=lostpassword");
+    await expect(anon.locator("#lostpasswordform")).toBeVisible();
+    await expect(anon.locator("style#rk-login-screen")).toHaveCount(1);
+
+    // switch it off from Site & SEO: the WordPress login comes back; the page is kept; switch it on again
+    await page.reload();
+    await page
+      .getByRole("complementary", { name: "Dashboard" })
+      .getByRole("button", { name: "Site & SEO", exact: true })
+      .click();
+    const useIt = page.getByLabel("Use the custom sign-in page");
+    await expect(useIt).toBeChecked();
+    await useIt.uncheck();
+    await page.getByRole("button", { name: "Save changes" }).click();
+    await expect(page.getByText(/Saved/)).toBeVisible();
+    await anon.goto("/wp-login.php");
+    await expect(anon.locator("#loginform")).toBeVisible();
+    await expect(anon).toHaveURL(/wp-login\.php/);
+    await expect(page.locator("#st-login")).not.toHaveValue("0");
+    await useIt.check();
+    await page.getByRole("button", { name: "Save changes" }).click();
+    await expect(page.getByText(/Saved/)).toBeVisible();
+    await anon.goto("/wp-login.php");
+    await expect(anon).toHaveURL(/\/sign-in\/?(\?|$)/);
+
+    // a protected admin address sends people to the sign-in page and brings them back after signing in
+    await anon.goto("/wp-admin/upload.php");
+    await expect(anon).toHaveURL(/\/sign-in\/?\?.*redirect_to=/);
+    await anon.locator('input[name="log"]').fill(AIO.admin);
+    await anon.locator('input[name="pwd"]').fill(AIO.adminPass);
+    await anon.locator(".site-login-btn").click();
+    await anon.waitForURL(/wp-admin\/upload\.php/);
+
+    // signed in, the page shows who you are instead of the form
+    await anon.goto("/sign-in/");
+    await expect(anon.locator(".site-login-done")).toContainText(
+      "Signed in as"
+    );
+    await expect(anon.locator(".site-login-avatar")).toBeVisible();
+    await expect(anon.locator("form.site-login-form")).toHaveCount(0);
+    await anon.close();
+
+    // a plain sign-in with no destination lands editors on the builder
+    const again = await (await browser.newContext()).newPage();
+    await again.goto("/sign-in/");
+    await again.locator('input[name="log"]').fill(AIO.admin);
+    await again.locator('input[name="pwd"]').fill(AIO.adminPass);
+    await again.locator(".site-login-btn").click();
+    await again.waitForURL(/page=rk-builder/);
+    await again.close();
+  } finally {
+    // leave WordPress's own login in place for anything that runs after this
+    await page.goto(builderUrl());
+    await wpFetch(page, "builder/site", {
+      method: "POST",
+      json: { loginPageId: 0, loginImage: "" },
+    });
+  }
+});

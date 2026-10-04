@@ -538,6 +538,12 @@ export function ThemeEngine({
             <p>{hiddenNote(view.report, false)}</p>
           )}
           <Summary r={view.report} />
+          <p className="muted">
+            The pages still use the demo&apos;s wording. Open{" "}
+            <strong>AI &amp; MCP</strong> in the dashboard to have an AI
+            assistant rewrite it for your business (saved as drafts for you to
+            review).
+          </p>
           {view.report.undo && (
             <p className="muted">
               Not what you wanted? <strong>Undo this install</strong> puts the

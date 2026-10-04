@@ -1,0 +1,19 @@
+{
+  "kind": "layout",
+  "description": "Sign-in layout must be card or split",
+  "document": {
+    "version": 1,
+    "blocks": [
+      {
+        "id": "login-1",
+        "type": "login",
+        "props": {
+          "heading": "Sign in",
+          "intro": "",
+          "button": "Sign in",
+          "layout": "fullscreen"
+        }
+      }
+    ]
+  }
+}

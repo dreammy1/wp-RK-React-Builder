@@ -21,6 +21,7 @@ export const BLOCK_TYPES = [
   "divider",
   "testimonial",
   "contact",
+  "login",
   "navbar",
   "coverhero",
   "sitefooter",

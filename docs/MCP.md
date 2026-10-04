@@ -48,6 +48,25 @@ To build a page the assistant reads `rkb_block_catalog` (every block type with i
 `rkb_get_layout`, `rkb_save_layout` (a draft, with `expectedRevision`) and, when you ask, `rkb_publish`. A
 conflict means someone else changed the page; it reads again and redoes the edit.
 
+## Rewrite a kit's wording for your business
+
+After installing a kit its text is about the demo business. Let an assistant fix that:
+
+1. **AI & MCP → Rewrite your site's wording with AI**: write a few lines about your business (what you do, customers,
+   services, tone) and **Save notes**. The same card shows the prompt to give your assistant.
+2. The assistant works with three tools (and the MCP prompt **rewrite-site-copy**, which holds the steps):
+   - `rkb_ai_brief`: your notes, the site name and your business details. It must use only these facts.
+   - `rkb_copy_extract`: every editable text of the pages, header/footer templates and reusable blocks, each with its
+     length limit, a `structured` flag for list-style texts, and (with `includeSeo`) each page's search title and
+     description. It pages through the site (`offset`, `next`).
+   - `rkb_copy_apply`: writes the new wording back as **drafts**. `dryRun` checks first.
+3. You review the drafts in the editor and publish.
+
+What it cannot do, by design: change links, pictures, colours or settings (only plain-text props are editable); change
+the shape of a list-style text (same number of lines and fields, and every address, `tel:`/`mailto:` link and colour
+stays as it was); exceed a text's limit; publish anything. Every changed page is validated as a whole and saved through
+the normal draft route, so it appears in the page's history and can be restored. Needs the **Read and write** level.
+
 ## Safety
 
 - Off until an administrator enables it; one switch turns it off again.

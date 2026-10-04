@@ -298,6 +298,11 @@ function rk_builder_site_settings() {
 		'tagline'       => (string) get_bloginfo( 'description' ),
 		'searchVisible' => '0' !== (string) get_option( 'blog_public', '1' ),
 		'frontPageId'   => $front,
+		'loginPageId'   => rk_builder_login_page_id(),
+		'loginEnabled'  => rk_builder_login_enabled(),
+		'loginImage'    => (string) get_option( RK_BUILDER_LOGIN_IMAGE_OPTION, '' ),
+		'loginUrl'      => rk_builder_login_page_url(),
+		'loginLink'     => rk_builder_login_page_link(),
 		'organization'  => rk_builder_org_payload( $org ),
 	);
 }
@@ -307,11 +312,11 @@ function rk_builder_handle_get_site( $req ) {
 	foreach ( rk_builder_dash_all_pages() as $p ) {
 		if ( 'publish' === $p->post_status ) { $pages[] = array( 'id' => (int) $p->ID, 'title' => rk_builder_plain( get_the_title( $p ) ) ); }
 	}
-	return rk_builder_no_store( array( 'site' => rk_builder_site_settings(), 'pages' => $pages ) );
+	return rk_builder_no_store( array( 'site' => rk_builder_site_settings(), 'pages' => $pages, 'loginPages' => rk_builder_login_candidates() ) );
 }
 
 function rk_builder_handle_set_site( $req ) {
-	$body = rk_builder_dash_body( $req, array( 'name', 'tagline', 'searchVisible', 'frontPageId', 'organization' ), 'rk_invalid_site' );
+	$body = rk_builder_dash_body( $req, array( 'name', 'tagline', 'searchVisible', 'frontPageId', 'loginPageId', 'loginEnabled', 'loginImage', 'organization' ), 'rk_invalid_site' );
 	if ( is_wp_error( $body ) ) { return $body; }
 	if ( isset( $body['name'] ) ) {
 		$n = rk_builder_theme_text( $body['name'], 120 );
@@ -332,6 +337,29 @@ function rk_builder_handle_set_site( $req ) {
 			}
 			rk_builder_set_front_page( $fid );
 		}
+	}
+	if ( array_key_exists( 'loginPageId', $body ) ) {
+		$lid = is_int( $body['loginPageId'] ) ? $body['loginPageId'] : -1;
+		if ( 0 === $lid ) {
+			delete_option( RK_BUILDER_LOGIN_OPTION );
+		} else {
+			$rk = $lid > 0 ? rk_builder_public_page( $lid ) : null;
+			if ( null === $rk || ! rk_builder_layout_has_login( $rk['layout'] ) ) {
+				return rk_builder_invalid( 'rk_invalid_site', array( array( 'path' => 'loginPageId', 'message' => 'Choose a published page that has the Sign-in form block, or create one.' ) ) );
+			}
+			update_option( RK_BUILDER_LOGIN_OPTION, $lid );
+		}
+	}
+	if ( array_key_exists( 'loginImage', $body ) ) {
+		$img = is_string( $body['loginImage'] ) ? trim( $body['loginImage'] ) : null;
+		if ( null === $img || ( '' !== $img && ! rk_builder_is_safe_image_url( $img, null ) ) ) {
+			return rk_builder_invalid( 'rk_invalid_site', array( array( 'path' => 'loginImage', 'message' => 'Use an image from the media library or an http(s) image address.' ) ) );
+		}
+		if ( '' === $img ) { delete_option( RK_BUILDER_LOGIN_IMAGE_OPTION ); } else { update_option( RK_BUILDER_LOGIN_IMAGE_OPTION, esc_url_raw( $img, array( 'http', 'https' ) ) ); }
+	}
+	if ( array_key_exists( 'loginEnabled', $body ) ) {
+		if ( ! is_bool( $body['loginEnabled'] ) ) { return rk_builder_invalid( 'rk_invalid_site', array( array( 'path' => 'loginEnabled', 'message' => 'Expected true or false' ) ) ); }
+		update_option( RK_BUILDER_LOGIN_ENABLED_OPTION, $body['loginEnabled'] ? '1' : '0' );
 	}
 	if ( isset( $body['organization'] ) ) { rk_builder_seo_organization_save( $body['organization'] ); }
 	if ( function_exists( 'rk_builder_purge_all_public_cache' ) ) { rk_builder_purge_all_public_cache(); }
@@ -455,6 +483,7 @@ function rk_builder_register_dashboard_routes( $ns ) {
 		array( 'methods' => 'GET', 'callback' => 'rk_builder_handle_get_page_seo', 'permission_callback' => $edit, 'args' => $id ),
 		array( 'methods' => 'POST', 'callback' => 'rk_builder_handle_set_page_seo', 'permission_callback' => $edit, 'args' => $id ),
 	) );
+	register_rest_route( $ns, '/builder/login/create', array( 'methods' => 'POST', 'callback' => 'rk_builder_handle_create_login_page', 'permission_callback' => $admin ) );
 	register_rest_route( $ns, '/builder/site', array(
 		array( 'methods' => 'GET', 'callback' => 'rk_builder_handle_get_site', 'permission_callback' => $admin ),
 		array( 'methods' => 'POST', 'callback' => 'rk_builder_handle_set_site', 'permission_callback' => $admin ),

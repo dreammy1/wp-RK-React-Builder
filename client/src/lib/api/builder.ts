@@ -22,6 +22,8 @@ import {
   SiteSettingsResponse,
   GlobalResponse,
   McpAdmin,
+  AiBriefSaved,
+  type AiBrief,
   type McpLevel,
   type GlobalSettings,
   type SiteSettings,
@@ -342,6 +344,8 @@ export const api = {
       method: "POST",
       body: patch,
     }),
+  createLoginPage: () =>
+    request("builder/login/create", SiteSettingsResponse, { method: "POST" }),
   getGlobal: () => request("builder/global", GlobalResponse),
   setGlobal: (patch: Partial<GlobalSettings>) =>
     request("builder/global", GlobalResponse, { method: "POST", body: patch }),
@@ -351,6 +355,11 @@ export const api = {
     level?: McpLevel;
     clearLog?: boolean;
   }) => request("builder/mcp", McpAdmin, { method: "POST", body: patch }),
+  saveAiBrief: (brief: AiBrief) =>
+    request("builder/mcp/brief", AiBriefSaved, {
+      method: "POST",
+      body: brief,
+    }),
   createMcpKey: (name: string, level: McpLevel) =>
     request("builder/mcp/keys", McpAdmin, {
       method: "POST",

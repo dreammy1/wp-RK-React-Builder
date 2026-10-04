@@ -3803,3 +3803,15 @@ input[type="checkbox"].row-check:indeterminate::after {
     height: 44px;
   }
 }
+
+/* Sign-in block in the editor: the logo and business details are filled in on the live page. */
+.canvas-block .site-login-brand:empty::before {
+  content: "Your logo or site name";
+  font-size: 13px;
+  opacity: 0.6;
+}
+.canvas-block .site-login-details:empty::before {
+  content: "Your address, phone, email and hours";
+  font-size: 13px;
+  opacity: 0.6;
+}
