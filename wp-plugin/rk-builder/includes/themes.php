@@ -438,4 +438,5 @@ function rk_builder_register_theme_routes( $ns ) {
 		'methods' => 'POST', 'callback' => 'rk_builder_handle_theme_undo', 'permission_callback' => $perm,
 	) );
 	rk_builder_register_kit_routes( $ns );
+	rk_builder_register_library_routes( $ns );
 }

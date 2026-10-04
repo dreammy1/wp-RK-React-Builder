@@ -320,7 +320,17 @@ function rk_builder_handle_kit_upload( $req ) {
 		$big = in_array( (int) $file['error'], array( UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE ), true );
 		return rk_builder_error( $big ? 'rk_payload_too_large' : 'rk_invalid_kit', $big ? 'The kit is larger than this server accepts. Ask your host to raise upload_max_filesize, or install the kit from a smaller file.' : 'The upload failed. Try again.', $big ? 413 : 400 );
 	}
-	$open = rk_builder_kit_open( (string) $file['tmp_name'] );
+	$added = rk_builder_kit_add_file( (string) $file['tmp_name'] );
+	return is_wp_error( $added ) ? $added : rk_builder_no_store( array( 'theme' => rk_builder_kit_public_summary( $added['theme'] ), 'check' => $added['check'] ) );
+}
+
+/**
+ * Check a kit zip on disk and add it to the library (shared by the upload and the Kit Library download).
+ *
+ * @return array{theme:array,check:array}|WP_Error
+ */
+function rk_builder_kit_add_file( $path, $library_id = '' ) {
+	$open = rk_builder_kit_open( $path );
 	if ( is_wp_error( $open ) ) { return $open; }
 	$open['zip']->close();
 	$meta = rk_builder_kit_meta_clean( $open['manifest'] );
@@ -331,8 +341,17 @@ function rk_builder_handle_kit_upload( $req ) {
 	if ( empty( $report['pages']['create'] ) && empty( $report['pages']['update'] ) ) {
 		return rk_builder_invalid( 'rk_invalid_kit', array( array( 'path' => 'pages', 'message' => 'The kit has no usable pages.' ) ), 'There is nothing in this kit to install.' );
 	}
-	$saved = rk_builder_kit_store( rk_builder_theme_pick_slug( $meta['name'] ), $open['bundle'], $meta, (string) $file['tmp_name'], $open['manifest'] );
-	return is_wp_error( $saved ) ? $saved : rk_builder_no_store( array( 'theme' => rk_builder_kit_public_summary( $saved ), 'check' => $report ) );
+	$saved = rk_builder_kit_store( rk_builder_theme_pick_slug( $meta['name'] ), $open['bundle'], $meta, $path, $open['manifest'] );
+	if ( is_wp_error( $saved ) ) { return $saved; }
+	if ( '' !== $library_id ) {
+		$index = rk_builder_themes_index();
+		if ( isset( $index[ $saved['slug'] ] ) ) {
+			$index[ $saved['slug'] ]['libraryId'] = $library_id;
+			update_option( 'rk_builder_theme_index', $index, false );
+			$saved['libraryId'] = $library_id;
+		}
+	}
+	return array( 'theme' => $saved, 'check' => $report );
 }
 
 function rk_builder_register_kit_routes( $ns ) {

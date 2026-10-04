@@ -1481,3 +1481,59 @@ test("19 · design system: a style preset changes the editor canvas; saved token
     },
   });
 });
+
+test("20 · kit library: connect needs https, an unreachable library is explained and stays connected, disconnect forgets it", async ({
+  page,
+}) => {
+  await login(page, AIO.admin, AIO.adminPass);
+  await page.goto(builderUrl());
+  const dash = page.getByRole("complementary", { name: "Dashboard" });
+  await dash.getByRole("button", { name: "Themes", exact: true }).click();
+  const lib = page.getByRole("region", { name: "Kit Library" });
+  await expect(lib.getByLabel("Library address")).toBeVisible();
+
+  // http is refused by the server
+  await lib
+    .getByLabel("Library address")
+    .fill("http://kits.example.com/index.json");
+  await lib.getByRole("button", { name: "Connect", exact: true }).click();
+  await expect(lib.getByRole("alert")).toContainText("https://");
+
+  // https is accepted; this site cannot reach the made-up host, and says so while staying connected
+  await lib
+    .getByLabel("Library address")
+    .fill("https://rk-kits.invalid/index.json");
+  await lib.getByLabel(/Licence key/).fill("KEY-SHOULD-NOT-COME-BACK");
+  await lib.getByRole("button", { name: "Connect", exact: true }).click();
+  await expect(lib.getByRole("alert")).toContainText(/Could not reach/, {
+    timeout: 60_000,
+  });
+  await expect(lib.getByRole("button", { name: "Disconnect" })).toBeVisible();
+  const view = await wpFetch(page, "builder/library");
+  expect(JSON.stringify(view.json)).not.toContain("KEY-SHOULD-NOT-COME-BACK");
+  expect((view.json as { hasKey: boolean }).hasKey).toBe(true);
+
+  // disconnect: back to the connect form, key forgotten
+  await lib.getByRole("button", { name: "Disconnect" }).click();
+  await expect(
+    lib.getByRole("button", { name: "Connect", exact: true })
+  ).toBeVisible();
+  const after = await wpFetch(page, "builder/library");
+  expect(
+    (after.json as { configured: boolean; hasKey: boolean }).configured
+  ).toBe(false);
+  expect((after.json as { hasKey: boolean }).hasKey).toBe(false);
+
+  // an editor can browse but not connect
+  const ed = await asRole(
+    page.context().browser()!,
+    AIO.editor,
+    AIO.editorPass
+  );
+  const denied = await ed.page.request.post(
+    `${AIO.wp}/wp-json/rk/v1/builder/library/settings`,
+    { data: { url: "https://x.example/i.json" } }
+  );
+  expect([401, 403]).toContain(denied.status());
+  await ed.ctx.close();
+});

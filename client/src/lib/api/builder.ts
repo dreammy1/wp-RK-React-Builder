@@ -32,6 +32,7 @@ import {
   ThemeAdded,
   ThemeInstallReport,
   ThemeList,
+  LibraryView,
   ThemeSaved,
   UndoResult,
   type ThemeInstallOptions,
@@ -511,6 +512,24 @@ export const api = {
   exportKitFile: (slug: string) =>
     requestBlob(`builder/themes/export?slug=${encodeURIComponent(slug)}`, {
       timeoutMs: 300_000,
+    }),
+  getLibrary: (refresh = false) =>
+    request(`builder/library${refresh ? "?refresh=1" : ""}`, LibraryView, {
+      timeoutMs: 40_000,
+    }),
+  /** Connect (or, with an empty address, disconnect) a kit library. The licence key is never read back. */
+  setLibrary: (s: { url: string; licenseKey?: string }) =>
+    request("builder/library/settings", LibraryView, {
+      method: "POST",
+      body: s,
+      timeoutMs: 40_000,
+    }),
+  /** Download a kit from the library into this site's theme library. */
+  addLibraryKit: (id: string) =>
+    request("builder/library/add", ThemeAdded, {
+      method: "POST",
+      body: { id },
+      timeoutMs: 330_000,
     }),
   /** Put the site back as it was before the last theme install. */
   undoInstall: () =>

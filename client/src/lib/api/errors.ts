@@ -44,6 +44,16 @@ const BY_CODE: Record<string, ApiErrorKind> = {
   rk_invalid_template: "invalid_layout",
   rk_invalid_block: "invalid_layout",
   rk_template_in_use: "conflict",
+  rk_invalid_library: "invalid_layout",
+  rk_invalid_kit: "invalid_layout",
+  rk_library_not_connected: "conflict",
+  rk_library_unreachable: "server",
+  rk_library_denied: "forbidden",
+  rk_library_invalid: "server",
+  rk_unsupported: "server",
+  rk_nothing_to_undo: "not_found",
+  rk_limit: "conflict",
+  rk_empty: "conflict",
   // WordPress core codes that can surface before the plugin runs
   rest_cookie_invalid_nonce: "unauthorized",
   rest_not_logged_in: "unauthorized",
@@ -57,6 +67,15 @@ const PLAIN_MESSAGE_CODES = new Set([
   "rk_reusable_in_use",
   "rk_payload_too_large",
   "rk_template_in_use",
+  "rk_invalid_kit",
+  "rk_library_not_connected",
+  "rk_library_unreachable",
+  "rk_library_denied",
+  "rk_library_invalid",
+  "rk_unsupported",
+  "rk_nothing_to_undo",
+  "rk_limit",
+  "rk_empty",
 ]);
 
 export function kindFromResponse(status: number, code?: string): ApiErrorKind {

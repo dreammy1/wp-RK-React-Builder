@@ -290,6 +290,36 @@ export const ThemeSummary = z.object({
   demo: z.string().optional(),
 });
 export type ThemeSummary = z.infer<typeof ThemeSummary>;
+/** Kit Library: a catalogue of kits hosted anywhere. */
+export const LibraryKit = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string(),
+  version: z.string(),
+  author: z.string(),
+  industry: z.string(),
+  license: z.string(),
+  price: z.string(),
+  preview: z.string(),
+  demo: z.string(),
+  bytes: z.number(),
+  requires: z.string(),
+  tags: z.array(z.string()),
+  requiresKey: z.boolean(),
+  state: z.enum(["new", "added", "update", "needs-plugin"]),
+});
+export type LibraryKit = z.infer<typeof LibraryKit>;
+export const LibraryView = z.object({
+  configured: z.boolean(),
+  url: z.string(),
+  hasKey: z.boolean(),
+  name: z.string(),
+  items: z.array(LibraryKit),
+  fetchedAt: z.string(),
+  error: z.string().optional(),
+});
+export type LibraryView = z.infer<typeof LibraryView>;
+
 export const UndoSummary = z.object({
   name: z.string(),
   at: z.string(),

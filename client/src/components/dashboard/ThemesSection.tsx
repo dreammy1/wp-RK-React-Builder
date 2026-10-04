@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { ExportSiteButton, ImportSiteDialog } from "../SiteTransfer";
 import { ThemeEngine } from "../ThemeEngine";
+import { KitLibrary } from "./KitLibrary";
 import { Upload } from "lucide-react";
 
 export function ThemesSection() {
   const [importing, setImporting] = useState(false);
+  const [rev, setRev] = useState(0);
   return (
     <>
       <header className="dash-head">
@@ -16,8 +18,9 @@ export function ThemesSection() {
           </p>
         </div>
       </header>
+      <KitLibrary onAdded={() => setRev(r => r + 1)} />
       <section className="dash-card">
-        <ThemeEngine onInstalled={() => undefined} />
+        <ThemeEngine key={rev} onInstalled={() => undefined} />
       </section>
       <section className="dash-card">
         <h2>Backup &amp; transfer</h2>
