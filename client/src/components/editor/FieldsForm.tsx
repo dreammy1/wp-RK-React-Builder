@@ -3,6 +3,7 @@ import type { FieldDef } from "@/blocks/fields";
 import type { MediaItem } from "@/lib/schema/api";
 import { sourceOptions, useDyn } from "@/render/dyn";
 import { CatalogCardsEditor } from "./CatalogCardsEditor";
+import { GalleryItemsEditor } from "./GalleryItemsEditor";
 import { MediaPicker } from "./MediaPicker";
 
 type Props = {
@@ -142,6 +143,17 @@ export function FieldsForm({ fields, values, errors, onChange }: Props) {
                   </select>
                   {error}
                 </div>
+              );
+            case "galleryItems":
+              return (
+                <GalleryItemsEditor
+                  key={f.key}
+                  uid={id}
+                  label={f.label}
+                  items={String(values.items ?? "")}
+                  error={err}
+                  onChange={items => onChange({ items })}
+                />
               );
             case "catalogCards":
               return (
@@ -351,7 +363,11 @@ export function FieldsForm({ fields, values, errors, onChange }: Props) {
                     <input
                       id={id}
                       type="checkbox"
-                      checked={Boolean(value)}
+                      checked={
+                        value === undefined
+                          ? Boolean(f.defaultOn)
+                          : Boolean(value)
+                      }
                       onChange={e => onChange({ [f.key]: e.target.checked })}
                     />{" "}
                     <span>{f.label}</span>

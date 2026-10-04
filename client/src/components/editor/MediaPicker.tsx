@@ -8,34 +8,69 @@ import { Modal } from "../Modal";
 export function MediaPicker({
   onSelect,
   onClose,
+  multiple = false,
+  limit = 40,
+  onSelectMany,
 }: {
   onSelect: (m: MediaItem) => void;
   onClose: () => void;
+  /** Pick several images (tick them, then confirm): they come back in the order picked through onSelectMany. */
+  multiple?: boolean;
+  limit?: number;
+  onSelectMany?: (items: MediaItem[]) => void;
 }) {
   const [search, setSearch] = useState("");
+  const [picked, setPicked] = useState<MediaItem[]>([]);
+  const isPicked = (m: MediaItem) => picked.some(p => p.id === m.id);
+  const toggle = (m: MediaItem) =>
+    setPicked(p =>
+      p.some(x => x.id === m.id)
+        ? p.filter(x => x.id !== m.id)
+        : p.length < limit
+          ? [...p, m]
+          : p
+    );
   const [alt, setAlt] = useState("");
   const [upload, setUpload] = useState<{ busy: boolean; error?: string }>({
     busy: false,
   });
   const canUpload = api.canUploadMedia();
-  const doUpload = (file: File | undefined) => {
-    if (!file) return;
-    if (!/^image\/(jpeg|png|gif|webp|avif)$/.test(file.type)) {
-      setUpload({
-        busy: false,
-        error: "Choose a JPEG, PNG, GIF, WebP or AVIF image.",
-      });
-      return;
-    }
-    if (file.size > 10 * 1024 * 1024) {
-      setUpload({ busy: false, error: "That image is larger than 10 MB." });
-      return;
+  const doUpload = (files: FileList | File[] | undefined) => {
+    const list = files ? Array.from(files) : [];
+    if (list.length === 0) return;
+    for (const file of list) {
+      if (!/^image\/(jpeg|png|gif|webp|avif)$/.test(file.type)) {
+        setUpload({
+          busy: false,
+          error: "Choose JPEG, PNG, GIF, WebP or AVIF images.",
+        });
+        return;
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        setUpload({
+          busy: false,
+          error: `${file.name} is larger than 10 MB.`,
+        });
+        return;
+      }
     }
     setUpload({ busy: true });
-    api
-      .uploadMedia(file, alt)
-      .then(item => onSelect(item))
-      .catch(e => setUpload({ busy: false, error: describeError(e) }));
+    if (!multiple) {
+      api
+        .uploadMedia(list[0]!, alt)
+        .then(item => onSelect(item))
+        .catch(e => setUpload({ busy: false, error: describeError(e) }));
+      return;
+    }
+    // several: upload one after another, tick each as it arrives
+    (async () => {
+      for (const file of list.slice(0, Math.max(0, limit - picked.length))) {
+        const item = await api.uploadMedia(file, alt);
+        setPicked(p => (p.length < limit ? [...p, item] : p));
+        setState(s => ({ ...s, items: [item, ...s.items] }));
+      }
+      setUpload({ busy: false });
+    })().catch(e => setUpload({ busy: false, error: describeError(e) }));
   };
   const [state, setState] = useState<{
     status: "loading" | "ready" | "error";
@@ -63,7 +98,11 @@ export function MediaPicker({
     };
   }, [search]);
   return (
-    <Modal title="Choose an image" onClose={onClose} wide>
+    <Modal
+      title={multiple ? "Choose photos" : "Choose an image"}
+      onClose={onClose}
+      wide
+    >
       <label className="field search-field">
         <span>Search media library</span>
         <div className="input-icon">
@@ -91,12 +130,20 @@ export function MediaPicker({
           </label>
           <label className="top-btn media-upload-btn">
             <Upload size={14} aria-hidden="true" />{" "}
-            {upload.busy ? "Uploading…" : "Upload image"}
+            {upload.busy
+              ? "Uploading…"
+              : multiple
+                ? "Upload images"
+                : "Upload image"}
             <input
               type="file"
               accept="image/jpeg,image/png,image/gif,image/webp,image/avif"
+              multiple={multiple}
               disabled={upload.busy}
-              onChange={e => doUpload(e.target.files?.[0])}
+              onChange={e => {
+                doUpload(e.target.files ?? undefined);
+                e.target.value = "";
+              }}
             />
           </label>
           {upload.error && (
@@ -126,9 +173,17 @@ export function MediaPicker({
         {state.items.map(m => (
           <li key={m.id}>
             <button
-              onClick={() => onSelect(m)}
+              className={multiple && isPicked(m) ? "picked" : undefined}
+              aria-pressed={multiple ? isPicked(m) : undefined}
+              disabled={multiple && !isPicked(m) && picked.length >= limit}
+              onClick={() => (multiple ? toggle(m) : onSelect(m))}
               aria-label={`Select ${m.title || `image ${m.id}`}`}
             >
+              {multiple && isPicked(m) && (
+                <b className="media-tick" aria-hidden="true">
+                  {picked.findIndex(p => p.id === m.id) + 1}
+                </b>
+              )}
               <img
                 src={m.url}
                 alt=""
@@ -141,6 +196,23 @@ export function MediaPicker({
           </li>
         ))}
       </ul>
+      {multiple && (
+        <div className="dialog-actions">
+          <span className="muted" role="status" aria-live="polite">
+            {picked.length} selected (up to {limit})
+          </span>
+          <button className="top-btn" onClick={onClose}>
+            Cancel
+          </button>
+          <button
+            className="save-btn"
+            disabled={picked.length === 0 || upload.busy}
+            onClick={() => onSelectMany?.(picked)}
+          >
+            Add {picked.length || ""} photo{picked.length === 1 ? "" : "s"}
+          </button>
+        </div>
+      )}
     </Modal>
   );
 }

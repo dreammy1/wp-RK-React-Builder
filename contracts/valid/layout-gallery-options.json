@@ -1,0 +1,53 @@
+{
+  "kind": "layout",
+  "description": "Gallery with every option, and one with none (the original look)",
+  "document": {
+    "version": 1,
+    "blocks": [
+      {
+        "id": "gal-1",
+        "type": "gallery",
+        "props": {
+          "items": "https://cms.example.com/uploads/a.jpg|Installation|Warm hardwood floor\nhttps://cms.example.com/uploads/b.jpg|Refinishing|Before & after\nhttps://cms.example.com/uploads/c.jpg||No category\njavascript:alert(1)|Bad|Dropped",
+          "filters": true,
+          "columns": 4,
+          "shape": "square",
+          "gap": "lg",
+          "featured": false,
+          "lightbox": true,
+          "captions": "below"
+        }
+      },
+      {
+        "id": "gal-2",
+        "type": "gallery",
+        "props": {
+          "items": "https://cms.example.com/uploads/a.jpg|Installation|Warm hardwood floor\nhttps://cms.example.com/uploads/b.jpg||Second",
+          "columns": 2,
+          "shape": "wide",
+          "gap": "sm",
+          "captions": "hover"
+        }
+      },
+      {
+        "id": "gal-3",
+        "type": "gallery",
+        "props": {
+          "items": "https://cms.example.com/uploads/a.jpg|Installation|Warm hardwood floor",
+          "captions": "none",
+          "columns": 3,
+          "shape": "rows",
+          "gap": "md",
+          "featured": true
+        }
+      },
+      {
+        "id": "gal-4",
+        "type": "gallery",
+        "props": {
+          "items": "https://cms.example.com/uploads/a.jpg|Installation|Warm hardwood floor"
+        }
+      }
+    ]
+  }
+}

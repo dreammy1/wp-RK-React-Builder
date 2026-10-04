@@ -82,6 +82,64 @@ test("media picker is searchable and keyboard-operable", async ({ page }) => {
     /\/media\/501\.svg$/
   );
 });
+test("gallery: pick several photos from the media library, caption, reorder, set options", async ({
+  page,
+}) => {
+  await openEditor(page, 43);
+  await addBlock(page, "Photo gallery");
+  await expect(page.getByText("No photos yet")).toBeVisible();
+  await page.getByRole("button", { name: "Add photos" }).click();
+  const dialog = page.getByRole("dialog", { name: "Choose photos" });
+  await scan(page, "gallery picker");
+  await dialog.getByRole("button", { name: "Select Switchboard" }).click();
+  await dialog.getByRole("button", { name: "Select Crew on site" }).click();
+  await expect(dialog.getByText("2 selected")).toBeVisible();
+  await dialog.getByRole("button", { name: "Add 2 photos" }).click();
+  await expect(dialog).toHaveCount(0);
+
+  // they arrive in the order picked, with the alt text (else the title) as caption
+  await expect(page.locator(".gi-row")).toHaveCount(2);
+  await expect(page.getByLabel("Photo 1 caption and alt text")).toHaveValue(
+    "Switchboard"
+  );
+  await expect(page.getByLabel("Photo 2 caption and alt text")).toHaveValue(
+    "Crew installing panels"
+  );
+  await expect(page.locator(".canvas-block .pf-gallery img")).toHaveCount(2);
+
+  // category, reorder
+  await page.getByLabel("Photo 2 category").fill("Installation");
+  await page.getByRole("button", { name: "Move photo 2 up" }).click();
+  await expect(page.getByLabel("Photo 1 caption and alt text")).toHaveValue(
+    "Crew installing panels"
+  );
+  await expect(page.getByLabel("Photo 1 category")).toHaveValue("Installation");
+
+  // options change the canvas
+  await page.getByLabel("Columns").selectOption("4");
+  await page.getByLabel("Photo shape").selectOption("square");
+  await page.getByLabel("Space between photos").selectOption("lg");
+  await page.getByLabel("Captions").selectOption("below");
+  await page.getByLabel("Open a photo large when clicked").check();
+  await page.getByLabel("Show the first photo large").uncheck();
+  const section = page.locator(".canvas-block .pf-gallery");
+  await expect(section).toHaveClass(/cols-4/);
+  await expect(section).toHaveClass(/shape-square/);
+  await expect(section).toHaveClass(/gap-lg/);
+  await expect(section).toHaveClass(/cap-below/);
+  await expect(section).toHaveClass(/has-lightbox/);
+  await expect(section).toHaveClass(/no-feature/);
+  await expect(
+    page.locator(".canvas-block .pf-gallery figure.big")
+  ).toHaveCount(0);
+
+  // remove one photo, then all
+  await page.getByRole("button", { name: "Remove photo 2" }).click();
+  await expect(page.locator(".gi-row")).toHaveCount(1);
+  page.once("dialog", d => void d.accept());
+  await page.getByRole("button", { name: "Remove all" }).click();
+  await expect(page.locator(".gi-row")).toHaveCount(0);
+});
 test("save status is announced through a polite live region", async ({
   page,
 }) => {

@@ -445,7 +445,16 @@ function rk_builder_block_specs() {
 			'tone'        => rk_builder_f_enum( array( 'light', 'muted' ) ),
 		),
 		'brandstrip' => array( 'label' => rk_builder_f_text( 0, 120 ), 'items' => rk_builder_f_text( 0, 600 ) ),
-		'gallery'   => array( 'items' => rk_builder_f_text( 0, 12000 ), 'filters' => rk_builder_f_bool( true ) ),
+		'gallery'   => array(
+			'items'    => rk_builder_f_text( 0, 12000 ),
+			'filters'  => rk_builder_f_bool( true ),
+			'columns'  => rk_builder_f_int( 2, 4, true ),
+			'shape'    => rk_builder_f_enum( array( 'rows', 'square', 'landscape', 'portrait', 'wide' ), true ),
+			'gap'      => rk_builder_f_enum( array( 'sm', 'md', 'lg' ), true ),
+			'featured' => rk_builder_f_bool( true ),
+			'lightbox' => rk_builder_f_bool( true ),
+			'captions' => rk_builder_f_enum( array( 'overlay', 'below', 'hover', 'none' ), true ),
+		),
 		'sitefooter' => array(
 			'brand'        => rk_builder_f_text( 1, 80 ),
 			'logoMediaId'  => rk_builder_f_int( 0, 2147483647, true ),

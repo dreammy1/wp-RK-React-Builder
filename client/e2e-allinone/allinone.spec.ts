@@ -1537,3 +1537,108 @@ test("20 · kit library: connect needs https, an unreachable library is explaine
   expect([401, 403]).toContain(denied.status());
   await ed.ctx.close();
 });
+
+test("21 · gallery: the live page honours columns, shape, captions, filters and the lightbox (click, arrows, Escape)", async ({
+  page,
+}) => {
+  await login(page, AIO.admin, AIO.adminPass);
+  await page.goto(builderUrl());
+  // a picture of this site's own (uploaded now, so it does not depend on earlier tests)
+  const nonce = await page.evaluate(
+    () =>
+      (window as unknown as { RK_BUILDER_BOOT: { nonce: string } })
+        .RK_BUILDER_BOOT.nonce
+  );
+  const up = await page.request.post(`${AIO.wp}/wp-json/rk/v1/builder/media`, {
+    headers: { "X-WP-Nonce": nonce },
+    multipart: {
+      file: { name: "gallery-e2e.png", mimeType: "image/png", buffer: PNG_1X1 },
+      alt: "Gallery test",
+    },
+  });
+  expect(up.status()).toBe(201);
+  const seedUrl = ((await up.json()) as { item: { url: string } }).item.url;
+  const made = await wpFetch(page, "builder/site-import", {
+    method: "POST",
+    json: {
+      options: { dryRun: false },
+      bundle: {
+        format: "rk-builder-site",
+        version: 1,
+        source: { url: "https://old.example.com/" },
+        theme: null,
+        content: [],
+        media: [],
+        pages: [
+          {
+            slug: "gallery-check",
+            title: "Gallery Check",
+            wasPublished: true,
+            layout: {
+              version: 1,
+              blocks: [
+                {
+                  id: "gal-1",
+                  type: "gallery",
+                  props: {
+                    items: `${seedUrl}|Installation|First\n${seedUrl}|Refinishing|Second\n${seedUrl}|Installation|Third`,
+                    filters: true,
+                    columns: 2,
+                    shape: "square",
+                    gap: "lg",
+                    captions: "below",
+                    lightbox: true,
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  });
+  expect(made.status).toBe(200);
+  const list = await wpFetch(page, "builder/pages?search=Gallery%20Check");
+  const pg = (list.json as { pages: { id: number; revision: number }[] })
+    .pages[0]!;
+  const pub = await wpFetch(page, `builder/publish/${pg.id}`, {
+    method: "POST",
+    json: { expectedRevision: pg.revision },
+  });
+  expect(pub.status).toBe(200);
+
+  await page.goto(`${AIO.wp}/?page_id=${pg.id}`);
+  const gal = page.locator(".pf-gallery");
+  await expect(gal).toHaveClass(/cols-2/);
+  await expect(gal).toHaveClass(/shape-square/);
+  await expect(gal).toHaveClass(/gap-lg/);
+  await expect(gal).toHaveClass(/cap-below/);
+  await expect(gal).toHaveClass(/has-lightbox/);
+  const grid = await page
+    .locator(".pf-gallery-grid")
+    .evaluate(el => getComputedStyle(el).gridTemplateColumns.split(" ").length);
+  expect(grid).toBe(2);
+  const figs = gal.locator("figure");
+  await expect(figs).toHaveCount(3);
+  const src = await figs.first().locator("img").getAttribute("src");
+  expect(src).toContain("/wp-content/uploads/"); // the copy in this site's library
+
+  // filter: only "Refinishing"
+  await gal.getByRole("button", { name: "Refinishing", exact: true }).click();
+  await expect(figs.nth(1)).toBeVisible();
+  await expect(figs.first()).toBeHidden();
+  await gal.getByRole("button", { name: "All", exact: true }).click();
+  await expect(figs.first()).toBeVisible();
+
+  // lightbox: open, next with the arrow key, Escape closes
+  await figs.first().click();
+  const box = page.locator("dialog.pf-lightbox");
+  await expect(box).toBeVisible();
+  await expect(box.locator("figcaption")).toHaveText("Installation · First");
+  await page.keyboard.press("ArrowRight");
+  await expect(box.locator("figcaption")).toHaveText("Refinishing · Second");
+  await box.getByRole("button", { name: "Previous photo" }).click();
+  await expect(box.locator("figcaption")).toHaveText("Installation · First");
+  await page.keyboard.press("Escape");
+  await expect(box).toBeHidden();
+});

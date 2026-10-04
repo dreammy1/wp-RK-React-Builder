@@ -293,8 +293,22 @@ function rk_builder_render_detail( array $p, array $context = array() ) {
 	return $html . '</aside></div></section>';
 }
 
+/** The classes a gallery section carries for its options. Mirrors galleryClasses() in client/src/blocks/gallery/schema.ts. */
+function rk_builder_gallery_classes( array $p ) {
+	$c = array( 'pf-section', 'pf-gallery' );
+	if ( isset( $p['columns'] ) && 3 !== (int) $p['columns'] ) { $c[] = 'cols-' . (int) $p['columns']; }
+	if ( isset( $p['shape'] ) && 'rows' !== $p['shape'] ) { $c[] = 'shape-' . $p['shape']; }
+	if ( isset( $p['gap'] ) && 'md' !== $p['gap'] ) { $c[] = 'gap-' . $p['gap']; }
+	if ( isset( $p['featured'] ) && false === $p['featured'] ) { $c[] = 'no-feature'; }
+	if ( isset( $p['captions'] ) && 'overlay' !== $p['captions'] ) { $c[] = 'cap-' . $p['captions']; }
+	if ( ! empty( $p['lightbox'] ) ) { $c[] = 'has-lightbox'; }
+	return implode( ' ', $c );
+}
+
 function rk_builder_render_gallery( array $p, array $context = array() ) {
-	$filters = ! empty( $p['filters'] );
+	$filters  = ! empty( $p['filters'] );
+	$featured = ! ( isset( $p['featured'] ) && false === $p['featured'] );
+	$lightbox = ! empty( $p['lightbox'] );
 	$figs    = '';
 	$tags    = array();
 	$n       = 0;
@@ -302,11 +316,11 @@ function rk_builder_render_gallery( array $p, array $context = array() ) {
 		if ( '' === $r[0] || '' === rk_builder_src( $r[0] ) ) { continue; }
 		$cap = '' !== $r[1] && '' !== $r[2] ? $r[1] . ' · ' . $r[2] : ( '' !== $r[1] ? $r[1] : $r[2] );
 		if ( $filters && '' !== $r[1] && ! in_array( $r[1], $tags, true ) ) { $tags[] = $r[1]; }
-		$attrs = ( 0 === $n ? ' class="big"' : '' ) . ( $filters && '' !== $r[1] ? ' data-tag="' . rk_builder_h( $r[1] ) . '"' : '' );
+		$attrs = ( 0 === $n && $featured ? ' class="big"' : '' ) . ( $filters && '' !== $r[1] ? ' data-tag="' . rk_builder_h( $r[1] ) . '"' : '' ) . ( $lightbox ? ' tabindex="0"' : '' );
 		$figs .= '<figure' . $attrs . '><img src="' . rk_builder_src( $r[0] ) . '" alt="' . rk_builder_h( $r[2] ) . '" decoding="async" loading="lazy"/>' . ( '' !== $cap ? '<figcaption>' . rk_builder_h( $cap ) . '</figcaption>' : '' ) . '</figure>';
 		$n++;
 	}
-	$html = '<section ' . rk_builder_root_attrs( 'gallery', 'pf-section pf-gallery' ) . '>';
+	$html = '<section ' . rk_builder_root_attrs( 'gallery', rk_builder_gallery_classes( $p ) ) . '>';
 	if ( $tags ) { return $html . '<div class="pf-wrap">' . rk_builder_filters_html( $tags ) . '<div class="pf-gallery-grid">' . $figs . '</div></div></section>'; }
 	return $html . '<div class="pf-wrap pf-gallery-grid">' . $figs . '</div></section>';
 }

@@ -29,7 +29,14 @@ type FieldVariant =
       options: { value: string | number; label: string }[];
       numeric?: boolean;
     }
-  | { kind: "checkbox"; key: string; label: string; help?: string }
+  | {
+      kind: "checkbox";
+      key: string;
+      label: string;
+      help?: string;
+      /** Shown ticked while the value is absent (for options that are on by default). */
+      defaultOn?: boolean;
+    }
   | {
       kind: "media";
       key: string;
@@ -52,6 +59,12 @@ type FieldVariant =
   | { kind: "taxonomy"; key: string; label: string; help?: string }
   | { kind: "taxonomyTerm"; key: string; label: string }
   | { kind: "loopTemplate"; key: string; label: string; help?: string }
+  | {
+      /** Photo-by-photo editor for the gallery block (media picker, order, category and caption): writes `items`. */
+      kind: "galleryItems";
+      key: "items";
+      label: string;
+    }
   | {
       /** Card-by-card editor for the catalog block: writes `items`, `modals`, `modalLabel` and `modalCta` together. */
       kind: "catalogCards";

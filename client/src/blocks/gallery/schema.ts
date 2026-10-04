@@ -1,11 +1,54 @@
 import { z } from "zod";
 import { text } from "@/lib/schema/primitives";
 
+export const GALLERY_SHAPES = [
+  "rows",
+  "square",
+  "landscape",
+  "portrait",
+  "wide",
+] as const;
+export const GALLERY_GAPS = ["sm", "md", "lg"] as const;
+export const GALLERY_CAPTIONS = ["overlay", "below", "hover", "none"] as const;
+
 export const galleryProps = z.strictObject({
-  /** One photo per line: "image|Category|Description" (up to 40). The first is shown large. */
+  /** One photo per line: "image|Category|Description" (up to 40). The first is shown large unless `featured` is false. */
   items: text(0, 12000),
   /** A row of category buttons above the grid. */
   filters: z.boolean().optional(),
+  /** Columns on a computer (2 to 4); 3 when absent. */
+  columns: z.number().int().min(2).max(4).optional(),
+  /** Photo shape: equal-height rows (the original look, also when absent) or a fixed shape. */
+  shape: z.enum(GALLERY_SHAPES).optional(),
+  /** Space between photos; medium when absent. */
+  gap: z.enum(GALLERY_GAPS).optional(),
+  /** Show the first photo large; on when absent. */
+  featured: z.boolean().optional(),
+  /** Click a photo to see it large, with previous / next. */
+  lightbox: z.boolean().optional(),
+  /** Where the caption goes; over the photo when absent. */
+  captions: z.enum(GALLERY_CAPTIONS).optional(),
 });
 export type GalleryProps = z.infer<typeof galleryProps>;
-export const galleryDefaults: GalleryProps = { items: "", filters: false };
+export const galleryDefaults: GalleryProps = {
+  items: "",
+  filters: false,
+  columns: 3,
+  shape: "rows",
+  gap: "md",
+  featured: true,
+  lightbox: false,
+  captions: "overlay",
+};
+
+/** The classes the section carries for its options (the PHP renderer builds the same string). */
+export function galleryClasses(p: GalleryProps): string {
+  const c = ["pf-section", "pf-gallery"];
+  if (p.columns && p.columns !== 3) c.push(`cols-${p.columns}`);
+  if (p.shape && p.shape !== "rows") c.push(`shape-${p.shape}`);
+  if (p.gap && p.gap !== "md") c.push(`gap-${p.gap}`);
+  if (p.featured === false) c.push("no-feature");
+  if (p.captions && p.captions !== "overlay") c.push(`cap-${p.captions}`);
+  if (p.lightbox) c.push("has-lightbox");
+  return c.join(" ");
+}
