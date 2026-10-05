@@ -11,6 +11,13 @@ export const GALLERY_SHAPES = [
 export const GALLERY_GAPS = ["sm", "md", "lg"] as const;
 export const GALLERY_CAPTIONS = ["overlay", "below", "hover", "none"] as const;
 
+export const GALLERY_SOURCES = [
+  "manual",
+  "media",
+  "portfolio",
+  "service",
+] as const;
+
 export const galleryProps = z.strictObject({
   /** One photo per line: "image|Category|Description" (up to 40). The first is shown large unless `featured` is false. */
   items: text(0, 12000),
@@ -28,6 +35,12 @@ export const galleryProps = z.strictObject({
   lightbox: z.boolean().optional(),
   /** Where the caption goes; over the photo when absent. */
   captions: z.enum(GALLERY_CAPTIONS).optional(),
+  /** Where the photos come from: added by hand (the original), the newest images in the media library, or the pictures of projects / services. */
+  source: z.enum(GALLERY_SOURCES).optional(),
+  /** How many photos an automatic gallery shows (12 when absent). */
+  limit: z.number().int().min(1).max(40).optional(),
+  /** Automatic galleries: a category slug for projects / services, or words to find in the media library. */
+  filter: text(0, 80).optional(),
 });
 export type GalleryProps = z.infer<typeof galleryProps>;
 export const galleryDefaults: GalleryProps = {
@@ -39,7 +52,19 @@ export const galleryDefaults: GalleryProps = {
   featured: true,
   lightbox: false,
   captions: "overlay",
+  source: "manual",
+  limit: 12,
+  filter: "",
 };
+
+/** "hardwood-floors" -> "Hardwood Floors": the filter button text for a category slug. */
+export function slugLabel(slug: string): string {
+  return slug
+    .split(/[-_\s]+/)
+    .filter(Boolean)
+    .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+}
 
 /** The classes the section carries for its options (the PHP renderer builds the same string). */
 export function galleryClasses(p: GalleryProps): string {

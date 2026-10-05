@@ -31,3 +31,20 @@ rk_test( 'gallery: rendering honours featured, lightbox and filters', function (
 	t_assert( false === strpos( $plain, 'tabindex' ) && false === strpos( $plain, 'has-lightbox' ) );
 	t_assert( false !== strpos( rk_builder_site_script(), 'pf-lightbox' ), 'the page script carries the lightbox' );
 } );
+
+rk_test( 'gallery: automatic sources validate; the filter is a setting, not wording for the AI', function () {
+	t_eq( rk_builder_validate_layout( rk_gal_layout( array( 'source' => 'media', 'limit' => 24, 'filter' => 'floor' ) ), RK_TEST_HOSTS ), array() );
+	t_eq( rk_builder_validate_layout( rk_gal_layout( array( 'source' => 'portfolio', 'limit' => 6, 'filter' => 'hardwood-floors', 'items' => '' ) ), RK_TEST_HOSTS ), array() );
+	foreach ( array( array( 'source' => 'flickr' ), array( 'limit' => 0 ), array( 'limit' => 41 ), array( 'limit' => '8' ), array( 'filter' => str_repeat( 'x', 81 ) ) ) as $bad ) {
+		t_assert( count( rk_builder_validate_layout( rk_gal_layout( $bad ), RK_TEST_HOSTS ) ) >= 1, json_encode( $bad ) );
+	}
+	t_assert( ! isset( rk_builder_copy_text_props( 'gallery' )['filter'] ), 'the AI copy tool never rewrites the filter' );
+	t_assert( isset( rk_builder_copy_text_props( 'hero' )['heading'] ), 'but still rewrites real wording' );
+} );
+
+rk_test( 'gallery: slug labels read like the filter buttons', function () {
+	t_eq( rk_builder_gallery_slug_label( 'hardwood-floors' ), 'Hardwood Floors' );
+	t_eq( rk_builder_gallery_slug_label( 'refinishing' ), 'Refinishing' );
+	t_eq( rk_builder_gallery_slug_label( '' ), '' );
+	t_eq( rk_builder_gallery_slug_label( 'a_b  c' ), 'A B C' );
+} );

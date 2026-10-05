@@ -15,6 +15,9 @@ import {
   RedirectList,
   type RedirectRule,
   ReviewsAdmin,
+  PlacesSearch,
+  PlacesImport,
+  PlacesLink,
   type ReviewItem,
   PageRowResponse,
   PageSeo,
@@ -465,6 +468,24 @@ export const api = {
       method: "POST",
       body: {},
       timeoutMs: 60_000,
+    }),
+  searchPlaces: (query: string) =>
+    request("builder/places/search", PlacesSearch, {
+      method: "POST",
+      body: { query },
+      timeoutMs: 30_000,
+    }),
+  readMapsLink: (url: string) =>
+    request("builder/places/link", PlacesLink, {
+      method: "POST",
+      body: { url },
+      timeoutMs: 30_000,
+    }),
+  importPlace: (placeId: string) =>
+    request("builder/places/import", PlacesImport, {
+      method: "POST",
+      body: { placeId },
+      timeoutMs: 30_000,
     }),
   getRedirects: () => request("builder/redirects", RedirectList),
   setRedirects: (items: RedirectRule[]) =>

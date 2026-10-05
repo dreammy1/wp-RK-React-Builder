@@ -618,6 +618,43 @@ export const ReviewsAdmin = z.object({
 });
 export type ReviewsAdmin = z.infer<typeof ReviewsAdmin>;
 
+export const PlacesSearch = z.object({
+  results: z.array(
+    z.object({
+      placeId: z.string(),
+      name: z.string(),
+      address: z.string(),
+      rating: z.number(),
+      count: z.number(),
+    })
+  ),
+});
+export type PlacesSearch = z.infer<typeof PlacesSearch>;
+export const PlacesLink = z.object({
+  profileUrl: z.string(),
+  name: z.string(),
+  placeId: z.string(),
+  writeUrl: z.string(),
+});
+export type PlacesLink = z.infer<typeof PlacesLink>;
+export const PlacesImport = z.object({
+  placeId: z.string(),
+  fields: z.object({
+    name: z.string(),
+    telephone: z.string(),
+    street: z.string(),
+    city: z.string(),
+    region: z.string(),
+    postal: z.string(),
+    country: z.string(),
+    hours: z.string(),
+    googleBusiness: z.string(),
+  }),
+  rating: z.number(),
+  count: z.number(),
+});
+export type PlacesImport = z.infer<typeof PlacesImport>;
+
 export const RedirectRule = z.object({
   from: z.string(),
   to: z.string(),

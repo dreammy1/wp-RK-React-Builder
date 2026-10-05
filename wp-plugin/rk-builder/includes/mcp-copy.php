@@ -77,7 +77,10 @@ function rk_builder_copy_is_structured( $v ) {
 function rk_builder_copy_text_props( $type ) {
 	$specs = rk_builder_block_specs();
 	$out   = array();
+	// Plain text that is a setting, not wording (a category slug, a search word): rewriting it would break the block.
+	$settings = array( 'gallery' => array( 'filter' ) );
 	foreach ( isset( $specs[ $type ] ) ? $specs[ $type ] : array() as $name => $spec ) {
+		if ( isset( $settings[ $type ] ) && in_array( $name, $settings[ $type ], true ) ) { continue; }
 		if ( isset( $spec['t'] ) && 'text' === $spec['t'] ) { $out[ $name ] = array( 'max' => (int) $spec['max'], 'min' => (int) $spec['min'] ); }
 	}
 	return $out;

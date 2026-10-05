@@ -3815,3 +3815,47 @@ input[type="checkbox"].row-check:indeterminate::after {
   font-size: 13px;
   opacity: 0.6;
 }
+
+.place-search {
+  margin-bottom: 16px;
+}
+.place-key {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.place-key input {
+  flex: 1;
+}
+.place-results {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  border: 1px solid var(--border, #2a2f3a);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.place-results li + li {
+  border-top: 1px solid var(--border, #2a2f3a);
+}
+.place-results button {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  padding: 10px 12px;
+  text-align: left;
+  background: transparent;
+  color: inherit;
+  border: 0;
+  cursor: pointer;
+  font: inherit;
+}
+.place-results button:hover,
+.place-results button:focus-visible {
+  background: rgba(127, 127, 127, 0.14);
+}
+.place-results span {
+  font-size: 0.85em;
+  opacity: 0.75;
+}

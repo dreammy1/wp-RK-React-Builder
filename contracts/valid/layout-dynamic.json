@@ -85,6 +85,27 @@
           "emptyText": "Nothing here yet.",
           "tone": "muted"
         }
+      },
+      {
+        "id": "gal-auto",
+        "type": "gallery",
+        "props": {
+          "items": "",
+          "source": "portfolio",
+          "limit": 9,
+          "filter": "hardwood-floors",
+          "filters": true,
+          "lightbox": true
+        }
+      },
+      {
+        "id": "gal-media",
+        "type": "gallery",
+        "props": {
+          "items": "",
+          "source": "media",
+          "limit": 12
+        }
       }
     ]
   }

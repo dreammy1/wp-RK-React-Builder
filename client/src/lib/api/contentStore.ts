@@ -9,6 +9,25 @@ import { describeError, isApiError } from "./errors";
 import { api } from "./builder";
 
 const TTL_MS = 60_000;
+
+/** The newest images of the media library, shaped like content entries (the editor shows at most 24). */
+async function fetchMedia(q: ContentQuery) {
+  const r = await api.listMedia(q.category, undefined, 1);
+  const items = r.items.slice(0, q.limit).map(m => ({
+    id: m.id,
+    title: m.alt || m.title,
+    excerpt: "",
+    link: "",
+    categories: [],
+    image: {
+      url: m.url,
+      width: m.width ?? 0,
+      height: m.height ?? 0,
+      alt: m.alt,
+    },
+  }));
+  return { items, total: items.length };
+}
 const LOADING: ContentResult = { status: "loading", items: [], total: 0 };
 
 type Entry = { result: ContentResult; at: number; inflight?: Promise<void> };
@@ -22,7 +41,7 @@ export class ContentStore implements ContentSource {
     private fetcher: (
       q: ContentQuery
     ) => Promise<{ items: ContentResult["items"]; total: number }> = q =>
-      api.listContent(q),
+      q.source === "media" ? fetchMedia(q) : api.listContent(q),
     private demo = false,
     private now: () => number = Date.now
   ) {}
@@ -88,6 +107,7 @@ export class ContentStore implements ContentSource {
   }
 
   private fromDemo(q: ContentQuery) {
+    if (q.source === "media") return { items: [], total: 0 };
     const all = DEMO_CONTENT[q.source].filter(
       i => !q.category || i.categories.includes(q.category)
     );

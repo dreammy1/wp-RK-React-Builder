@@ -305,6 +305,48 @@ function rk_builder_gallery_classes( array $p ) {
 	return implode( ' ', $c );
 }
 
+/** "hardwood-floors" -> "Hardwood Floors". Mirrors slugLabel() in blocks/gallery/schema.ts. */
+function rk_builder_gallery_slug_label( $slug ) {
+	$out = array();
+	foreach ( preg_split( '/[-_\s]+/', (string) $slug, -1, PREG_SPLIT_NO_EMPTY ) as $w ) {
+		$out[] = mb_strtoupper( mb_substr( $w, 0, 1 ) ) . mb_substr( $w, 1 );
+	}
+	return implode( ' ', $out );
+}
+
+/**
+ * The photos of an automatic gallery as "image|Category|Caption" rows: the newest images in the media library, or the
+ * featured images of projects / services (title as caption, first category as the filter). Entries without a picture are skipped.
+ */
+function rk_builder_gallery_auto_rows( array $p, array $context = array() ) {
+	$source = $p['source'];
+	$limit  = isset( $p['limit'] ) ? (int) $p['limit'] : 12;
+	$filter = isset( $p['filter'] ) && is_string( $p['filter'] ) ? trim( $p['filter'] ) : '';
+	$rows   = array();
+	try {
+		if ( 'media' === $source ) {
+			$args = array( 'post_type' => 'attachment', 'post_status' => 'inherit', 'post_mime_type' => 'image', 'posts_per_page' => max( 1, min( 40, $limit ) ), 'orderby' => 'date', 'order' => 'DESC' );
+			if ( '' !== $filter ) { $args['s'] = $filter; }
+			foreach ( get_posts( $args ) as $att ) {
+				$item = rk_builder_media_item( $att );
+				if ( null === $item ) { continue; }
+				$rows[] = array( $item['url'], '', '' !== $item['alt'] ? $item['alt'] : $item['title'] );
+			}
+			return $rows;
+		}
+		$res = rk_builder_query_content( $source, array( 'limit' => min( 24, $limit ), 'category' => $filter, 'orderby' => 'date', 'order' => 'desc' ) );
+		foreach ( null === $res ? array() : $res['items'] as $item ) {
+			if ( empty( $item['image']['url'] ) ) { continue; }
+			$cat    = ! empty( $item['categories'][0] ) ? rk_builder_gallery_slug_label( $item['categories'][0] ) : '';
+			$rows[] = array( $item['image']['url'], $cat, $item['title'] );
+		}
+	} catch ( Throwable $e ) {
+		rk_builder_log( 'warning', 'gallery_query_failed', array( 'source' => $source, 'error' => get_class( $e ) ) );
+		rk_builder_record_render_error( isset( $context['page_id'] ) ? (int) $context['page_id'] : 0, 'rk_gallery_query_failed' );
+	}
+	return $rows;
+}
+
 function rk_builder_render_gallery( array $p, array $context = array() ) {
 	$filters  = ! empty( $p['filters'] );
 	$featured = ! ( isset( $p['featured'] ) && false === $p['featured'] );
@@ -312,7 +354,9 @@ function rk_builder_render_gallery( array $p, array $context = array() ) {
 	$figs    = '';
 	$tags    = array();
 	$n       = 0;
-	foreach ( rk_builder_parse_rows( $p['items'], 3, 40 ) as $r ) {
+	$source = isset( $p['source'] ) ? $p['source'] : 'manual';
+	$rows   = 'manual' === $source ? rk_builder_parse_rows( $p['items'], 3, 40 ) : rk_builder_gallery_auto_rows( $p, $context );
+	foreach ( $rows as $r ) {
 		if ( '' === $r[0] || '' === rk_builder_src( $r[0] ) ) { continue; }
 		$cap = '' !== $r[1] && '' !== $r[2] ? $r[1] . ' · ' . $r[2] : ( '' !== $r[1] ? $r[1] : $r[2] );
 		if ( $filters && '' !== $r[1] && ! in_array( $r[1], $tags, true ) ) { $tags[] = $r[1]; }

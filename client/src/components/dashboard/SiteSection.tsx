@@ -3,6 +3,7 @@ import { api } from "@/lib/api/builder";
 import { describeError } from "@/lib/api/errors";
 import type { SiteSettings } from "@/lib/schema/api";
 import { ImageField } from "./ImageField";
+import { PlaceSearch } from "./PlaceSearch";
 
 const PROFILES: [string, string, string][] = [
   ["googleBusiness", "Google Business Profile", "https://g.page/r/…"],
@@ -350,6 +351,50 @@ export function SiteSection() {
           Fill in your address to publish a LocalBusiness listing in the
           structured data. Use the same details as your Google Business Profile.
         </p>
+        <PlaceSearch
+          onLinked={r =>
+            setS(
+              cur =>
+                cur && {
+                  ...cur,
+                  organization: {
+                    ...cur.organization,
+                    ...(r.name && !cur.organization.name && { name: r.name }),
+                    profiles: {
+                      ...cur.organization.profiles,
+                      ...(r.profileUrl && { googleBusiness: r.profileUrl }),
+                    },
+                  },
+                }
+            )
+          }
+          onImported={r => {
+            const f = r.fields;
+            setS(
+              cur =>
+                cur && {
+                  ...cur,
+                  organization: {
+                    ...cur.organization,
+                    ...(f.name && { name: f.name }),
+                    ...(f.telephone && { telephone: f.telephone }),
+                    street: f.street,
+                    city: f.city,
+                    region: f.region,
+                    postal: f.postal,
+                    ...(f.country && { country: f.country }),
+                    ...(f.hours && { hours: f.hours }),
+                    profiles: {
+                      ...cur.organization.profiles,
+                      ...(f.googleBusiness && {
+                        googleBusiness: f.googleBusiness,
+                      }),
+                    },
+                  },
+                }
+            );
+          }}
+        />
         <div className="form-grid">
           <div className="field">
             <label htmlFor="lb-type">

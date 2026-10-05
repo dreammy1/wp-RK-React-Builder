@@ -2,7 +2,7 @@ import { createContext, useContext } from "react";
 import type { ContentItem } from "@/lib/schema/api";
 
 export type ContentQuery = {
-  source: "service" | "portfolio";
+  source: "service" | "portfolio" | "media";
   limit: number;
   category: string;
   orderBy: "date" | "title" | "menu_order";

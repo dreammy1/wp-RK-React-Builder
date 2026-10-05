@@ -36,7 +36,7 @@ function rk_builder_int_http( $method, $url, array $args = array() ) {
 	$args['method'] = $method;
 	$r = wp_remote_request( $url, $args );
 	if ( is_wp_error( $r ) ) { return $r; }
-	return array( 'code' => (int) wp_remote_retrieve_response_code( $r ), 'body' => (string) wp_remote_retrieve_body( $r ) );
+	return array( 'code' => (int) wp_remote_retrieve_response_code( $r ), 'body' => (string) wp_remote_retrieve_body( $r ), 'location' => (string) wp_remote_retrieve_header( $r, 'location' ) );
 }
 
 /* ------------------------------------------------------------------ *
@@ -282,6 +282,7 @@ function rk_builder_handle_set_reviews_admin( $req ) {
 		$u = rk_builder_int_url( $body['profileUrl'] );
 		if ( '' !== trim( (string) $body['profileUrl'] ) && '' === $u ) { return rk_builder_invalid( 'rk_invalid_reviews', array( array( 'path' => 'profileUrl', 'message' => 'Paste the full https:// link to your Google Business Profile.' ) ) ); }
 		$s['profileUrl'] = $u;
+		if ( '' === $u ) { $s['mapsUrl'] = ''; } // clearing the link clears the map link that came with it
 	}
 	if ( array_key_exists( 'placeId', $body ) ) {
 		$p = trim( (string) $body['placeId'] );
@@ -497,6 +498,9 @@ function rk_builder_register_integration_routes( $ns ) {
 		array( 'methods' => 'POST', 'callback' => 'rk_builder_handle_set_reviews_admin', 'permission_callback' => $admin ),
 	) );
 	register_rest_route( $ns, '/builder/reviews-admin/items', array( 'methods' => 'POST', 'callback' => 'rk_builder_handle_set_reviews_items', 'permission_callback' => $admin ) );
+	register_rest_route( $ns, '/builder/places/search', array( 'methods' => 'POST', 'callback' => 'rk_builder_handle_places_search', 'permission_callback' => $admin ) );
+	register_rest_route( $ns, '/builder/places/link', array( 'methods' => 'POST', 'callback' => 'rk_builder_handle_places_link', 'permission_callback' => $admin ) );
+	register_rest_route( $ns, '/builder/places/import', array( 'methods' => 'POST', 'callback' => 'rk_builder_handle_places_import', 'permission_callback' => $admin ) );
 	register_rest_route( $ns, '/builder/reviews-admin/sync', array( 'methods' => 'POST', 'callback' => 'rk_builder_handle_sync_reviews', 'permission_callback' => $admin ) );
 	register_rest_route( $ns, '/builder/redirects', array(
 		array( 'methods' => 'GET', 'callback' => 'rk_builder_handle_get_redirects', 'permission_callback' => $admin ),

@@ -1937,3 +1937,153 @@ test("23 · custom sign-in page: wp-login.php sends people to it, a wrong passwo
     });
   }
 });
+
+test("24 · automatic gallery: photos come from the media library or from project pictures, stay current, and show in the editor", async ({
+  page,
+}) => {
+  await login(page, AIO.admin, AIO.adminPass);
+  await page.goto(builderUrl());
+  const nonce = await page.evaluate(
+    () =>
+      (window as unknown as { RK_BUILDER_BOOT: { nonce: string } })
+        .RK_BUILDER_BOOT.nonce
+  );
+  const upload = async (name: string, alt: string) => {
+    const r = await page.request.post(`${AIO.wp}/wp-json/rk/v1/builder/media`, {
+      headers: { "X-WP-Nonce": nonce },
+      multipart: {
+        file: { name, mimeType: "image/png", buffer: PNG_1X1 },
+        alt,
+      },
+    });
+    expect(r.status()).toBe(201);
+    return ((await r.json()) as { item: { id: number } }).item.id;
+  };
+  const oak = await upload("auto-oak.png", "Auto Oak");
+  const walnut = await upload("auto-walnut.png", "Auto Walnut");
+
+  // two projects with a picture and a category, one without a picture
+  const entry = async (title: string, cat: string, image?: number) => {
+    const r = await wpFetch(page, "builder/entries/portfolio", {
+      method: "POST",
+      json: {
+        title,
+        status: "publish",
+        ...(image ? { image } : {}),
+        terms: { portfolio_cat: [cat] },
+      },
+    });
+    expect(r.status).toBe(201);
+    return (r.json as { entry: { id: number } }).entry.id;
+  };
+  const e1 = await entry("Oak Lounge", "Auto Hardwood", oak);
+  const e2 = await entry("Stair Refinish", "Auto Refinish", walnut);
+  const e3 = await entry("No Picture Yet", "Auto Hardwood");
+
+  const made = await wpFetch(page, "builder/site-import", {
+    method: "POST",
+    json: {
+      options: { dryRun: false },
+      bundle: {
+        format: "rk-builder-site",
+        version: 1,
+        source: { url: "https://old.example.com/" },
+        theme: null,
+        content: [],
+        media: [],
+        pages: [
+          {
+            slug: "auto-gallery-check",
+            title: "Auto Gallery Check",
+            wasPublished: true,
+            layout: {
+              version: 1,
+              blocks: [
+                {
+                  id: "g-media",
+                  type: "gallery",
+                  props: {
+                    items: "",
+                    source: "media",
+                    limit: 5,
+                    filter: "Auto",
+                  },
+                },
+                {
+                  id: "g-all",
+                  type: "gallery",
+                  props: {
+                    items: "",
+                    source: "portfolio",
+                    limit: 6,
+                    filters: true,
+                  },
+                },
+                {
+                  id: "g-one",
+                  type: "gallery",
+                  props: {
+                    items: "",
+                    source: "portfolio",
+                    filter: "auto-hardwood",
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  });
+  expect(made.status).toBe(200);
+  const list = await wpFetch(page, "builder/pages?search=Auto%20Gallery");
+  const pg = (list.json as { pages: { id: number; revision: number }[] })
+    .pages[0]!;
+  await wpFetch(page, `builder/publish/${pg.id}`, {
+    method: "POST",
+    json: { expectedRevision: pg.revision },
+  });
+
+  const pub = await page.context().newPage();
+  try {
+    await pub.goto("/auto-gallery-check/");
+    const media = pub.locator('[data-rk-block="gallery"]').nth(0);
+    const projects = pub.locator('[data-rk-block="gallery"]').nth(1);
+    const hardwood = pub.locator('[data-rk-block="gallery"]').nth(2);
+    // the media library, filtered by the words "Auto": newest first, alt text as caption
+    await expect(media.locator("figure")).toHaveCount(2);
+    await expect(media.locator("figcaption").first()).toHaveText("Auto Walnut");
+    await expect(media.locator("figcaption").nth(1)).toHaveText("Auto Oak");
+    // projects: title as caption, category as filter; the entry without a picture is skipped
+    await expect(projects).toContainText("Auto Hardwood · Oak Lounge");
+    await expect(projects).toContainText("Auto Refinish · Stair Refinish");
+    await expect(projects).not.toContainText("No Picture Yet");
+    await expect(
+      projects.getByRole("button", { name: "Auto Refinish", exact: true })
+    ).toBeVisible();
+    // one category only
+    await expect(hardwood.locator("figure")).toHaveCount(1);
+
+    // a new picture shows up on the live page without touching the page
+    await upload("auto-third.png", "Auto Third");
+    await pub.reload();
+    await expect(
+      pub.locator('[data-rk-block="gallery"]').nth(0).locator("figure")
+    ).toHaveCount(3);
+  } finally {
+    await pub.close();
+    for (const id of [e1, e2, e3]) {
+      await wpFetch(page, `builder/entry/${id}/trash`, { method: "POST" });
+    }
+  }
+
+  // the editor canvas shows the same photos
+  await page.goto(builderUrl(pg.id));
+  await expect(
+    page
+      .locator('[data-testid="block-gallery"]')
+      .first()
+      .locator("figure")
+      .first()
+  ).toBeVisible({ timeout: 20_000 });
+});

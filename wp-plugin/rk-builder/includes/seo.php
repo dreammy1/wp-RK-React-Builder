@@ -272,7 +272,9 @@ function rk_builder_seo_site_nodes( array $d ) {
 			$areas = array_values( array_filter( array_map( 'trim', explode( ',', $org['areaServed'] ) ), 'strlen' ) );
 			if ( $areas ) { $lb['areaServed'] = array_map( function ( $a ) { return array( '@type' => 'City', 'name' => $a ); }, array_slice( $areas, 0, 30 ) ); }
 		}
-		if ( isset( $org['profiles']['googleBusiness'] ) ) { $lb['hasMap'] = $org['profiles']['googleBusiness']; }
+		$gr = rk_builder_reviews_store();
+		if ( isset( $org['profiles']['googleBusiness'] ) ) { $lb['hasMap'] = $org['profiles']['googleBusiness']; } elseif ( '' !== $gr['mapsUrl'] ) { $lb['hasMap'] = $gr['mapsUrl']; }
+		if ( (int) $gr['summary']['count'] > 0 && (float) $gr['summary']['rating'] > 0 ) { $lb['aggregateRating'] = array( '@type' => 'AggregateRating', 'ratingValue' => (float) $gr['summary']['rating'], 'reviewCount' => (int) $gr['summary']['count'], 'bestRating' => '5', 'worstRating' => '1' ); }
 		if ( $same ) { $lb['sameAs'] = $same; }
 		$graph[] = $lb;
 	}

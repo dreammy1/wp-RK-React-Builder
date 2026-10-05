@@ -454,6 +454,9 @@ function rk_builder_block_specs() {
 			'featured' => rk_builder_f_bool( true ),
 			'lightbox' => rk_builder_f_bool( true ),
 			'captions' => rk_builder_f_enum( array( 'overlay', 'below', 'hover', 'none' ), true ),
+			'source'   => rk_builder_f_enum( array( 'manual', 'media', 'portfolio', 'service' ), true ),
+			'limit'    => rk_builder_f_int( 1, 40, true ),
+			'filter'   => rk_builder_f_text( 0, 80, true ),
 		),
 		'sitefooter' => array(
 			'brand'        => rk_builder_f_text( 1, 80 ),

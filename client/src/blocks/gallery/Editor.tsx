@@ -1,7 +1,41 @@
 import type { FieldDef } from "../fields";
 
 export const galleryFields: FieldDef[] = [
-  { kind: "galleryItems", key: "items", label: "Photos" },
+  {
+    kind: "select",
+    key: "source",
+    label: "Photos from",
+    options: [
+      { value: "manual", label: "Added by hand" },
+      { value: "media", label: "Newest in the media library" },
+      { value: "portfolio", label: "Project pictures" },
+      { value: "service", label: "Service pictures" },
+    ],
+    help: "Automatic galleries fill themselves and stay up to date. Project and service pictures use each entry's featured image, its title as caption and its first category as the filter button.",
+  },
+  {
+    kind: "number",
+    key: "limit",
+    label: "How many photos",
+    min: 1,
+    max: 40,
+    showIf: v => !!v.source && v.source !== "manual",
+    help: "Up to 24 for projects and services, 40 for the media library. The editor preview shows at most 24.",
+  },
+  {
+    kind: "text",
+    key: "filter",
+    label: "Only show",
+    maxLength: 80,
+    showIf: v => !!v.source && v.source !== "manual",
+    help: "Projects and services: a category slug such as hardwood-floors. Media library: words that appear in the picture's title or text. Leave empty for all.",
+  },
+  {
+    kind: "galleryItems",
+    key: "items",
+    label: "Photos",
+    showIf: v => !v.source || v.source === "manual",
+  },
   { kind: "group", label: "Layout" },
   {
     kind: "select",

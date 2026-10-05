@@ -1,0 +1,18 @@
+{
+  "kind": "layout",
+  "description": "Gallery limit is 1 to 40",
+  "document": {
+    "version": 1,
+    "blocks": [
+      {
+        "id": "g",
+        "type": "gallery",
+        "props": {
+          "items": "",
+          "source": "media",
+          "limit": 99
+        }
+      }
+    ]
+  }
+}

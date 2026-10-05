@@ -1,11 +1,52 @@
 import type { ViewProps } from "@/render/ViewProps";
+import { useContent } from "@/render/content";
 import { parseRows, safeImg, uniqueTags } from "../links";
-import { galleryClasses, type GalleryProps } from "./schema";
+import { galleryClasses, slugLabel, type GalleryProps } from "./schema";
+
+type Row = [string, string, string];
 
 export function GalleryView({ props }: ViewProps<GalleryProps>) {
-  const rows = parseRows(props.items, 3, 40).filter(
-    ([src]) => safeImg(src) !== ""
+  if (props.source && props.source !== "manual")
+    return <AutoGallery props={props} source={props.source} />;
+  return (
+    <GalleryGrid props={props} rows={parseRows(props.items, 3, 40) as Row[]} />
   );
+}
+
+/** Photos taken from the media library or from projects / services (the server does the same in PHP). */
+function AutoGallery({
+  props,
+  source,
+}: {
+  props: GalleryProps;
+  source: "media" | "portfolio" | "service";
+}) {
+  const limit = props.limit ?? 12;
+  const result = useContent({
+    source,
+    limit: Math.min(limit, source === "media" ? 40 : 24),
+    category: props.filter ?? "",
+    orderBy: "date",
+    order: "desc",
+  });
+  const rows: Row[] = result.items
+    .filter(i => i.image)
+    .map(i => [
+      i.image!.url,
+      source === "media" ? "" : slugLabel(i.categories[0] ?? ""),
+      i.title,
+    ]);
+  return <GalleryGrid props={props} rows={rows} />;
+}
+
+function GalleryGrid({
+  props,
+  rows: all,
+}: {
+  props: GalleryProps;
+  rows: Row[];
+}) {
+  const rows = all.filter(([src]) => safeImg(src) !== "");
   const tags = props.filters ? uniqueTags(rows.map(r => r[1])) : [];
   const featured = props.featured !== false;
   const grid = rows.map(([src, cat, alt], i) => (
