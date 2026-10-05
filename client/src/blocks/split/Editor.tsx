@@ -12,6 +12,13 @@ export const splitFields: FieldDef[] = [
   },
   {
     kind: "textarea",
+    key: "checks",
+    label: "Checklist",
+    maxLength: 1800,
+    help: "One point per line (up to 12), shown with check marks under the copy",
+  },
+  {
+    kind: "textarea",
     key: "facts",
     label: "Key facts",
     maxLength: 600,

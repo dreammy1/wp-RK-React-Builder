@@ -1,4 +1,4 @@
-import { ArrowRight, ArrowUpRight } from "lucide-react";
+import { ArrowRight, ArrowUpRight, Check } from "lucide-react";
 import type { ViewProps } from "@/render/ViewProps";
 import { paragraphs, parseFacts, parseLinks } from "../links";
 import type { SplitProps } from "./schema";
@@ -6,6 +6,11 @@ import type { SplitProps } from "./schema";
 export function SplitView({ props }: ViewProps<SplitProps>) {
   const facts = parseFacts(props.facts);
   const links = parseLinks(props.links ?? "", 4);
+  const checks = (props.checks ?? "")
+    .split("\n")
+    .map(l => l.trim())
+    .filter(Boolean)
+    .slice(0, 12);
   return (
     <section className={`pf-section pf-split ${props.tone} ${props.side}`}>
       <div className="pf-wrap pf-split-grid">
@@ -26,6 +31,16 @@ export function SplitView({ props }: ViewProps<SplitProps>) {
               {p}
             </p>
           ))}
+          {checks.length > 0 && (
+            <ul className="pf-checks">
+              {checks.map((l, i) => (
+                <li key={i}>
+                  <Check size={16} aria-hidden="true" />
+                  {l}
+                </li>
+              ))}
+            </ul>
+          )}
           {facts.length > 0 && (
             <dl className="pf-facts">
               {facts.map(f => (

@@ -4,7 +4,7 @@ import { parseRows } from "@/blocks/links";
 import type { MediaItem } from "@/lib/schema/api";
 import { MediaPicker } from "./MediaPicker";
 
-export const MAX_GALLERY_PHOTOS = 40;
+export const MAX_GALLERY_PHOTOS = 300;
 
 export type GalleryPhoto = { src: string; category: string; caption: string };
 

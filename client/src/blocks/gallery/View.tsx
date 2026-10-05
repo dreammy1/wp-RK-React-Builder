@@ -9,7 +9,7 @@ export function GalleryView({ props }: ViewProps<GalleryProps>) {
   if (props.source && props.source !== "manual")
     return <AutoGallery props={props} source={props.source} />;
   return (
-    <GalleryGrid props={props} rows={parseRows(props.items, 3, 40) as Row[]} />
+    <GalleryGrid props={props} rows={parseRows(props.items, 3, 300) as Row[]} />
   );
 }
 

@@ -32,13 +32,13 @@ describe("gallery photo list", () => {
     expect(out).toBe("https://x.example/a.jpg|A/B|two lines");
     expect(parsePhotos(out)).toHaveLength(1);
   });
-  it("drops empty addresses and stops at 40 photos", () => {
-    const many = Array.from({ length: 45 }, (_, i) => ({
+  it("drops empty addresses and stops at 300 photos", () => {
+    const many = Array.from({ length: 305 }, (_, i) => ({
       src: `https://x.example/${i}.jpg`,
       category: "",
       caption: "",
     }));
-    expect(serializePhotos(many).split("\n")).toHaveLength(40);
+    expect(serializePhotos(many).split("\n")).toHaveLength(300);
     expect(serializePhotos([{ src: " ", category: "x", caption: "y" }])).toBe(
       ""
     );

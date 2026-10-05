@@ -16,6 +16,8 @@ export const splitProps = z.strictObject({
   tone: z.enum(["light", "muted"]),
   /** Text links under the copy, one per line: "Label|/path". */
   links: text(0, 600).optional(),
+  /** A check-marked list under the copy, one point per line (up to 12). */
+  checks: text(0, 1800).optional(),
 });
 export type SplitProps = z.infer<typeof splitProps>;
 export const splitDefaults: SplitProps = {
@@ -29,4 +31,5 @@ export const splitDefaults: SplitProps = {
   side: "left",
   tone: "light",
   links: "",
+  checks: "",
 };

@@ -19,8 +19,8 @@ export const GALLERY_SOURCES = [
 ] as const;
 
 export const galleryProps = z.strictObject({
-  /** One photo per line: "image|Category|Description" (up to 40). The first is shown large unless `featured` is false. */
-  items: text(0, 12000),
+  /** One photo per line: "image|Category|Description" (up to 300). The first is shown large unless `featured` is false. */
+  items: text(0, 45000),
   /** A row of category buttons above the grid. */
   filters: z.boolean().optional(),
   /** Columns on a computer (2 to 4); 3 when absent. */

@@ -355,7 +355,7 @@ function rk_builder_render_gallery( array $p, array $context = array() ) {
 	$tags    = array();
 	$n       = 0;
 	$source = isset( $p['source'] ) ? $p['source'] : 'manual';
-	$rows   = 'manual' === $source ? rk_builder_parse_rows( $p['items'], 3, 40 ) : rk_builder_gallery_auto_rows( $p, $context );
+	$rows   = 'manual' === $source ? rk_builder_parse_rows( $p['items'], 3, 300 ) : rk_builder_gallery_auto_rows( $p, $context );
 	foreach ( $rows as $r ) {
 		if ( '' === $r[0] || '' === rk_builder_src( $r[0] ) ) { continue; }
 		$cap = '' !== $r[1] && '' !== $r[2] ? $r[1] . ' · ' . $r[2] : ( '' !== $r[1] ? $r[1] : $r[2] );

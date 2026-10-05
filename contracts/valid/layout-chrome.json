@@ -72,7 +72,8 @@
           "imageAlt": "A craftsman at work",
           "side": "right",
           "tone": "light",
-          "links": "More about us|/about\nbad|javascript:x\nTalk|/contact"
+          "links": "More about us|/about\nbad|javascript:x\nTalk|/contact",
+          "checks": "First point\nSecond point"
         }
       },
       {

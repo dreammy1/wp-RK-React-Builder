@@ -257,6 +257,12 @@ function rk_builder_render_split( array $p, array $context = array() ) {
 	$html .= '<div class="pf-split-copy">';
 	if ( '' !== $p['eyebrow'] ) { $html .= '<p class="pf-kicker">' . rk_builder_h( $p['eyebrow'] ) . '</p>'; }
 	$html .= '<h2>' . rk_builder_h( $p['heading'] ) . '</h2>' . rk_builder_paragraphs_html( $p['body'] );
+	$check_lines = rk_builder_lines( isset( $p['checks'] ) ? $p['checks'] : '', 12 );
+	if ( $check_lines ) {
+		$html .= '<ul class="pf-checks">';
+		foreach ( $check_lines as $l ) { $html .= '<li>' . rk_builder_icon( 'check' ) . rk_builder_h( $l ) . '</li>'; }
+		$html .= '</ul>';
+	}
 	if ( $facts ) {
 		$html .= '<dl class="pf-facts">';
 		foreach ( $facts as $f ) { $html .= '<div><dt>' . rk_builder_h( $f['value'] ) . '</dt><dd>' . rk_builder_h( $f['label'] ) . '</dd></div>'; }
