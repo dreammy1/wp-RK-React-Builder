@@ -220,6 +220,7 @@ function rk_builder_register_routes() {
 	rk_builder_register_mcp_routes( $ns );
 	rk_builder_register_dashboard_routes( $ns );
 	rk_builder_register_integration_routes( $ns );
+	rk_builder_register_ui_library_routes( $ns );
 	register_rest_route( $ns, '/theme-config', array(
 		array( 'methods' => $GET, 'callback' => 'rk_builder_handle_get_theme', 'permission_callback' => '__return_true' ),
 		array( 'methods' => $POST, 'callback' => 'rk_builder_handle_save_theme', 'permission_callback' => 'rk_builder_perm_theme_write' ),

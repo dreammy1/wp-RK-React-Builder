@@ -29,6 +29,9 @@ function rk_builder_register_admin_menu() {
 		// Runs before wp-admin prints its header, so we can answer with the standalone document.
 		add_action( 'load-' . $hook, 'rk_builder_render_standalone' );
 	}
+	if ( function_exists( 'rk_builder_register_ui_library_menu' ) ) {
+		rk_builder_register_ui_library_menu();
+	}
 }
 
 /** Builder switched on in Settings > RK Builder (default: on). */
@@ -65,6 +68,12 @@ function rk_builder_boot_data() {
 	$uid  = (int) get_current_user_id();
 	$user = get_userdata( $uid );
 	$page = rk_builder_requested_page_id();
+	$view = '';
+	if ( isset( $_GET['page'] ) && 'rk-builder-ui-library' === $_GET['page'] ) { // phpcs:ignore WordPress.Security.NonceVerification
+		$view = 'library';
+	} elseif ( isset( $_GET['view'] ) && is_string( $_GET['view'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification
+		$view = sanitize_key( (string) wp_unslash( $_GET['view'] ) );
+	}
 	return array(
 		'mode'          => 'nonce',
 		'apiBase'       => rest_url( 'rk/v1/' ),
@@ -80,6 +89,7 @@ function rk_builder_boot_data() {
 		'publicSiteUrl' => rk_builder_frontend_url(),
 		'adminUrl'      => admin_url( 'admin.php?page=rk-builder' ),
 		'initialPageId' => $page > 0 ? $page : null,
+		'initialView'   => '' !== $view ? $view : null,
 	);
 }
 

@@ -16,6 +16,7 @@ import {
   LayoutTemplate,
   SlidersHorizontal,
   Bot,
+  Library,
 } from "lucide-react";
 import { api } from "@/lib/api/builder";
 import { getBoot } from "@/lib/boot";
@@ -23,6 +24,7 @@ import { CodeSection } from "./CodeSection";
 import { GlobalSection } from "./GlobalSection";
 import { ContentSection } from "./ContentSection";
 import { TemplatesSection } from "./TemplatesSection";
+import { UiLibrarySection } from "./UiLibrarySection";
 import { TypesSection } from "./TypesSection";
 import { McpSection } from "./McpSection";
 import { MediaSection } from "./MediaSection";
@@ -38,6 +40,7 @@ import { VisualizerSection } from "./VisualizerSection";
 export type DashView =
   | "overview"
   | "pages"
+  | "library"
   | "content"
   | "media"
   | "templates"
@@ -56,6 +59,7 @@ type Icon = ComponentType<{ size?: number; "aria-hidden"?: boolean }>;
 const NAV: { id: DashView; label: string; icon: Icon }[] = [
   { id: "overview", label: "Overview", icon: LayoutDashboard },
   { id: "pages", label: "Pages", icon: FileText },
+  { id: "library", label: "UI Library", icon: Library },
   { id: "content", label: "Content", icon: Database },
   { id: "media", label: "Media", icon: ImageIcon },
   { id: "templates", label: "Templates", icon: LayoutTemplate },
@@ -95,7 +99,11 @@ const ADMIN_ONLY = new Set<DashView>([
 const VIEWS = new Set<string>([...NAV.map(n => n.id), "more"]);
 
 function readView(): DashView {
-  const v = new URLSearchParams(location.search).get("view") ?? "";
+  const boot = getBoot();
+  const v =
+    new URLSearchParams(location.search).get("view") ??
+    boot?.initialView ??
+    "";
   return VIEWS.has(v) ? (v as DashView) : "overview";
 }
 
@@ -127,6 +135,7 @@ export function Dashboard({ navigate }: { navigate: (to: string) => void }) {
   const body = {
     overview: <Overview go={setView} navigate={navigate} admin={admin} />,
     pages: <PagesSection navigate={navigate} />,
+    library: <UiLibrarySection navigate={navigate} />,
     content: <ContentSection key={contentType} initialType={contentType} />,
     media: <MediaSection />,
     templates: <TemplatesSection navigate={navigate} />,

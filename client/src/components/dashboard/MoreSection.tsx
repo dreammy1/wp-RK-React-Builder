@@ -3,6 +3,7 @@ import {
   Boxes,
   CodeXml,
   LayoutTemplate,
+  Library,
   Package,
   ExternalLink,
   Settings,
@@ -29,6 +30,9 @@ export function MoreSection({
         <h1>More</h1>
       </header>
       <div className="more-list">
+        <button className="more-item" onClick={() => go("library")}>
+          <Library size={16} aria-hidden="true" /> UI Library
+        </button>
         {admin && (
           <>
             <button className="more-item" onClick={() => go("templates")}>

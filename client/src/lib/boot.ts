@@ -11,6 +11,7 @@ export type BuilderBoot = {
     name: string;
     capabilities: { manageTheme: boolean; publish: boolean };
   };
+  initialView?: string;
 };
 
 declare global {

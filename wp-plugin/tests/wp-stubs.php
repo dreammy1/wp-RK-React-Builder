@@ -171,6 +171,7 @@ function esc_url( $url ) { return esc_html( esc_url_raw( $url ) ); }
 function wp_cache_delete( $k, $g = '' ) { return true; }
 function wp_die( $m = '', $t = '', $a = array() ) { throw new Exception( 'wp_die: ' . $m ); }
 function add_menu_page( $title, $menu, $cap, $slug, $cb, $icon = '', $pos = null ) { $GLOBALS['RK']['menu'][] = compact( 'title', 'menu', 'cap', 'slug', 'cb', 'icon', 'pos' ); }
+function add_submenu_page( $parent, $title, $menu, $cap, $slug, $cb = '', $pos = null ) { $GLOBALS['RK']['submenu'][ $parent ][] = compact( 'parent', 'title', 'menu', 'cap', 'slug', 'cb', 'pos' ); return 'hook_' . $slug; }
 function flush_rewrite_rules() { $GLOBALS['RK']['flushed'] = ( isset( $GLOBALS['RK']['flushed'] ) ? $GLOBALS['RK']['flushed'] : 0 ) + 1; }
 function register_post_type( $t, $a = array() ) { $GLOBALS['RK']['cpt'][ $t ] = $a; }
 function register_taxonomy( $t, $o, $a = array() ) { $GLOBALS['RK']['tax'][ $t ] = array( $o, $a ); }

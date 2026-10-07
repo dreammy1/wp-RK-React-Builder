@@ -40,6 +40,7 @@ require_once RK_BUILDER_DIR . 'includes/site-transfer.php';
 require_once RK_BUILDER_DIR . 'includes/themes.php';
 require_once RK_BUILDER_DIR . 'includes/kit.php';
 require_once RK_BUILDER_DIR . 'includes/library.php';
+require_once RK_BUILDER_DIR . 'includes/ui-library.php';
 require_once RK_BUILDER_DIR . 'includes/install-undo.php';
 require_once RK_BUILDER_DIR . 'includes/dashboard.php';
 require_once RK_BUILDER_DIR . 'includes/integrations.php';

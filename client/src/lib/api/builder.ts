@@ -585,4 +585,40 @@ export const api = {
       signal,
     });
   },
+
+  applyUiLibraryTheme: (theme: ThemeConfig) =>
+    request("builder/ui-library/apply-theme", z.object({ ok: z.boolean(), theme: z.unknown() }), {
+      method: "POST",
+      body: { theme },
+    }),
+
+  createUiLibraryPage: (title: string, layout: LayoutDocument, slug?: string) =>
+    request(
+      "builder/ui-library/create-page",
+      z.object({ ok: z.boolean(), id: z.number(), title: z.string(), editLink: z.string().optional() }),
+      {
+        method: "POST",
+        body: { title, layout, slug },
+      }
+    ),
+
+  createUiLibraryTemplate: (title: string, kind: "header" | "footer", layout: LayoutDocument, activate = false) =>
+    request(
+      "builder/ui-library/create-template",
+      z.object({ ok: z.boolean(), id: z.number(), editLink: z.string().optional() }),
+      {
+        method: "POST",
+        body: { title, kind, layout, activate },
+      }
+    ),
+
+  createUiLibraryReusable: (name: string, block: Block) =>
+    request(
+      "builder/ui-library/create-reusable",
+      z.object({ ok: z.boolean(), id: z.number(), item: z.unknown().optional() }),
+      {
+        method: "POST",
+        body: { name, block },
+      }
+    ),
 };
