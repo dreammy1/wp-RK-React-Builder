@@ -279,6 +279,14 @@ function rk_builder_handle_ui_library_create_reusable( $req ) {
 		return rk_builder_invalid( 'rk_invalid_reusable', array( array( 'path' => 'block', 'message' => 'Required' ) ) );
 	}
 
+	// Reusable blocks expect { type, props } without block id.
+	if ( isset( $block['type'], $block['props'] ) && is_array( $block['props'] ) ) {
+		$block = array(
+			'type'  => (string) $block['type'],
+			'props' => (array) $block['props'],
+		);
+	}
+
 	$bi = rk_builder_reusable_block_issues( $block, rk_builder_allowed_image_hosts() );
 	if ( ! empty( $bi ) ) {
 		return rk_builder_invalid( 'rk_invalid_reusable', rk_builder_prefix_issues( $bi, 'block' ) );

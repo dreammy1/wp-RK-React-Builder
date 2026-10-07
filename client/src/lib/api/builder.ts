@@ -618,7 +618,7 @@ export const api = {
       z.object({ ok: z.boolean(), id: z.number(), item: z.unknown().optional() }),
       {
         method: "POST",
-        body: { name, block },
+        body: { name, block: { type: block.type, props: block.props } },
       }
     ),
 };
