@@ -191,20 +191,22 @@ function rk_builder_style_declarations( $style ) {
 	if ( isset( $size['colSpan'] ) && rk_builder_is_intlike( $size['colSpan'] ) && $size['colSpan'] >= 1 && $size['colSpan'] <= 4 ) { $out[] = 'grid-column:span ' . (int) $size['colSpan']; }
 
 	$bg = isset( $style['background'] ) && is_array( $style['background'] ) ? $style['background'] : array();
-	if ( isset( $bg['color'] ) && '' !== ( $c = rk_builder_style_color( $bg['color'] ) ) ) { $out[] = 'background-color:' . $c; }
+	// `!important` because every block root paints its own background/colour; without it the chosen
+	// value would be hidden behind the block's default and appear to do nothing.
+	if ( isset( $bg['color'] ) && '' !== ( $c = rk_builder_style_color( $bg['color'] ) ) ) { $out[] = 'background-color:' . $c . '!important'; }
 	$gradients = array(
 		'fade'     => 'linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,.45) 100%)',
 		'diagonal' => 'linear-gradient(135deg, rgba(0,0,0,.35) 0%, rgba(0,0,0,0) 70%)',
 		'radial'   => 'radial-gradient(120% 120% at 50% 0%, rgba(0,0,0,.35) 0%, rgba(0,0,0,0) 60%)',
 	);
-	if ( isset( $bg['gradient'], $gradients[ $bg['gradient'] ] ) ) { $out[] = 'background-image:' . $gradients[ $bg['gradient'] ]; }
+	if ( isset( $bg['gradient'], $gradients[ $bg['gradient'] ] ) ) { $out[] = 'background-image:' . $gradients[ $bg['gradient'] ] . '!important'; }
 	if ( isset( $bg['imageUrl'] ) && is_string( $bg['imageUrl'] ) && null === rk_builder_image_url_problem( $bg['imageUrl'], null ) ) {
-		$out[] = 'background-image:url("' . $bg['imageUrl'] . '")';
+		$out[] = 'background-image:url("' . $bg['imageUrl'] . '")!important';
 		$fits = array( 'cover', 'contain', 'fill' );
 		$pos  = array( 'center', 'top', 'bottom', 'left', 'right' );
-		$out[] = 'background-size:' . ( isset( $bg['imageFit'] ) && in_array( $bg['imageFit'], $fits, true ) ? $bg['imageFit'] : 'cover' );
-		$out[] = 'background-position:' . ( isset( $bg['imagePosition'] ) && in_array( $bg['imagePosition'], $pos, true ) ? $bg['imagePosition'] : 'center' );
-		$out[] = 'background-repeat:no-repeat';
+		$out[] = 'background-size:' . ( isset( $bg['imageFit'] ) && in_array( $bg['imageFit'], $fits, true ) ? $bg['imageFit'] : 'cover' ) . '!important';
+		$out[] = 'background-position:' . ( isset( $bg['imagePosition'] ) && in_array( $bg['imagePosition'], $pos, true ) ? $bg['imagePosition'] : 'center' ) . '!important';
+		$out[] = 'background-repeat:no-repeat!important';
 	}
 
 	$border = isset( $style['border'] ) && is_array( $style['border'] ) ? $style['border'] : array();
@@ -213,21 +215,20 @@ function rk_builder_style_declarations( $style ) {
 		$styles = array( 'solid', 'dashed', 'dotted' );
 		$bs = isset( $border['style'] ) && in_array( $border['style'], $styles, true ) ? $border['style'] : 'solid';
 		$bc = isset( $border['color'] ) ? rk_builder_style_color( $border['color'] ) : '';
-		$out[] = 'border:' . $bw . ' ' . $bs . ' ' . ( '' !== $bc ? $bc : 'currentColor' );
+		$out[] = 'border:' . $bw . ' ' . $bs . ' ' . ( '' !== $bc ? $bc : 'currentColor' ) . '!important';
 	}
 	if ( isset( $border['radius'] ) && '' !== ( $br = rk_builder_style_len( $border['radius'] ) ) ) {
-		$out[] = 'border-radius:' . $br;
-		$out[] = 'overflow:hidden';
+		$out[] = 'border-radius:' . $br . '!important';
 	}
 
 	$shadows = array( 'sm' => '0 1px 2px rgba(0,0,0,.08)', 'md' => '0 6px 18px rgba(0,0,0,.10)', 'lg' => '0 18px 50px rgba(0,0,0,.16)', 'glow' => '0 0 0 4px rgba(199,243,107,.35)' );
-	if ( isset( $style['shadow']['preset'], $shadows[ $style['shadow']['preset'] ] ) ) { $out[] = 'box-shadow:' . $shadows[ $style['shadow']['preset'] ]; }
+	if ( isset( $style['shadow']['preset'], $shadows[ $style['shadow']['preset'] ] ) ) { $out[] = 'box-shadow:' . $shadows[ $style['shadow']['preset'] ] . '!important'; }
 
 	$typo = isset( $style['typography'] ) && is_array( $style['typography'] ) ? $style['typography'] : array();
 	if ( isset( $typo['size'] ) && '' !== ( $ts = rk_builder_style_len( $typo['size'] ) ) ) { $out[] = '--rk-block-size:' . $ts; }
 	if ( isset( $typo['weight'] ) && rk_builder_is_intlike( $typo['weight'] ) && $typo['weight'] >= 300 && $typo['weight'] <= 900 ) { $out[] = '--rk-block-weight:' . (int) $typo['weight']; }
-	if ( isset( $typo['align'] ) && in_array( $typo['align'], array( 'left', 'center', 'right' ), true ) ) { $out[] = 'text-align:' . $typo['align']; }
-	if ( isset( $typo['color'] ) && '' !== ( $tc = rk_builder_style_color( $typo['color'] ) ) ) { $out[] = 'color:' . $tc; }
+	if ( isset( $typo['align'] ) && in_array( $typo['align'], array( 'left', 'center', 'right' ), true ) ) { $out[] = 'text-align:' . $typo['align'] . '!important'; }
+	if ( isset( $typo['color'] ) && '' !== ( $tc = rk_builder_style_color( $typo['color'] ) ) ) { $out[] = 'color:' . $tc . '!important'; }
 
 	return $out;
 }
@@ -238,15 +239,20 @@ function rk_builder_style_rule( $selector, array $decls ) {
 }
 
 /**
- * The advanced-style CSS for one block, scoped to `.rk-root .rk-style-<id>` (the class the renderer
- * adds to that block's root). Returns '' for a block without styles, so unstyled documents emit
- * exactly what they did before this existed.
+ * The advanced-style CSS for one block.
+ *
+ * The `rk-style-<id>` class sits on a wrapper around the block, but each block View paints its own
+ * background and text colour on its own root element, so the declarations are applied to the wrapper
+ * and to the block root inside it. The editor wraps the block in a transparent `.canvas-view` shim,
+ * hence the third selector. Mirrors selectorsFor() in client/src/lib/schema/style.ts.
+ * Returns '' for a block without styles, so unstyled documents emit exactly what they did before.
  */
 function rk_builder_block_style_css( $block, $scope = '.site-root' ) {
 	$class = rk_builder_style_class( $block );
 	if ( '' === $class || ! is_array( $block['advanced'] ) ) { return ''; }
 	$style  = $block['advanced'];
-	$base   = $scope . ' .' . $class;
+	$wrap   = $scope . ' .' . $class;
+	$base   = $wrap . ',' . $wrap . ' > *' . ',' . $wrap . ' > .canvas-view > *';
 	$out    = array();
 
 	$vis = isset( $style['visibility'] ) && is_array( $style['visibility'] ) ? $style['visibility'] : array();
@@ -262,7 +268,7 @@ function rk_builder_block_style_css( $block, $scope = '.site-root' ) {
 		$parts = array();
 		if ( ! empty( $typo['size'] ) ) { $parts[] = 'font-size:var(--rk-block-size)!important'; }
 		if ( ! empty( $typo['weight'] ) ) { $parts[] = 'font-weight:var(--rk-block-weight)!important'; }
-		$out[] = rk_builder_style_rule( $base . ' :is(h1,h2,h3,h4,.pf-kicker)', $parts );
+		$out[] = rk_builder_style_rule( $wrap . ' :is(h1,h2,h3,h4,.pf-kicker)', $parts );
 	}
 
 	if ( isset( $style['overrides'] ) && is_array( $style['overrides'] ) ) {

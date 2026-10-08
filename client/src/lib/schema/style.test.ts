@@ -99,12 +99,25 @@ describe("advancedToCss", () => {
     expect(advancedToCss(id, {})).toBe("");
   });
 
-  it("scopes every rule to the block and the surface", () => {
+  it("scopes every rule to the block and the surface, on both the wrapper and the block root", () => {
+    // The declarations must land on the block's own root as well as the wrapper: every block paints
+    // its own background/colour on that root, which would otherwise hide the chosen style.
     const css = advancedToCss(id, { spacing: { top: "24px" } }, "public");
-    expect(css).toBe(`.site-root .rk-style-${id}{padding-top:24px}`);
+    expect(css).toBe(
+      `.site-root .rk-style-${id},.site-root .rk-style-${id} > *,.site-root .rk-style-${id} > .canvas-view > *{padding-top:24px}`
+    );
     expect(advancedToCss(id, { spacing: { top: "24px" } }, "editor")).toContain(
       `.editor-canvas .rk-style-${id}`
     );
+  });
+
+  it("background and text colour are authoritative so a block's own rules cannot hide them", () => {
+    const css = advancedToCss(id, {
+      background: { color: "#112233" },
+      typography: { color: "#ffffff" },
+    });
+    expect(css).toContain("background-color:#112233!important");
+    expect(css).toContain("color:#ffffff!important");
   });
 
   it("turns box style into padding, border and shadow declarations", () => {
@@ -134,7 +147,8 @@ describe("advancedToCss", () => {
       spacing: { top: "48px" },
       overrides: { phone: { spacing: { top: "12px" } } },
     });
-    expect(css).toContain("@media (min-width:641px){.site-root .rk-style-" + id + "{padding-top:12px}}");
+    expect(css).toContain("@media (min-width:641px){");
+    expect(css).toContain("padding-top:12px");
   });
 
   it("hides a block per breakpoint", () => {

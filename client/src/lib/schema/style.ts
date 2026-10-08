@@ -249,40 +249,72 @@ function declarations(style: NonNullable<AdvancedStyle> | undefined): string[] {
     if (size.colSpan) out.push(`grid-column:span ${size.colSpan}`);
   }
   if (background) {
-    if (background.color) out.push(`background-color:${background.color}`);
+    // `!important` because every block root paints its own background (e.g. `.pf-section`); without
+    // it the chosen colour would be hidden behind the block's default and appear to do nothing.
+    if (background.color) out.push(`background-color:${background.color}!important`);
     if (background.gradient && background.gradient !== "none")
-      out.push(`background-image:${GRADIENT_VALUES[background.gradient]}`);
+      out.push(`background-image:${GRADIENT_VALUES[background.gradient]}!important`);
     if (background.imageUrl) {
-      out.push(`background-image:url("${background.imageUrl}")`);
-      out.push(`background-size:${background.imageFit ?? "cover"}`);
-      out.push(`background-position:${background.imagePosition ?? "center"}`);
-      out.push("background-repeat:no-repeat");
+      out.push(`background-image:url("${background.imageUrl}")!important`);
+      out.push(`background-size:${background.imageFit ?? "cover"}!important`);
+      out.push(`background-position:${background.imagePosition ?? "center"}!important`);
+      out.push("background-repeat:no-repeat!important");
     }
   }
   if (border) {
     const w = border.width;
     if (w && w !== "0px")
       out.push(
-        `border:${w} ${border.style ?? "solid"} ${border.color ?? "currentColor"}`
+        `border:${w} ${border.style ?? "solid"} ${border.color ?? "currentColor"}!important`
       );
     else if (border.color && border.style)
-      out.push(`border-color:${border.color}`);
-    if (border.radius) out.push(`border-radius:${border.radius}`);
-    if (border.radius) out.push("overflow:hidden");
+      out.push(`border-color:${border.color}!important`);
+    if (border.radius) out.push(`border-radius:${border.radius}!important`);
   }
   if (shadow?.preset && shadow.preset !== "none")
-    out.push(`box-shadow:${SHADOW_VALUES[shadow.preset]}`);
+    out.push(`box-shadow:${SHADOW_VALUES[shadow.preset]}!important`);
   if (typography) {
     if (typography.size) out.push(`--rk-block-size:${typography.size}`);
     if (typography.weight) out.push(`--rk-block-weight:${typography.weight}`);
-    if (typography.align) out.push(`text-align:${typography.align}`);
-    if (typography.color) out.push(`color:${typography.color}`);
+    if (typography.align) out.push(`text-align:${typography.align}!important`);
+    // Authoritative so the block's own `color` (e.g. `.pf-section { color: var(--site-ink) }`) cannot hide it.
+    if (typography.color) out.push(`color:${typography.color}!important`);
   }
   return out;
 }
 
 const rule = (selector: string, decls: string[]) =>
   decls.length ? `${selector}{${decls.join(";")}}` : "";
+
+/**
+ * Selectors for a styled block.
+ *
+ * The `rk-style-<id>` class sits on a wrapper, but every block View paints its own background and
+ * text colour on its own root element (e.g. `.pf-section { background: var(--site-bg) }`), and the
+ * depth differs per surface:
+ *
+ *   editor :  .canvas-block.rk-style-x > .canvas-view > <block root>
+ *   public :  .rk-style-x            > <block root>
+ *
+ * `.canvas-view` is an editor-only, transparent shim, so the block root is reached through it rather
+ * than targeted directly. This works in both surfaces without every View having to accept a class.
+ */
+function selectorsFor(scope: "editor" | "public", id: string): string[] {
+  const root = scope === "editor" ? ".editor-canvas" : ".site-root";
+  const wrap = `${root} .rk-style-${id}`;
+  // `> *` covers the public surface (block root is the direct child) and `> .canvas-view > *`
+  // covers the editor, where the block root sits inside the transparent `.canvas-view` shim.
+  return [wrap, `${wrap} > *`, `${wrap} > .canvas-view > *`];
+}
+
+/** The heading-like elements inside a block, so typography size/weight can reach them. */
+function headingSelectorsFor(
+  scope: "editor" | "public",
+  id: string
+): string[] {
+  const root = scope === "editor" ? ".editor-canvas" : ".site-root";
+  return [`${root} .rk-style-${id} :is(h1,h2,h3,h4,.pf-kicker)`];
+}
 
 /**
  * Turn one block's advanced style into scoped CSS.
@@ -297,8 +329,8 @@ export function advancedToCss(
   scope: "editor" | "public" = "public"
 ): string {
   if (!style) return "";
-  const root = scope === "editor" ? ".editor-canvas" : ".site-root";
-  const base = `${root} .rk-style-${id}`;
+  const targets = selectorsFor(scope, id);
+  const base = targets.join(",");
   const out: string[] = [];
 
   // Visibility: independent of the styled declarations so hiding works on its own.
@@ -327,7 +359,7 @@ export function advancedToCss(
       parts.push(`font-size:var(--rk-block-size)!important`);
     if (style.typography.weight)
       parts.push(`font-weight:var(--rk-block-weight)!important`);
-    out.push(rule(`${base} :is(h1,h2,h3,h4,.pf-kicker)`, parts));
+    out.push(rule(headingSelectorsFor(scope, id).join(","), parts));
   }
 
   const overrides = style.overrides;

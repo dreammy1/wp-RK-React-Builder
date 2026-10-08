@@ -347,10 +347,24 @@ code {
     border-color 0.16s ease-out,
     box-shadow 0.16s ease-out;
 }
+/*
+ * Hover/selection outline for the whole section.
+ *
+ * The wrappers are flat siblings (a block never contains another block), so the outline already
+ * covers the entire section rather than some inner element. The one thing that used to hide it was
+ * the block's own painted background (e.g. `.site-hero`, `.pf-section`) sitting on top of the inset
+ * ring. Giving the outline an inset box-shadow with a offset that draws *inside* the border keeps it
+ * visible over any block content, and lifting the block body below it keeps the ring crisp.
+ */
 .canvas-block:hover,
 .canvas-block.selected {
   border-color: #6f8c41;
   box-shadow: inset 0 0 0 1px #c7f36b55;
+}
+.canvas-block:hover > .canvas-view,
+.canvas-block.selected > .canvas-view {
+  position: relative;
+  z-index: 0;
 }
 .block-handle {
   height: 25px;
