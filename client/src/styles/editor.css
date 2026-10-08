@@ -4279,3 +4279,334 @@ input[type="checkbox"].row-check:indeterminate::after {
   border: 1px solid rgba(0, 0, 0, 0.15);
 }
 
+
+/* ================================================================== *
+ * Block inspector: tabs + the Style/Advanced panels (components/editor/style/*)
+ * ================================================================== */
+
+.inspector-title-actions {
+  display: flex;
+  gap: 4px;
+}
+/* Content / Style / Advanced */
+.sx-tabs {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 2px;
+  margin: 18px 0 4px;
+  padding: 3px;
+  background: #11151b;
+  border: 1px solid #2c333c;
+  border-radius: 8px;
+}
+.sx-tabs button {
+  padding: 8px 6px;
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  color: #a3aeb4;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.sx-tabs button:hover {
+  color: #dbe3dd;
+}
+.sx-tabs button.active {
+  background: #232c35;
+  color: #edf0e8;
+}
+.sx-tabs button:focus-visible {
+  outline: 2px solid #c7f36b;
+  outline-offset: 1px;
+}
+
+.sx-panel {
+  padding-top: 14px;
+}
+.sx-scope {
+  margin: 0 0 14px;
+  padding: 8px 10px;
+  background: #1a2129;
+  border-left: 2px solid #6f8c41;
+  border-radius: 3px;
+  color: #9aa5ac;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+/* Collapsible section (native <details>) */
+.sx-section {
+  border-bottom: 1px solid #262d35;
+}
+.sx-section > summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 13px 2px;
+  color: #dbe3dd;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+.sx-section > summary::-webkit-details-marker {
+  display: none;
+}
+.sx-section > summary > span:first-child {
+  flex: 1;
+}
+.sx-section > summary:focus-visible {
+  outline: 2px solid #c7f36b;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+.sx-chevron {
+  color: #7f8b94;
+  transition: transform 0.15s ease;
+}
+.sx-section[open] .sx-chevron {
+  transform: rotate(180deg);
+}
+.sx-section-body {
+  padding: 2px 2px 16px;
+}
+.sx-swatch {
+  width: 14px;
+  height: 14px;
+  border: 1px solid #4a555f;
+  border-radius: 3px;
+  background-image: linear-gradient(45deg, #2c333c 25%, transparent 25%);
+  background-size: 6px 6px;
+}
+
+/* A labelled control row */
+.sx-control {
+  margin: 0 0 14px;
+}
+.sx-label {
+  display: block;
+  margin-bottom: 6px;
+  color: #88939c;
+  font:
+    10px "IBM Plex Mono",
+    monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+.sx-input-el,
+.sx-select {
+  width: 100%;
+  padding: 8px 9px;
+  border: 1px solid #34404a;
+  border-radius: 4px;
+  background: #1d242c;
+  color: #e7eee9;
+  font-size: 12px;
+}
+.sx-input-el:focus,
+.sx-select:focus {
+  outline: 0;
+  border-color: #c7f36b;
+  box-shadow: 0 0 0 2px #c7f36b22;
+}
+.sx-hint {
+  display: block;
+  margin-top: 5px;
+  color: #7f8b94;
+  font-size: 11px;
+  line-height: 1.4;
+}
+.sx-inline-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+/* Number field with a unit suffix */
+.sx-number {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.sx-suffix {
+  color: #7f8b94;
+  font-size: 11px;
+}
+
+/* Colour field: swatch + hex + clear */
+.sx-color {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.sx-color input[type="color"] {
+  flex: 0 0 34px;
+  width: 34px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid #34404a;
+  border-radius: 4px;
+  background: #1d242c;
+  cursor: pointer;
+}
+.sx-hex {
+  flex: 1;
+  font-family: "IBM Plex Mono", monospace;
+  text-transform: uppercase;
+}
+.sx-mini {
+  flex: 0 0 auto;
+  width: 28px;
+  height: 30px;
+  border: 1px solid #34404a;
+  border-radius: 4px;
+  background: #1d242c;
+  color: #a3aeb4;
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+}
+.sx-mini:hover,
+.sx-mini.on {
+  border-color: #6f8c41;
+  color: #c7f36b;
+}
+
+/* Four-sided box editor */
+.sx-box {
+  margin-bottom: 16px;
+}
+.sx-box-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.sx-preset {
+  width: auto;
+  max-width: 110px;
+  padding: 4px 6px;
+  font-size: 11px;
+}
+.sx-sides {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 5px;
+}
+.sx-side {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.sx-side > span {
+  color: #7f8b94;
+  font-size: 9px;
+  text-align: center;
+  text-transform: uppercase;
+}
+.sx-side input {
+  padding: 7px 4px;
+  text-align: center;
+  font-size: 11px;
+}
+
+/* Toggle */
+.sx-toggle label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #dbe3dd;
+  font-size: 12px;
+  cursor: pointer;
+}
+.sx-toggle input {
+  width: 15px;
+  height: 15px;
+  accent-color: #c7f36b;
+}
+
+/* Media row inside the style panel */
+.sx-media-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.sx-media-thumb {
+  width: 56px;
+  height: 42px;
+  object-fit: cover;
+  border: 1px solid #34404a;
+  border-radius: 4px;
+}
+.sx-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border: 1px solid #34404a;
+  border-radius: 4px;
+  background: #1d242c;
+  color: #dbe3dd;
+  font-size: 11px;
+  cursor: pointer;
+}
+.sx-btn:hover:not(:disabled) {
+  border-color: #6f8c41;
+  color: #c7f36b;
+}
+.sx-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Device switcher inside the Style tab */
+.sx-devices {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 4px;
+  margin-bottom: 16px;
+  padding: 3px;
+  background: #11151b;
+  border: 1px solid #2c333c;
+  border-radius: 8px;
+}
+.sx-devices button {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 8px 4px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #a3aeb4;
+  font-size: 11px;
+  cursor: pointer;
+}
+.sx-devices button.on {
+  background: #232c35;
+  color: #edf0e8;
+}
+.sx-devices button:focus-visible {
+  outline: 2px solid #c7f36b;
+  outline-offset: 1px;
+}
+.sx-device-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #c7f36b;
+}
+@media (max-width: 520px) {
+  .sx-device-label {
+    display: none;
+  }
+}

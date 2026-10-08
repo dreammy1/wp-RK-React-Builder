@@ -378,6 +378,8 @@ export function useEditorSession(pageId: number, demo: boolean) {
         dispatch({ type: "moveBy", id, delta }),
       patchProps: (id: string, patch: Record<string, unknown>) =>
         dispatch({ type: "patchProps", id, patch, now: Date.now() }),
+      patchAdvanced: (id: string, patch: Record<string, unknown>) =>
+        dispatch({ type: "patchAdvanced", id, patch, now: Date.now() }),
       patchTheme: (patch: Partial<EditorState["theme"]>) =>
         dispatch({ type: "patchTheme", patch, now: Date.now() }),
       select: (id: string | null) => dispatch({ type: "select", id }),

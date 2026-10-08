@@ -4279,3 +4279,12 @@ body.rk-login-full {
 .site-login-card .site-login-links {
   margin-top: 20px;
 }
+
+/* ---- Per-block advanced styles (see lib/schema/style.ts) ----
+   A block only gets a .rk-style-<id> class when it has an `advanced` object, so this base rule is
+   inert for every existing document. The generated CSS (background, spacing, border, shadow) is
+   scoped to the same element with an extra class, so it wins over the block's default rules. */
+.site-root [class*="rk-style-"],
+.editor-canvas [class*="rk-style-"] {
+  position: relative;
+}

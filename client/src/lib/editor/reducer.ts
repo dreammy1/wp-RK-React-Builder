@@ -2,6 +2,7 @@ import { registry } from "@/blocks/registry";
 import type { Block, LayoutDocument } from "@/lib/schema/layout";
 import { LIMITS, type BlockType } from "@/lib/schema/primitives";
 import type { ThemeConfig } from "@/lib/schema/theme";
+import { mergeAdvanced } from "./styleModel";
 
 export type Snapshot = { layout: LayoutDocument; theme: ThemeConfig };
 
@@ -37,6 +38,13 @@ export type EditorAction =
   | { type: "moveBy"; id: string; delta: number }
   | {
       type: "patchProps";
+      id: string;
+      patch: Record<string, unknown>;
+      now: number;
+    }
+  | {
+      /** Replace (or clear, with undefined) a block's advanced presentation object. */
+      type: "patchAdvanced";
       id: string;
       patch: Record<string, unknown>;
       now: number;
@@ -183,6 +191,24 @@ export function reducer(state: EditorState, action: EditorAction): EditorState {
         props: { ...target.props, ...action.patch },
       } as Block;
       const key = `props:${action.id}:${Object.keys(action.patch).sort().join(",")}`;
+      return commit(
+        state,
+        { layout: withBlocks(state, next) },
+        key,
+        action.now
+      );
+    }
+    case "patchAdvanced": {
+      const index = blocks.findIndex(b => b.id === action.id);
+      if (index < 0) return state;
+      const target = blocks[index]!;
+      const merged = mergeAdvanced(target.advanced, action.patch);
+      const next = [...blocks];
+      const rebuilt = { ...target } as Block & { advanced?: unknown };
+      if (merged) rebuilt.advanced = merged;
+      else delete rebuilt.advanced;
+      next[index] = rebuilt;
+      const key = `advanced:${action.id}:${Object.keys(action.patch).sort().join(",")}`;
       return commit(
         state,
         { layout: withBlocks(state, next) },

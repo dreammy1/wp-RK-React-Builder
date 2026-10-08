@@ -3,6 +3,7 @@ import { ArrowDown, ArrowUp, Copy, GripVertical, Trash2 } from "lucide-react";
 import { registry } from "@/blocks/registry";
 import type { Block, LayoutDocument } from "@/lib/schema/layout";
 import type { BlockType } from "@/lib/schema/primitives";
+import { layoutStyles, styleClass } from "@/lib/schema/style";
 import { BlockRenderer } from "@/render/BlockRenderer";
 
 type Props = {
@@ -54,6 +55,11 @@ export function Canvas(p: Props) {
     <div
       className={`site-root site-canvas editor-canvas${p.solidHeader ? " solid-header" : ""}`}
     >
+      {/* Advanced styles for the canvas, scoped to each block's style class. */}
+      {(() => {
+        const css = layoutStyles(blocks, "editor");
+        return css ? <style>{css}</style> : null;
+      })()}
       {blocks.length === 0 && (
         <div className="empty-canvas">
           <span aria-hidden="true">+</span>
@@ -70,7 +76,7 @@ export function Canvas(p: Props) {
             {zone(index)}
             <div
               role="presentation" /* mouse convenience only; keyboard selection uses the handle button */
-              className={`canvas-block ${p.selectedId === block.id ? "selected" : ""} ${invalid ? "invalid" : ""}`}
+              className={`canvas-block ${styleClass(block.id)} ${p.selectedId === block.id ? "selected" : ""} ${invalid ? "invalid" : ""}`}
               draggable
               onDragStart={e => {
                 e.dataTransfer.effectAllowed = "move";

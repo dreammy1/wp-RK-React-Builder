@@ -130,9 +130,160 @@ function rk_builder_arrow_icon() {
 	return '<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-up-right" aria-hidden="true"><path d="M7 7h10v10"></path><path d="M7 17 17 7"></path></svg>';
 }
 
-/** `class="<base> rk-block rk-block-<type>" data-rk-block="<type>"` (class first, data attribute second). */
+/**
+ * `class="<base> rk-block rk-block-<type>" data-rk-block="<type>"` (class first, data attribute second).
+ * Kept as the single place block roots build their attributes; advanced styles use a wrapper instead
+ * (see rk_builder_render_block) so the markup matches the React views exactly.
+ */
 function rk_builder_root_attrs( $type, $base_class ) {
 	return 'class="' . $base_class . ' rk-block rk-block-' . $type . '" data-rk-block="' . $type . '"';
+}
+
+/* ------------------------------------------------------------------ *
+ * Per-block advanced styles (mirrors client/src/lib/schema/style.ts)
+ * ------------------------------------------------------------------ */
+
+/** The class a block root carries when it has an `advanced` object; empty string otherwise. */
+function rk_builder_style_class( $block ) {
+	if ( ! is_array( $block ) || empty( $block['advanced'] ) || ! is_array( $block['advanced'] ) ) { return ''; }
+	$id = isset( $block['id'] ) && is_string( $block['id'] ) ? $block['id'] : '';
+	return 1 === preg_match( '/^[a-z0-9][a-z0-9_-]{0,63}\z/', $id ) ? 'rk-style-' . $id : '';
+}
+
+/** Breakpoint min-widths, mirroring BREAKPOINT_MIN_WIDTH in style.ts. */
+function rk_builder_style_breakpoints() {
+	return array( 'tablet' => 981, 'phone' => 641 );
+}
+
+/** $length is a validated `Npx`; returns the value or '' when absent/invalid. */
+function rk_builder_style_len( $v ) {
+	return is_string( $v ) && 1 === preg_match( '/^(0|[1-9][0-9]{0,3})px\z/', $v ) ? $v : '';
+}
+
+/** A validated colour (#RRGGBB or transparent) or '' . */
+function rk_builder_style_color( $v ) {
+	return is_string( $v ) && 1 === preg_match( '/^(#[0-9a-fA-F]{6}|transparent)\z/', $v ) ? $v : '';
+}
+
+/**
+ * CSS declarations for one breakpoint's worth of advanced style. Mirrors declarations() in style.ts,
+ * including the fixed option tables, so both renderers emit identical rules.
+ *
+ * @return string[]
+ */
+function rk_builder_style_declarations( $style ) {
+	$out = array();
+	if ( ! is_array( $style ) ) { return $out; }
+
+	$spacing = isset( $style['spacing'] ) && is_array( $style['spacing'] ) ? $style['spacing'] : array();
+	foreach ( array( 'top', 'right', 'bottom', 'left' ) as $side ) {
+		$v = isset( $spacing[ $side ] ) ? rk_builder_style_len( $spacing[ $side ] ) : '';
+		if ( '' !== $v ) { $out[] = 'padding-' . $side . ':' . $v; }
+	}
+
+	$size = isset( $style['size'] ) && is_array( $style['size'] ) ? $style['size'] : array();
+	$widths = array( 'full' => 'none', 'wide' => '1320px', 'boxed' => 'var(--site-container, 1144px)', 'narrow' => '760px' );
+	if ( isset( $size['width'] ) && is_string( $size['width'] ) && isset( $widths[ $size['width'] ] ) ) {
+		$out[] = 'max-width:' . $widths[ $size['width'] ];
+		if ( 'full' !== $size['width'] ) { $out[] = 'margin-inline:auto'; }
+	}
+	if ( isset( $size['minHeight'] ) && '' !== ( $mh = rk_builder_style_len( $size['minHeight'] ) ) ) { $out[] = 'min-height:' . $mh; }
+	if ( isset( $size['colSpan'] ) && rk_builder_is_intlike( $size['colSpan'] ) && $size['colSpan'] >= 1 && $size['colSpan'] <= 4 ) { $out[] = 'grid-column:span ' . (int) $size['colSpan']; }
+
+	$bg = isset( $style['background'] ) && is_array( $style['background'] ) ? $style['background'] : array();
+	if ( isset( $bg['color'] ) && '' !== ( $c = rk_builder_style_color( $bg['color'] ) ) ) { $out[] = 'background-color:' . $c; }
+	$gradients = array(
+		'fade'     => 'linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,.45) 100%)',
+		'diagonal' => 'linear-gradient(135deg, rgba(0,0,0,.35) 0%, rgba(0,0,0,0) 70%)',
+		'radial'   => 'radial-gradient(120% 120% at 50% 0%, rgba(0,0,0,.35) 0%, rgba(0,0,0,0) 60%)',
+	);
+	if ( isset( $bg['gradient'], $gradients[ $bg['gradient'] ] ) ) { $out[] = 'background-image:' . $gradients[ $bg['gradient'] ]; }
+	if ( isset( $bg['imageUrl'] ) && is_string( $bg['imageUrl'] ) && null === rk_builder_image_url_problem( $bg['imageUrl'], null ) ) {
+		$out[] = 'background-image:url("' . $bg['imageUrl'] . '")';
+		$fits = array( 'cover', 'contain', 'fill' );
+		$pos  = array( 'center', 'top', 'bottom', 'left', 'right' );
+		$out[] = 'background-size:' . ( isset( $bg['imageFit'] ) && in_array( $bg['imageFit'], $fits, true ) ? $bg['imageFit'] : 'cover' );
+		$out[] = 'background-position:' . ( isset( $bg['imagePosition'] ) && in_array( $bg['imagePosition'], $pos, true ) ? $bg['imagePosition'] : 'center' );
+		$out[] = 'background-repeat:no-repeat';
+	}
+
+	$border = isset( $style['border'] ) && is_array( $style['border'] ) ? $style['border'] : array();
+	$bw     = isset( $border['width'] ) ? rk_builder_style_len( $border['width'] ) : '';
+	if ( '' !== $bw && '0px' !== $bw ) {
+		$styles = array( 'solid', 'dashed', 'dotted' );
+		$bs = isset( $border['style'] ) && in_array( $border['style'], $styles, true ) ? $border['style'] : 'solid';
+		$bc = isset( $border['color'] ) ? rk_builder_style_color( $border['color'] ) : '';
+		$out[] = 'border:' . $bw . ' ' . $bs . ' ' . ( '' !== $bc ? $bc : 'currentColor' );
+	}
+	if ( isset( $border['radius'] ) && '' !== ( $br = rk_builder_style_len( $border['radius'] ) ) ) {
+		$out[] = 'border-radius:' . $br;
+		$out[] = 'overflow:hidden';
+	}
+
+	$shadows = array( 'sm' => '0 1px 2px rgba(0,0,0,.08)', 'md' => '0 6px 18px rgba(0,0,0,.10)', 'lg' => '0 18px 50px rgba(0,0,0,.16)', 'glow' => '0 0 0 4px rgba(199,243,107,.35)' );
+	if ( isset( $style['shadow']['preset'], $shadows[ $style['shadow']['preset'] ] ) ) { $out[] = 'box-shadow:' . $shadows[ $style['shadow']['preset'] ]; }
+
+	$typo = isset( $style['typography'] ) && is_array( $style['typography'] ) ? $style['typography'] : array();
+	if ( isset( $typo['size'] ) && '' !== ( $ts = rk_builder_style_len( $typo['size'] ) ) ) { $out[] = '--rk-block-size:' . $ts; }
+	if ( isset( $typo['weight'] ) && rk_builder_is_intlike( $typo['weight'] ) && $typo['weight'] >= 300 && $typo['weight'] <= 900 ) { $out[] = '--rk-block-weight:' . (int) $typo['weight']; }
+	if ( isset( $typo['align'] ) && in_array( $typo['align'], array( 'left', 'center', 'right' ), true ) ) { $out[] = 'text-align:' . $typo['align']; }
+	if ( isset( $typo['color'] ) && '' !== ( $tc = rk_builder_style_color( $typo['color'] ) ) ) { $out[] = 'color:' . $tc; }
+
+	return $out;
+}
+
+/** `selector{decls}` or '' when there is nothing to say. */
+function rk_builder_style_rule( $selector, array $decls ) {
+	return $decls ? $selector . '{' . implode( ';', $decls ) . '}' : '';
+}
+
+/**
+ * The advanced-style CSS for one block, scoped to `.rk-root .rk-style-<id>` (the class the renderer
+ * adds to that block's root). Returns '' for a block without styles, so unstyled documents emit
+ * exactly what they did before this existed.
+ */
+function rk_builder_block_style_css( $block, $scope = '.site-root' ) {
+	$class = rk_builder_style_class( $block );
+	if ( '' === $class || ! is_array( $block['advanced'] ) ) { return ''; }
+	$style  = $block['advanced'];
+	$base   = $scope . ' .' . $class;
+	$out    = array();
+
+	$vis = isset( $style['visibility'] ) && is_array( $style['visibility'] ) ? $style['visibility'] : array();
+	$bps = rk_builder_style_breakpoints();
+	if ( ! empty( $vis['hideDesktop'] ) ) { $out[] = $base . '{display:none!important}'; }
+	if ( ! empty( $vis['hideTablet'] ) ) { $out[] = '@media (min-width:' . $bps['tablet'] . 'px){' . $base . '{display:none!important}}'; }
+	if ( ! empty( $vis['hidePhone'] ) ) { $out[] = '@media (min-width:' . $bps['phone'] . 'px){' . $base . '{display:none!important}}'; }
+
+	$out[] = rk_builder_style_rule( $base, rk_builder_style_declarations( $style ) );
+
+	$typo = isset( $style['typography'] ) && is_array( $style['typography'] ) ? $style['typography'] : array();
+	if ( ! empty( $typo['size'] ) || ! empty( $typo['weight'] ) ) {
+		$parts = array();
+		if ( ! empty( $typo['size'] ) ) { $parts[] = 'font-size:var(--rk-block-size)!important'; }
+		if ( ! empty( $typo['weight'] ) ) { $parts[] = 'font-weight:var(--rk-block-weight)!important'; }
+		$out[] = rk_builder_style_rule( $base . ' :is(h1,h2,h3,h4,.pf-kicker)', $parts );
+	}
+
+	if ( isset( $style['overrides'] ) && is_array( $style['overrides'] ) ) {
+		foreach ( $bps as $bp => $min ) {
+			if ( ! isset( $style['overrides'][ $bp ] ) ) { continue; }
+			$decls = rk_builder_style_declarations( $style['overrides'][ $bp ] );
+			if ( $decls ) { $out[] = '@media (min-width:' . $min . 'px){' . rk_builder_style_rule( $base, $decls ) . '}'; }
+		}
+	}
+
+	return implode( '', array_filter( $out ) );
+}
+
+/** All advanced-style CSS for a layout ('' when nothing is styled). */
+function rk_builder_layout_style_css( array $layout, $scope = '.site-root' ) {
+	$blocks = isset( $layout['blocks'] ) && is_array( $layout['blocks'] ) ? $layout['blocks'] : array();
+	$out    = '';
+	foreach ( $blocks as $block ) {
+		if ( is_array( $block ) ) { $out .= rk_builder_block_style_css( $block, $scope ); }
+	}
+	return $out;
 }
 
 /* ------------------------------------------------------------------ *
@@ -213,8 +364,16 @@ function rk_builder_render_block( array $block, array $context = array() ) {
 			rk_builder_log( 'info', 'render_block_invalid', array( 'type' => $type ) );
 			return '';
 		}
+		// Advanced styles ride along with the block: a wrapper carrying the block's style class (the
+		// same wrapper the React LayoutRenderer emits, so both match). The CSS itself is emitted once
+		// for the whole layout by rk_builder_render_layout().
+		$style_class = rk_builder_style_class( $block );
 		$html = call_user_func( $renderers[ $type ], $props, $context );
-		return is_string( $html ) ? $html : '';
+		$html = is_string( $html ) ? $html : '';
+		if ( '' !== $style_class ) {
+			$html = '<div class="' . $style_class . '">' . $html . '</div>';
+		}
+		return $html;
 	} catch ( Throwable $e ) {
 		rk_builder_log( 'error', 'render_block_failed', array( 'type' => $type, 'error' => get_class( $e ), 'message' => $e->getMessage() ) );
 		rk_builder_record_render_error( isset( $context['page_id'] ) ? (int) $context['page_id'] : 0, 'rk_render_exception' );
@@ -231,5 +390,8 @@ function rk_builder_render_layout( array $layout, array $context = array() ) {
 	foreach ( $blocks as $block ) {
 		if ( is_array( $block ) ) { $out .= rk_builder_render_block( $block, $context ); }
 	}
-	return $out;
+	// Advanced-style CSS is emitted once for the whole layout, before the markup, exactly where the
+	// React LayoutRenderer puts its single <style>.
+	$css = rk_builder_layout_style_css( $layout );
+	return ( '' !== $css ? '<style>' . $css . '</style>' : '' ) . $out;
 }

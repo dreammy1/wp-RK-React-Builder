@@ -547,7 +547,13 @@ export function EditorPage({
                         onPatch={p =>
                           selected && actions.patchProps(selected.id, p)
                         }
+                        onPatchAdvanced={p =>
+                          selected && actions.patchAdvanced(selected.id, p)
+                        }
                         onDelete={() => selected && remove(selected.id)}
+                        onDuplicate={() =>
+                          selected && actions.duplicate(selected.id)
+                        }
                         library={library}
                         onSaveAsReusable={async (block, name) => {
                           if (block.type === "reusable") return;

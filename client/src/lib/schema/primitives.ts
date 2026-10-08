@@ -93,10 +93,35 @@ export const hexColor = z
   .string()
   .regex(/^#[0-9a-fA-F]{6}$/, "Expected a #RRGGBB color");
 
+/**
+ * A block-scoped CSS length: a whole number of pixels followed by "px".
+ *
+ * Deliberately narrow. Free-form CSS strings would let a saved layout inject arbitrary
+ * declarations into the public stylesheet, so the only way a length reaches CSS is through this
+ * validated shape (see style.ts → advancedToCss).
+ */
+export const cssLength = z
+  .string()
+  .regex(/^(0|[1-9][0-9]{0,3})px$/, "Expected a pixel value like 24px");
+
+/** A colour that may be left unset: a hex value, the literal "transparent", or nothing. */
+export const paintColor = z
+  .string()
+  .regex(/^(#[0-9a-fA-F]{6}|transparent)$/, "Expected a #RRGGBB colour");
+
 export const blockId = z
   .string()
   .regex(/^[a-z0-9][a-z0-9_-]{0,63}$/, "Invalid block id");
 
 export const slug = z.string().regex(/^[a-z0-9-]{0,60}$/, "Invalid slug");
+
+export const imageFit = z.enum(["cover", "contain", "fill"]);
+export const imagePosition = z.enum([
+  "center",
+  "top",
+  "bottom",
+  "left",
+  "right",
+]);
 
 export const text = (min: number, max: number) => z.string().min(min).max(max);

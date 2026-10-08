@@ -1,0 +1,40 @@
+{
+  "kind": "layout",
+  "description": "Blocks carrying advanced styles (background, spacing, border, responsive overrides)",
+  "document": {
+    "version": 1,
+    "blocks": [
+      {
+        "id": "hero-styled",
+        "type": "hero",
+        "props": {
+          "heading": "Styled hero",
+          "sub": "With a background colour and generous spacing.",
+          "cta": "Get a quote",
+          "ctaHref": "/contact"
+        },
+        "advanced": {
+          "spacing": { "top": "48px", "bottom": "48px" },
+          "background": { "color": "#112233" },
+          "border": { "radius": "16px" },
+          "shadow": { "preset": "md" },
+          "overrides": { "phone": { "spacing": { "top": "16px" } } }
+        }
+      },
+      {
+        "id": "text-styled",
+        "type": "text",
+        "props": { "text": "A narrow column with centred copy." },
+        "advanced": {
+          "size": { "width": "narrow" },
+          "typography": { "align": "center", "size": "20px" }
+        }
+      },
+      {
+        "id": "spacer-plain",
+        "type": "spacer",
+        "props": { "h": 32 }
+      }
+    ]
+  }
+}

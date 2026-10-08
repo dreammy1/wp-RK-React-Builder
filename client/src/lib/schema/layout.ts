@@ -36,9 +36,20 @@ import {
 } from "@/blocks/dynamic/schema";
 import { reusableProps } from "@/blocks/reusable/schema";
 import { blockId, LIMITS } from "./primitives";
+import { AdvancedStyleSchema } from "./style";
 
+/**
+ * Every block may carry an optional `advanced` presentation object (see lib/schema/style.ts).
+ * It is optional and strict, so a document without it serialises exactly as before and an unknown
+ * key inside it is still rejected rather than silently dropped.
+ */
 const b = <T extends string, P extends z.ZodType>(type: T, props: P) =>
-  z.strictObject({ id: blockId, type: z.literal(type), props });
+  z.strictObject({
+    id: blockId,
+    type: z.literal(type),
+    props,
+    advanced: AdvancedStyleSchema,
+  });
 
 export const BlockSchema = z.discriminatedUnion("type", [
   b("hero", heroProps),

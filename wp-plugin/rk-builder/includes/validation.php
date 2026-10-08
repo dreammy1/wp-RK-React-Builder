@@ -564,10 +564,188 @@ function rk_builder_validate_fields( $value, array $fields, $path, array &$issue
 	}
 }
 
+/* ------------------------------------------------------------------ *
+ * Per-block advanced styles (mirrors client/src/lib/schema/style.ts)
+ * ------------------------------------------------------------------ */
+
 function rk_builder_trim_ws( $s ) {
 	$r = preg_replace( '/^[' . rk_builder_ws_class() . ']+|[' . rk_builder_ws_class() . ']+\z/u', '', $s );
 	return null === $r ? $s : $r;
 }
+
+/** True when $v is a strict `Npx` length. */
+function rk_builder_is_css_len( $v ) {
+	return is_string( $v ) && 1 === preg_match( '/^(0|[1-9][0-9]{0,3})px\z/', $v );
+}
+
+/** True when $v is a validated colour (#RRGGBB or transparent). */
+function rk_builder_is_paint( $v ) {
+	return is_string( $v ) && 1 === preg_match( '/^(#[0-9a-fA-F]{6}|transparent)\z/', $v );
+}
+
+/** One group inside an advanced object or a breakpoint override: enum fields + unknown-key check. */
+function rk_builder_validate_style_groups( $style, $path, array &$issues, $image_hosts, $allow_overrides ) {
+	$groups = array( 'spacing', 'size', 'background', 'border', 'shadow', 'typography', 'visibility' );
+	if ( $allow_overrides ) { $groups[] = 'overrides'; }
+	$groups[] = 'cssClass';
+	$groups[] = 'name';
+
+	foreach ( $style as $k => $v ) {
+		if ( ! in_array( (string) $k, $groups, true ) ) {
+			rk_builder_add_issue( $issues, rk_builder_join_path( $path, $k ), 'Unrecognized key "' . $k . '"' );
+		}
+	}
+
+	$sides = array( 'top', 'right', 'bottom', 'left' );
+	if ( isset( $style['spacing'] ) ) {
+		$p = rk_builder_join_path( $path, 'spacing' );
+		if ( ! rk_builder_is_object( $style['spacing'] ) ) { rk_builder_add_issue( $issues, $p, 'Expected object' ); }
+		else {
+			foreach ( $style['spacing'] as $k => $v ) {
+				if ( ! in_array( (string) $k, $sides, true ) ) { rk_builder_add_issue( $issues, rk_builder_join_path( $p, $k ), 'Unrecognized key "' . $k . '"' ); }
+				elseif ( ! rk_builder_is_css_len( $v ) ) { rk_builder_add_issue( $issues, rk_builder_join_path( $p, $k ), 'Expected a pixel value like 24px' ); }
+			}
+		}
+	}
+
+	if ( isset( $style['size'] ) ) {
+		$p = rk_builder_join_path( $path, 'size' );
+		if ( ! rk_builder_is_object( $style['size'] ) ) { rk_builder_add_issue( $issues, $p, 'Expected object' ); }
+		else {
+			foreach ( $style['size'] as $k => $v ) {
+				$kp = rk_builder_join_path( $p, $k );
+				if ( 'width' === $k ) {
+					if ( ! in_array( $v, array( 'full', 'wide', 'boxed', 'narrow' ), true ) ) { rk_builder_add_issue( $issues, $kp, 'Invalid value' ); }
+				} elseif ( 'minHeight' === $k ) {
+					if ( ! rk_builder_is_css_len( $v ) ) { rk_builder_add_issue( $issues, $kp, 'Expected a pixel value like 320px' ); }
+				} elseif ( 'colSpan' === $k ) {
+					if ( $e = rk_builder_check_int( $v, 1, 4 ) ) { rk_builder_add_issue( $issues, $kp, $e ); }
+				} else {
+					rk_builder_add_issue( $issues, $kp, 'Unrecognized key "' . $k . '"' );
+				}
+			}
+		}
+	}
+
+	if ( isset( $style['background'] ) ) {
+		$p = rk_builder_join_path( $path, 'background' );
+		if ( ! rk_builder_is_object( $style['background'] ) ) { rk_builder_add_issue( $issues, $p, 'Expected object' ); }
+		else {
+			foreach ( $style['background'] as $k => $v ) {
+				$kp = rk_builder_join_path( $p, $k );
+				if ( 'color' === $k ) {
+					if ( ! rk_builder_is_paint( $v ) ) { rk_builder_add_issue( $issues, $kp, 'Expected a #RRGGBB colour' ); }
+				} elseif ( 'gradient' === $k ) {
+					if ( ! in_array( $v, array( 'none', 'fade', 'diagonal', 'radial' ), true ) ) { rk_builder_add_issue( $issues, $kp, 'Invalid value' ); }
+				} elseif ( 'imageFit' === $k ) {
+					if ( ! in_array( $v, array( 'cover', 'contain', 'fill' ), true ) ) { rk_builder_add_issue( $issues, $kp, 'Invalid value' ); }
+				} elseif ( 'imagePosition' === $k ) {
+					if ( ! in_array( $v, array( 'center', 'top', 'bottom', 'left', 'right' ), true ) ) { rk_builder_add_issue( $issues, $kp, 'Invalid value' ); }
+				} elseif ( 'imageMediaId' === $k ) {
+					if ( $e = rk_builder_check_int( $v, 0, 2147483647 ) ) { rk_builder_add_issue( $issues, $kp, $e ); }
+				} elseif ( 'imageUrl' === $k ) {
+					if ( $e = rk_builder_image_url_problem( $v, $image_hosts ) ) { rk_builder_add_issue( $issues, $kp, $e ); }
+				} else {
+					rk_builder_add_issue( $issues, $kp, 'Unrecognized key "' . $k . '"' );
+				}
+			}
+		}
+	}
+
+	if ( isset( $style['border'] ) ) {
+		$p = rk_builder_join_path( $path, 'border' );
+		if ( ! rk_builder_is_object( $style['border'] ) ) { rk_builder_add_issue( $issues, $p, 'Expected object' ); }
+		else {
+			foreach ( $style['border'] as $k => $v ) {
+				$kp = rk_builder_join_path( $p, $k );
+				if ( 'width' === $k || 'radius' === $k ) {
+					if ( ! rk_builder_is_css_len( $v ) ) { rk_builder_add_issue( $issues, $kp, 'Expected a pixel value like 2px' ); }
+				} elseif ( 'style' === $k ) {
+					if ( ! in_array( $v, array( 'solid', 'dashed', 'dotted' ), true ) ) { rk_builder_add_issue( $issues, $kp, 'Invalid value' ); }
+				} elseif ( 'color' === $k ) {
+					if ( ! rk_builder_is_paint( $v ) ) { rk_builder_add_issue( $issues, $kp, 'Expected a #RRGGBB colour' ); }
+				} else {
+					rk_builder_add_issue( $issues, $kp, 'Unrecognized key "' . $k . '"' );
+				}
+			}
+		}
+	}
+
+	if ( isset( $style['shadow'] ) ) {
+		$p = rk_builder_join_path( $path, 'shadow' );
+		if ( ! rk_builder_is_object( $style['shadow'] ) ) { rk_builder_add_issue( $issues, $p, 'Expected object' ); }
+		else {
+			foreach ( $style['shadow'] as $k => $v ) {
+				$kp = rk_builder_join_path( $p, $k );
+				if ( 'preset' !== $k ) { rk_builder_add_issue( $issues, $kp, 'Unrecognized key "' . $k . '"' ); }
+				elseif ( ! in_array( $v, array( 'none', 'sm', 'md', 'lg', 'glow' ), true ) ) { rk_builder_add_issue( $issues, $kp, 'Invalid value' ); }
+			}
+		}
+	}
+
+	if ( isset( $style['typography'] ) ) {
+		$p = rk_builder_join_path( $path, 'typography' );
+		if ( ! rk_builder_is_object( $style['typography'] ) ) { rk_builder_add_issue( $issues, $p, 'Expected object' ); }
+		else {
+			foreach ( $style['typography'] as $k => $v ) {
+				$kp = rk_builder_join_path( $p, $k );
+				if ( 'size' === $k ) {
+					if ( ! rk_builder_is_css_len( $v ) ) { rk_builder_add_issue( $issues, $kp, 'Expected a pixel value like 40px' ); }
+				} elseif ( 'weight' === $k ) {
+					if ( $e = rk_builder_check_int( $v, 300, 900 ) ) { rk_builder_add_issue( $issues, $kp, $e ); }
+				} elseif ( 'align' === $k ) {
+					if ( ! in_array( $v, array( 'left', 'center', 'right' ), true ) ) { rk_builder_add_issue( $issues, $kp, 'Invalid value' ); }
+				} elseif ( 'color' === $k ) {
+					if ( ! rk_builder_is_paint( $v ) ) { rk_builder_add_issue( $issues, $kp, 'Expected a #RRGGBB colour' ); }
+				} else {
+					rk_builder_add_issue( $issues, $kp, 'Unrecognized key "' . $k . '"' );
+				}
+			}
+		}
+	}
+
+	if ( isset( $style['visibility'] ) ) {
+		$p = rk_builder_join_path( $path, 'visibility' );
+		if ( ! rk_builder_is_object( $style['visibility'] ) ) { rk_builder_add_issue( $issues, $p, 'Expected object' ); }
+		else {
+			foreach ( $style['visibility'] as $k => $v ) {
+				$kp = rk_builder_join_path( $p, $k );
+				if ( ! in_array( $k, array( 'hideDesktop', 'hideTablet', 'hidePhone' ), true ) ) { rk_builder_add_issue( $issues, $kp, 'Unrecognized key "' . $k . '"' ); }
+				elseif ( ! is_bool( $v ) ) { rk_builder_add_issue( $issues, $kp, 'Expected boolean' ); }
+			}
+		}
+	}
+
+	if ( $allow_overrides && isset( $style['overrides'] ) ) {
+		$p = rk_builder_join_path( $path, 'overrides' );
+		if ( ! rk_builder_is_object( $style['overrides'] ) ) { rk_builder_add_issue( $issues, $p, 'Expected object' ); }
+		else {
+			foreach ( $style['overrides'] as $bp => $groups_value ) {
+				$bpp = rk_builder_join_path( $p, $bp );
+				if ( ! in_array( $bp, array( 'tablet', 'phone' ), true ) ) { rk_builder_add_issue( $issues, $bpp, 'Unrecognized key "' . $bp . '"' ); continue; }
+				if ( ! rk_builder_is_object( $groups_value ) ) { rk_builder_add_issue( $issues, $bpp, 'Expected object' ); continue; }
+				rk_builder_validate_style_groups( $groups_value, $bpp, $issues, $image_hosts, false );
+			}
+		}
+	}
+
+	if ( isset( $style['cssClass'] ) && ( ! is_string( $style['cssClass'] ) || 1 !== preg_match( '/^[a-z0-9-]{0,40}\z/', $style['cssClass'] ) ) ) {
+		rk_builder_add_issue( $issues, rk_builder_join_path( $path, 'cssClass' ), 'Use lowercase letters, numbers and dashes' );
+	}
+	if ( isset( $style['name'] ) && ( ! is_string( $style['name'] ) || rk_builder_strlen( $style['name'] ) > 60 ) ) {
+		rk_builder_add_issue( $issues, rk_builder_join_path( $path, 'name' ), 'String must contain at most 60 character(s)' );
+	}
+}
+
+/** Validate a block's optional `advanced` object (strict; unknown keys are reported). */
+function rk_builder_validate_advanced( $style, $path, array &$issues, $image_hosts ) {
+	if ( ! rk_builder_is_object( $style ) ) {
+		rk_builder_add_issue( $issues, $path, 'Expected object' );
+		return;
+	}
+	rk_builder_validate_style_groups( $style, $path, $issues, $image_hosts, true );
+}
+
 
 /* ------------------------------------------------------------------ *
  * Layout
@@ -618,7 +796,7 @@ function rk_builder_validate_layout( $doc, $image_hosts = array() ) {
 			continue;
 		}
 		foreach ( $block as $k => $_ ) {
-			if ( 'id' !== $k && 'type' !== $k && 'props' !== $k ) {
+			if ( 'id' !== $k && 'type' !== $k && 'props' !== $k && 'advanced' !== $k ) {
 				rk_builder_add_issue( $issues, $bp . '.' . $k, 'Unrecognized key "' . $k . '"' );
 			}
 		}
@@ -655,6 +833,10 @@ function rk_builder_validate_layout( $doc, $image_hosts = array() ) {
 				rk_builder_add_issue( $issues, $bp . '.props.alt', 'Alt text is required unless the image is decorative' );
 			}
 		}
+		// Optional presentation object; validated strictly so unknown keys are still reported.
+		if ( array_key_exists( 'advanced', $block ) ) {
+			rk_builder_validate_advanced( $block['advanced'], $bp . '.advanced', $issues, $image_hosts );
+		}
 	}
 	return $issues;
 }
@@ -672,7 +854,11 @@ function rk_builder_canonicalize_layout( array $layout ) {
 			if ( ( 'int' === $field['t'] || 'enum' === $field['t'] ) && rk_builder_is_intlike( $v ) ) { $v = (int) $v; }
 			$props[ $name ] = $v;
 		}
-		$blocks[] = array( 'id' => $block['id'], 'type' => $block['type'], 'props' => $props );
+		$item = array( 'id' => $block['id'], 'type' => $block['type'], 'props' => $props );
+		if ( isset( $block['advanced'] ) && is_array( $block['advanced'] ) ) {
+			$item['advanced'] = $block['advanced'];
+		}
+		$blocks[] = $item;
 	}
 	return array( 'version' => RK_BUILDER_SCHEMA_VERSION, 'blocks' => $blocks );
 }
